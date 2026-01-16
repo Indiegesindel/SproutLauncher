@@ -26,7 +26,7 @@ fun AllAppsTab(
     LazyColumn(
         modifier = Modifier.fillMaxSize()
     ) {
-        items(installedApps, key = { "${it.activityInfo.packageName}_${it.activityInfo.name}" }) { app ->
+        items(installedApps, key = { app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }) { app ->
             val itemId = "${app.activityInfo.packageName}_${app.activityInfo.name}"
             val tile = selectedTiles.find {
                 it.packageName == app.activityInfo.packageName && it.activityName == app.activityInfo.name

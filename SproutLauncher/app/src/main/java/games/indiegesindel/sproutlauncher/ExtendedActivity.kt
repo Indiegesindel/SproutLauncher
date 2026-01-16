@@ -46,8 +46,12 @@ import games.indiegesindel.sproutlauncher.ui.screens.HomeTab
 import games.indiegesindel.sproutlauncher.ui.screens.SettingsTab
 import games.indiegesindel.sproutlauncher.ui.theme.SproutLauncherTheme
 
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import android.content.pm.ResolveInfo
 
 class ExtendedActivity : ComponentActivity() {
     enum class Tab { Home, All, Settings }
@@ -75,12 +79,16 @@ class ExtendedActivity : ComponentActivity() {
                 var currentTab by rememberSaveable { mutableStateOf(startTab) }
                 var focusedItemId by rememberSaveable { mutableStateOf<String?>(null) }
 
-                val installedApps = remember {
-                    val intent = Intent(Intent.ACTION_MAIN, null).apply {
-                        addCategory(Intent.CATEGORY_LAUNCHER)
+                var installedApps by remember { mutableStateOf<List<ResolveInfo>>(emptyList()) }
+                LaunchedEffect(Unit) {
+                    withContext(Dispatchers.IO) {
+                        val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
+                            addCategory(Intent.CATEGORY_LAUNCHER)
+                        }
+                        val apps = packageManager.queryIntentActivities(mainIntent, 0)
+                            .sortedBy { it.loadLabel(packageManager).toString().lowercase() }
+                        installedApps = apps
                     }
-                    packageManager.queryIntentActivities(intent, 0)
-                        .sortedBy { it.loadLabel(packageManager).toString().lowercase() }
                 }
 
                 Scaffold(
