@@ -107,6 +107,7 @@ fun SettingsTab(settingsManager: SettingsManager) {
                             AppTheme.SYSTEM -> "System default"
                             AppTheme.LIGHT -> "Light"
                             AppTheme.DARK -> "Dark"
+                            AppTheme.WINE_RED -> "Wine Red"
                         },
                         onValueChange = {},
                         readOnly = true,
@@ -140,6 +141,13 @@ fun SettingsTab(settingsManager: SettingsManager) {
                             text = { Text("Dark") },
                             onClick = {
                                 settingsManager.setTheme(AppTheme.DARK)
+                                expanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Wine Red") },
+                            onClick = {
+                                settingsManager.setTheme(AppTheme.WINE_RED)
                                 expanded = false
                             }
                         )

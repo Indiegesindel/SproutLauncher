@@ -221,12 +221,12 @@ fun ButtonPrompt(
         Box(
             modifier = Modifier
                 .size(24.dp)
-                .background(MaterialTheme.colorScheme.onSurface, shape = CircleShape),
+                .background(MaterialTheme.colorScheme.inverseSurface, shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = button,
-                color = MaterialTheme.colorScheme.surface,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -234,7 +234,7 @@ fun ButtonPrompt(
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = label,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
         )
