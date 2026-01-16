@@ -20,6 +20,13 @@ class AppManager(context: Context) {
         saveAppTiles(currentTiles)
     }
 
+    fun updateAppTile(updatedTile: AppTile) {
+        val currentTiles = getAppTiles().map {
+            if (it.id == updatedTile.id) updatedTile else it
+        }
+        saveAppTiles(currentTiles)
+    }
+
     fun getAppTiles(): List<AppTile> {
         val jsonString = sharedPreferences.getString(KEY_APP_TILES, null) ?: return emptyList()
         val tiles = mutableListOf<AppTile>()
