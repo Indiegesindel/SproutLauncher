@@ -52,7 +52,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import games.indiegesindel.sproutlauncher.data.AppManager
+import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.ui.theme.SproutLauncherTheme
+
+import androidx.compose.runtime.collectAsState
 
 class AppTileSettingsActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -63,8 +66,11 @@ class AppTileSettingsActivity : ComponentActivity() {
         
         enableEdgeToEdge()
         setContent {
-            SproutLauncherTheme {
-                val context = LocalContext.current
+            val context = LocalContext.current
+            val settingsManager = remember { SettingsManager(context) }
+            val appTheme by settingsManager.theme.collectAsState()
+
+            SproutLauncherTheme(appTheme = appTheme) {
                 val appManager = remember { AppManager(context) }
                 val initialTile = remember { appManager.getAppTiles().find { it.id == tileId } } ?: run {
                     finish()

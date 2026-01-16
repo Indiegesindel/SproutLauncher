@@ -35,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +46,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import games.indiegesindel.sproutlauncher.data.AppManager
+import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.components.AppGrid
 import games.indiegesindel.sproutlauncher.ui.components.QuickActionsBar
@@ -60,8 +62,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         setContent {
-            SproutLauncherTheme {
-                val context = LocalContext.current
+            val context = LocalContext.current
+            val settingsManager = remember { SettingsManager(context) }
+            val appTheme by settingsManager.theme.collectAsState()
+
+            SproutLauncherTheme(appTheme = appTheme) {
                 val appManager = remember { AppManager(context) }
                 var appTiles by remember { mutableStateOf(emptyList<AppTile>()) }
                 var focusedElement by remember { mutableStateOf(FocusedElement.NONE) }
