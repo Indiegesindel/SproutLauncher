@@ -32,7 +32,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".AllAppsActivity"
+            android:name=".ExtendedActivity"
             android:exported="false"
             android:screenOrientation="landscape"
             android:theme="@style/Theme.SproutLauncher" />

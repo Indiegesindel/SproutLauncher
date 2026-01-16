@@ -52,16 +52,7 @@ class AppTileSettingsActivity : ComponentActivity() {
         
         val tileId = intent.getStringExtra("TILE_ID") ?: finish().run { return }
         
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT
-            ),
-            navigationBarStyle = SystemBarStyle.light(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT
-            )
-        )
+        enableEdgeToEdge()
         setContent {
             SproutLauncherTheme {
                 val context = LocalContext.current
