@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -39,9 +40,12 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import coil.compose.AsyncImage
 import games.indiegesindel.sproutlauncher.model.AppTile
 import android.view.KeyEvent
@@ -54,6 +58,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.runtime.LaunchedEffect
+
 @Composable
 fun AppGrid(
     appTiles: List<AppTile>,
@@ -61,6 +69,9 @@ fun AppGrid(
     onRemove: (AppTile) -> Unit,
     onSettings: (AppTile) -> Unit,
     onReorder: (Int, Int) -> Unit,
+    onFocusChanged: (Boolean) -> Unit = {},
+    focusedItemId: String? = null,
+    onFocusItemIdChanged: (String?) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -86,23 +97,30 @@ fun AppGrid(
         state = gridState,
         modifier = modifier
             .height(if (isPhone) 240.dp else 440.dp)
-            .wrapContentWidth(),
-        contentPadding = PaddingValues(start = 32.dp, top = 48.dp, end = 32.dp, bottom = 16.dp),
+            .wrapContentWidth()
+            .onFocusChanged { state ->
+                onFocusChanged(state.hasFocus)
+            },
+        contentPadding = PaddingValues(start = 32.dp, top = 16.dp, end = 32.dp, bottom = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+) {
         items(appTiles.size, key = { appTiles[it].id }) { index ->
             val tile = appTiles[index]
+            val tileId = "tile:${tile.id}"
             AppTileItem(
                 tile = tile,
                 index = index,
                 rows = rows,
+                isPhone = isPhone,
                 onClick = { onAppClick(tile) },
                 onRemove = { onRemove(tile) },
                 onSettings = { onSettings(tile) },
                 onMove = { direction -> moveItem(index, direction) },
                 onDragReorder = { from, to -> onReorder(from, to) },
-                gridState = gridState
+                gridState = gridState,
+                isTargetFocused = focusedItemId == tileId,
+                onFocused = { onFocusItemIdChanged(tileId) }
             )
         }
     }
@@ -114,17 +132,27 @@ fun AppTileItem(
     tile: AppTile,
     index: Int,
     rows: Int,
+    isPhone: Boolean,
     onClick: () -> Unit,
     onRemove: () -> Unit,
     onSettings: () -> Unit,
     onMove: (String) -> Unit,
     onDragReorder: (Int, Int) -> Unit,
-    gridState: LazyGridState
+    gridState: LazyGridState,
+    isTargetFocused: Boolean,
+    onFocused: () -> Unit
 ) {
     val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
     var showMenu by remember { mutableStateOf(false) }
     var isXPressed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isTargetFocused) {
+        if (isTargetFocused) {
+            focusRequester.requestFocus()
+        }
+    }
 
     var dragOffset by remember { mutableStateOf(IntOffset.Zero) }
     var isDragging by remember { mutableStateOf(false) }
@@ -132,7 +160,11 @@ fun AppTileItem(
     Box(
         modifier = Modifier
             .zIndex(if (isDragging) 1f else 0f)
-            .onFocusChanged { isFocused = it.isFocused }
+            .focusRequester(focusRequester)
+            .onFocusChanged { 
+                isFocused = it.isFocused
+                if (it.isFocused) onFocused()
+            }
             .onKeyEvent { event ->
                 val isDown = event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN
                 
@@ -205,22 +237,23 @@ fun AppTileItem(
     ) {
         // Tooltip
         if (isFocused && !isDragging && !isXPressed) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-40).dp),
-                contentAlignment = Alignment.BottomCenter
+            val density = LocalDensity.current
+            val yOffset = with(density) { (-40).dp.roundToPx() }
+            Popup(
+                alignment = Alignment.TopCenter,
+                offset = IntOffset(0, yOffset),
+                properties = PopupProperties(focusable = false)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color.Black)
+                            .background(MaterialTheme.colorScheme.onSurface)
                             .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = tile.label,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.surface,
                             style = MaterialTheme.typography.labelLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -230,7 +263,7 @@ fun AppTileItem(
                     Box(
                         modifier = Modifier
                             .size(14.dp, 7.dp)
-                            .background(Color.Black, shape = TriangleShape)
+                            .background(MaterialTheme.colorScheme.onSurface, shape = TriangleShape)
                     )
                 }
             }
@@ -238,7 +271,8 @@ fun AppTileItem(
 
         Box(
             modifier = Modifier
-                .size(160.dp)
+                .height(if (isPhone) 140.dp else 160.dp)
+                .aspectRatio(1f)
                 .offset { if (isDragging) dragOffset else IntOffset.Zero }
                 .graphicsLayer {
                     if (isDragging || isXPressed) {
@@ -248,12 +282,12 @@ fun AppTileItem(
                     }
                 }
                 .then(
-                    if (isFocused) Modifier.border(2.dp, Color.Black, RoundedCornerShape(22.dp))
+                    if (isFocused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(22.dp))
                     else Modifier
                 )
                 .padding(if (isFocused) 6.dp else 0.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color.LightGray)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .combinedClickable(
                     onClick = onClick,
                     onDoubleClick = { showMenu = true }
