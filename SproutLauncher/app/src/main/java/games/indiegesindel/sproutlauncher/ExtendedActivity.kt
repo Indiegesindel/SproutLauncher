@@ -33,12 +33,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import games.indiegesindel.sproutlauncher.data.AppManager
+import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.ui.screens.AllAppsTab
 import games.indiegesindel.sproutlauncher.ui.screens.HomeTab
 import games.indiegesindel.sproutlauncher.ui.screens.SettingsTab
 import games.indiegesindel.sproutlauncher.ui.theme.SproutLauncherTheme
 
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.collectAsState
 
 class ExtendedActivity : ComponentActivity() {
     enum class Tab { Home, All, Settings }
@@ -47,8 +49,11 @@ class ExtendedActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SproutLauncherTheme {
-                val context = LocalContext.current
+            val context = LocalContext.current
+            val settingsManager = remember { SettingsManager(context) }
+            val appTheme by settingsManager.theme.collectAsState()
+
+            SproutLauncherTheme(appTheme = appTheme) {
                 val appManager = remember { AppManager(context) }
                 var selectedTiles by remember { mutableStateOf(appManager.getAppTiles()) }
                 
@@ -130,7 +135,7 @@ class ExtendedActivity : ComponentActivity() {
                                 focusedItemId = focusedItemId,
                                 onFocusItemIdChanged = { focusedItemId = it }
                             )
-                            Tab.Settings -> SettingsTab()
+                            Tab.Settings -> SettingsTab(settingsManager)
                         }
                     }
                 }
