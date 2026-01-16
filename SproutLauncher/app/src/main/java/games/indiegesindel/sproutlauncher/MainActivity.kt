@@ -2,10 +2,12 @@ package games.indiegesindel.sproutlauncher
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,7 +82,20 @@ class MainActivity : ComponentActivity() {
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            AppGrid(appTiles = appTiles)
+                            AppGrid(
+                                appTiles = appTiles,
+                                onAppClick = { tile ->
+                                    try {
+                                        val intent = Intent().apply {
+                                            setClassName(tile.packageName, tile.activityName)
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Could not launch ${tile.label}", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
                             
                             Spacer(modifier = Modifier.height(32.dp))
                             
@@ -98,7 +113,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppGrid(appTiles: List<AppTile>, modifier: Modifier = Modifier) {
+fun AppGrid(
+    appTiles: List<AppTile>,
+    onAppClick: (AppTile) -> Unit,
+    modifier: Modifier = Modifier
+) {
     LazyHorizontalGrid(
         rows = GridCells.Fixed(2),
         modifier = modifier
@@ -109,16 +128,19 @@ fun AppGrid(appTiles: List<AppTile>, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(appTiles) { tile ->
-            AppTileItem(tile = tile)
+            AppTileItem(tile = tile, onClick = { onAppClick(tile) })
         }
     }
 }
 
 @Composable
-fun AppTileItem(tile: AppTile) {
+fun AppTileItem(tile: AppTile, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.size(width = 80.dp, height = 100.dp)
+        modifier = Modifier
+            .size(width = 80.dp, height = 100.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() }
     ) {
         Box(
             modifier = Modifier
