@@ -51,7 +51,16 @@ class AppManager(context: Context) {
         saveAppTiles(currentTiles)
     }
 
-    private fun saveAppTiles(tiles: List<AppTile>) {
+    fun reorderAppTile(fromIndex: Int, toIndex: Int) {
+        val currentTiles = getAppTiles().toMutableList()
+        if (fromIndex in currentTiles.indices && toIndex in currentTiles.indices) {
+            val tile = currentTiles.removeAt(fromIndex)
+            currentTiles.add(toIndex, tile)
+            saveAppTiles(currentTiles)
+        }
+    }
+
+    fun saveAppTiles(tiles: List<AppTile>) {
         val jsonArray = JSONArray()
         tiles.forEach { tile ->
             val obj = JSONObject()
