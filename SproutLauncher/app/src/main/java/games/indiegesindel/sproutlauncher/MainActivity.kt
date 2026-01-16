@@ -1,7 +1,9 @@
 package games.indiegesindel.sproutlauncher
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -125,8 +127,16 @@ class MainActivity : ComponentActivity() {
                                 onAllAppsClick = {
                                     context.startActivity(Intent(context, AllAppsActivity::class.java))
                                 },
+                                onBrowserClick = {
+                                    try {
+                                        val intent = Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_BROWSER)
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Could not open browser", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
                                 onSettingsClick = {
-                                    Toast.makeText(context, "Settings clicked", Toast.LENGTH_SHORT).show()
+                                    context.startActivity(Intent(Settings.ACTION_SETTINGS))
                                 }
                             )
                             
@@ -134,7 +144,7 @@ class MainActivity : ComponentActivity() {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 32.dp, vertical = 16.dp),
+                                    .padding(start = 32.dp, end = 32.dp, bottom = 12.dp, top = 0.dp),
                                 contentAlignment = Alignment.BottomEnd
                             ) {
                                 Text(

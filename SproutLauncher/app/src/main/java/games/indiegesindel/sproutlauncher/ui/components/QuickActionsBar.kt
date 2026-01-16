@@ -16,8 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -37,16 +37,16 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun QuickActionsBar(
     onAllAppsClick: () -> Unit,
+    onBrowserClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
+            .padding(top = 16.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        QuickActionButton(icon = Icons.Filled.Search, onClick = { /* TODO */ })
         Spacer(modifier = Modifier.width(16.dp))
         QuickActionButton(icon = Icons.Filled.Menu, onClick = onAllAppsClick)
         
@@ -55,11 +55,13 @@ fun QuickActionsBar(
         Box(
             modifier = Modifier
                 .width(2.dp)
-                .height(32.dp)
+                .height(40.dp)
                 .background(Color.LightGray.copy(alpha = 0.5f))
         )
         Spacer(modifier = Modifier.width(16.dp))
         
+        QuickActionButton(icon = Icons.Filled.Language, onClick = onBrowserClick)
+        Spacer(modifier = Modifier.width(16.dp))
         QuickActionButton(icon = Icons.Filled.Settings, onClick = onSettingsClick)
     }
 }
@@ -74,7 +76,7 @@ fun QuickActionButton(
 
     Surface(
         modifier = Modifier
-            .size(48.dp)
+            .size(56.dp)
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .then(
@@ -91,7 +93,7 @@ fun QuickActionButton(
             Icon(
                 imageVector = icon, 
                 contentDescription = null, 
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(28.dp),
                 tint = Color.Black
             )
         }
