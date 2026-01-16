@@ -202,7 +202,7 @@ fun AppTileItem(
             .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
-        if (isFocused && !isDragging) {
+        if (isFocused && !isDragging && !isXPressed) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -239,17 +239,17 @@ fun AppTileItem(
                 .size(160.dp)
                 .offset { if (isDragging) dragOffset else IntOffset.Zero }
                 .graphicsLayer {
-                    if (isDragging) {
+                    if (isDragging || isXPressed) {
                         alpha = 0.8f
                         scaleX = 1.1f
                         scaleY = 1.1f
                     }
                 }
                 .then(
-                    if (isFocused || isXPressed) Modifier.border(2.dp, if (isXPressed) Color.Red else Color.Black, RoundedCornerShape(22.dp))
+                    if (isFocused) Modifier.border(2.dp, Color.Black, RoundedCornerShape(22.dp))
                     else Modifier
                 )
-                .padding(if (isFocused || isXPressed) 6.dp else 0.dp)
+                .padding(if (isFocused) 6.dp else 0.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.LightGray)
                 .combinedClickable(
