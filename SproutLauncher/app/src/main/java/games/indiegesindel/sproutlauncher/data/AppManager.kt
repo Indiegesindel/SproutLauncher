@@ -27,6 +27,16 @@ class AppManager(context: Context) {
     }
 
     /**
+     * Updates an existing app tile.
+     */
+    fun updateAppTile(updatedTile: AppTile) {
+        val currentTiles = getAppTiles().map {
+            if (it.id == updatedTile.id) updatedTile else it
+        }
+        saveAppTiles(currentTiles)
+    }
+
+    /**
      * Retrieves all saved app tiles.
      */
     fun getAppTiles(): List<AppTile> {
