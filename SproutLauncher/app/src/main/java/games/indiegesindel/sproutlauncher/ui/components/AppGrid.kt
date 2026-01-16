@@ -20,8 +20,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -145,7 +143,6 @@ fun AppTileItem(
     val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
-    var showMenu by remember { mutableStateOf(false) }
     var isXPressed by remember { mutableStateOf(false) }
 
     LaunchedEffect(isTargetFocused) {
@@ -185,7 +182,7 @@ fun AppTileItem(
                     when (event.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_BUTTON_START,
                         KeyEvent.KEYCODE_MENU -> {
-                            showMenu = true
+                            onSettings()
                             true
                         }
                         else -> false
@@ -238,7 +235,7 @@ fun AppTileItem(
         // Tooltip
         if (isFocused && !isDragging && !isXPressed) {
             val density = LocalDensity.current
-            val yOffset = with(density) { (-40).dp.roundToPx() }
+            val yOffset = with(density) { (-30).dp.roundToPx() }
             Popup(
                 alignment = Alignment.TopCenter,
                 offset = IntOffset(0, yOffset),
@@ -290,7 +287,7 @@ fun AppTileItem(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .combinedClickable(
                     onClick = onClick,
-                    onDoubleClick = { showMenu = true }
+                    onDoubleClick = onSettings
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -303,26 +300,6 @@ fun AppTileItem(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds
-            )
-        }
-
-        DropdownMenu(
-            expanded = showMenu,
-            onDismissRequest = { showMenu = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("Settings") },
-                onClick = {
-                    showMenu = false
-                    onSettings()
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Remove") },
-                onClick = {
-                    showMenu = false
-                    onRemove()
-                }
             )
         }
     }

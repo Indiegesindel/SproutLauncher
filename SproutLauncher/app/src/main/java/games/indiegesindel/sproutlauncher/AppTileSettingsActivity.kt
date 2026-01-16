@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,14 +33,22 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import games.indiegesindel.sproutlauncher.data.AppManager
@@ -64,6 +73,31 @@ class AppTileSettingsActivity : ComponentActivity() {
 
                 var label by remember { mutableStateOf(initialTile.label) }
                 var iconUri by remember { mutableStateOf(initialTile.iconUri) }
+                var showDeleteConfirm by remember { mutableStateOf(false) }
+
+                if (showDeleteConfirm) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteConfirm = false },
+                        title = { Text("Remove Tile") },
+                        text = { Text("Are you sure you want to remove this tile from your home screen?") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    appManager.removeAppTile(tileId)
+                                    finish()
+                                },
+                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("Remove")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteConfirm = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
+                }
 
                 val photoPickerLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.OpenDocument(),
@@ -101,96 +135,102 @@ class AppTileSettingsActivity : ComponentActivity() {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding)
-                            .padding(16.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(24.dp)
-                        ) {
-                            // Left side: Icon Area (1fr)
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                val appIcon = remember {
-                                    try {
-                                        context.packageManager.getApplicationIcon(initialTile.packageName)
-                                    } catch (e: Exception) {
-                                        null
-                                    }
-                                }
+                        // Icon Area (Modern style)
+                        Spacer(modifier = Modifier.height(32.dp))
 
-                                AsyncImage(
-                                    model = iconUri ?: appIcon,
-                                    contentDescription = "Tile Icon",
-                                    modifier = Modifier.size(128.dp),
-                                    contentScale = ContentScale.Fit
-                                )
-                                
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(
-                                        onClick = { photoPickerLauncher.launch(arrayOf("image/*")) },
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("Change", maxLines = 1)
-                                    }
-                                    OutlinedButton(
-                                        onClick = { iconUri = null },
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("Reset", maxLines = 1)
-                                    }
-                                }
-                            }
-
-                            // Right side: Label input (2fr)
-                            Column(
-                                modifier = Modifier.weight(2f)
-                            ) {
-                                OutlinedTextField(
-                                    value = label,
-                                    onValueChange = { label = it },
-                                    label = { Text("Label") },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-
-                                Spacer(modifier = Modifier.height(16.dp))
-                                
-                                Text(
-                                    text = "Package: ${initialTile.packageName}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                
-                                Text(
-                                    text = "Activity: ${initialTile.activityName}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                        val appIcon = remember {
+                            try {
+                                context.packageManager.getApplicationIcon(initialTile.packageName)
+                            } catch (e: Exception) {
+                                null
                             }
                         }
 
-                        Spacer(modifier = Modifier.weight(1f))
-                        
-                        // Bottom buttons for explicit Save/Discard as requested
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            OutlinedButton(onClick = { finish() }) {
-                                Text("Discard")
+                        AsyncImage(
+                            model = iconUri ?: appIcon,
+                            contentDescription = "Tile Icon",
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Fit
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { photoPickerLauncher.launch(arrayOf("image/*")) }
+                            ) {
+                                Text("Change Icon")
                             }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Button(onClick = {
-                                val updatedTile = initialTile.copy(label = label, iconUri = iconUri)
-                                appManager.updateAppTile(updatedTile)
-                                finish()
-                            }) {
-                                Text("Save")
+                            if (iconUri != null) {
+                                OutlinedButton(
+                                    onClick = { iconUri = null }
+                                ) {
+                                    Text("Reset")
+                                }
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Label Input
+                        OutlinedTextField(
+                            value = label,
+                            onValueChange = { label = it },
+                            label = { Text("Label") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // App Information Section
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "App Details",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Package: ${initialTile.packageName}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "Activity: ${initialTile.activityName}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Dangerous Actions Section
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = { showDeleteConfirm = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Remove Tile")
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }

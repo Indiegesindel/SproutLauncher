@@ -9,6 +9,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -86,11 +87,12 @@ class MainActivity : ComponentActivity() {
                         Column(
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            Box(
+                            Column(
                                 modifier = Modifier
                                     .weight(1f)
                                     .fillMaxWidth(),
-                                contentAlignment = Alignment.Center
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
                                 AppGrid(
                                     appTiles = appTiles,
@@ -135,38 +137,38 @@ class MainActivity : ComponentActivity() {
                                     onFocusItemIdChanged = { focusedItemId = it },
                                     modifier = Modifier.padding(bottom = 0.dp)
                                 )
-                            }
-                            
-                            Box(modifier = Modifier.zIndex(1f)) {
-                                QuickActionsBar(
-                                    onAllAppsClick = {
-                                        context.startActivity(Intent(context, ExtendedActivity::class.java))
-                                    },
-                                    onBrowserClick = {
-                                        try {
-                                            val intent = Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_BROWSER)
-                                            context.startActivity(intent)
-                                        } catch (e: Exception) {
-                                            Toast.makeText(context, "Could not open browser", Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    onSettingsClick = {
-                                        try {
-                                            context.startActivity(Intent(Settings.ACTION_SETTINGS))
-                                        } catch (e: Exception) {
-                                            Toast.makeText(context, "Could not open settings", Toast.LENGTH_SHORT).show()
-                                        }
-                                    },
-                                    onFocusChanged = { focused ->
-                                        if (focused) {
-                                            focusedElement = FocusedElement.QUICK_ACTION
-                                        } else if (focusedElement == FocusedElement.QUICK_ACTION) {
-                                            focusedElement = FocusedElement.NONE
-                                        }
-                                    },
-                                    focusedItemId = focusedItemId,
-                                    onFocusItemIdChanged = { focusedItemId = it }
-                                )
+
+                                Box(modifier = Modifier.zIndex(1f)) {
+                                    QuickActionsBar(
+                                        onAllAppsClick = {
+                                            context.startActivity(Intent(context, ExtendedActivity::class.java))
+                                        },
+                                        onBrowserClick = {
+                                            try {
+                                                val intent = Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_BROWSER)
+                                                context.startActivity(intent)
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Could not open browser", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        onSettingsClick = {
+                                            try {
+                                                context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Could not open settings", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        onFocusChanged = { focused ->
+                                            if (focused) {
+                                                focusedElement = FocusedElement.QUICK_ACTION
+                                            } else if (focusedElement == FocusedElement.QUICK_ACTION) {
+                                                focusedElement = FocusedElement.NONE
+                                            }
+                                        },
+                                        focusedItemId = focusedItemId,
+                                        onFocusItemIdChanged = { focusedItemId = it }
+                                    )
+                                }
                             }
                             
                             // Controller prompts
@@ -182,7 +184,7 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     when (focusedElement) {
                                         FocusedElement.APP_TILE -> {
-                                            ButtonPrompt(button = "+", label = "Options")
+                                            ButtonPrompt(button = "+", label = "Settings")
                                             ButtonPrompt(button = "X", label = "Move (Hold)")
                                             ButtonPrompt(button = "A", label = "Launch")
                                         }

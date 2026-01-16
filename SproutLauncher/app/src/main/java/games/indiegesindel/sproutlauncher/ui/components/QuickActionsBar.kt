@@ -61,7 +61,7 @@ fun QuickActionsBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 24.dp)
+            .padding(top = 0.dp, bottom = 8.dp)
             .onFocusChanged { state ->
                 // Check if any child is focused
                 onFocusChanged(state.hasFocus)
@@ -139,7 +139,7 @@ fun QuickActionButton(
         // Tooltip
         if (isFocused) {
             val density = LocalDensity.current
-            val yOffset = with(density) { (-48).dp.roundToPx() }
+            val yOffset = with(density) { (-30).dp.roundToPx() }
             Popup(
                 alignment = Alignment.TopCenter,
                 offset = IntOffset(0, yOffset),
