@@ -34,10 +34,12 @@
         <activity
             android:name=".AllAppsActivity"
             android:exported="false"
+            android:screenOrientation="landscape"
             android:theme="@style/Theme.SproutLauncher" />
         <activity
             android:name=".AppTileSettingsActivity"
             android:exported="false"
+            android:screenOrientation="landscape"
             android:theme="@style/Theme.SproutLauncher" />
     </application>
 
