@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import coil.compose.rememberAsyncImagePainter
+import coil.imageLoader
 import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 import android.content.pm.ResolveInfo
@@ -67,8 +68,10 @@ fun AppListItem(
     val iconPainter: Painter = if (tile?.iconUri != null) {
         rememberAsyncImagePainter(tile.iconUri)
     } else {
-        val icon = remember(app) { IconUtils.getUnmaskedDrawable(app.loadIcon(pm)).toBitmap().asImageBitmap() }
-        BitmapPainter(icon)
+        rememberAsyncImagePainter(
+            model = app,
+            imageLoader = context.imageLoader
+        )
     }
 
     Row(

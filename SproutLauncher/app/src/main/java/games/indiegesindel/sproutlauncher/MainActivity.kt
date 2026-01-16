@@ -72,6 +72,10 @@ class MainActivity : ComponentActivity() {
                 var focusedElement by remember { mutableStateOf(FocusedElement.NONE) }
                 var focusedItemId by rememberSaveable { mutableStateOf<String?>(null) }
 
+                LaunchedEffect(Unit) {
+                    appTiles = appManager.getAppTiles()
+                }
+
                 val lifecycleOwner = LocalLifecycleOwner.current
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {

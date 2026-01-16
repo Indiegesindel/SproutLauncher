@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import games.indiegesindel.sproutlauncher.data.AppManager
@@ -23,8 +26,12 @@ fun HomeTab(
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
-    val displayedApps = installedApps.filter { app ->
-        selectedTiles.any { it.packageName == app.activityInfo.packageName && it.activityName == app.activityInfo.name }
+    val displayedApps by remember(installedApps, selectedTiles) {
+        derivedStateOf {
+            installedApps.filter { app ->
+                selectedTiles.any { it.packageName == app.activityInfo.packageName && it.activityName == app.activityInfo.name }
+            }
+        }
     }
 
     if (displayedApps.isEmpty()) {
@@ -33,7 +40,7 @@ fun HomeTab(
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
-            items(displayedApps, key = { "${it.activityInfo.packageName}_${it.activityInfo.name}" }) { app ->
+            items(displayedApps, key = { app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }) { app ->
                 val itemId = "${app.activityInfo.packageName}_${app.activityInfo.name}"
                 val tile = selectedTiles.find {
                     it.packageName == app.activityInfo.packageName && it.activityName == app.activityInfo.name
