@@ -108,6 +108,15 @@ class MainActivity : ComponentActivity() {
                                             putExtra("TILE_ID", tile.id)
                                         }
                                         context.startActivity(intent)
+                                    },
+                                    onReorder = { from, to ->
+                                        val newList = appTiles.toMutableList()
+                                        if (from in newList.indices && to in newList.indices) {
+                                            val tile = newList.removeAt(from)
+                                            newList.add(to, tile)
+                                            appTiles = newList
+                                            appManager.saveAppTiles(newList)
+                                        }
                                     }
                                 )
                             }

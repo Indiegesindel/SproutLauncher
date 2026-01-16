@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -43,6 +45,14 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import games.indiegesindel.sproutlauncher.model.AppTile
 import android.view.KeyEvent
+import games.indiegesindel.sproutlauncher.utils.IconUtils
+
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 
 @Composable
 fun AppGrid(
@@ -50,27 +60,49 @@ fun AppGrid(
     onAppClick: (AppTile) -> Unit,
     onRemove: (AppTile) -> Unit,
     onSettings: (AppTile) -> Unit,
+    onReorder: (Int, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
     val isPhone = configuration.smallestScreenWidthDp < 600
     val rows = if (isPhone) 1 else 2
+    val gridState = rememberLazyGridState()
+
+    fun moveItem(currentIndex: Int, direction: String) {
+        val targetIndex = when (direction) {
+            "UP" -> if (currentIndex % rows == 1) currentIndex - 1 else -1
+            "DOWN" -> if (currentIndex % rows == 0 && rows > 1 && currentIndex + 1 < appTiles.size) currentIndex + 1 else -1
+            "LEFT" -> if (currentIndex >= rows) currentIndex - rows else -1
+            "RIGHT" -> if (currentIndex + rows < appTiles.size) currentIndex + rows else -1
+            else -> -1
+        }
+        if (targetIndex != -1 && targetIndex in appTiles.indices) {
+            onReorder(currentIndex, targetIndex)
+        }
+    }
 
     LazyHorizontalGrid(
         rows = GridCells.Fixed(rows),
+        state = gridState,
         modifier = modifier
             .height(if (isPhone) 240.dp else 440.dp)
             .wrapContentWidth(),
         contentPadding = PaddingValues(start = 32.dp, top = 48.dp, end = 32.dp, bottom = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(appTiles, key = { it.id }) { tile ->
+        items(appTiles.size, key = { appTiles[it].id }) { index ->
+            val tile = appTiles[index]
             AppTileItem(
                 tile = tile,
+                index = index,
+                rows = rows,
                 onClick = { onAppClick(tile) },
                 onRemove = { onRemove(tile) },
-                onSettings = { onSettings(tile) }
+                onSettings = { onSettings(tile) },
+                onMove = { direction -> moveItem(index, direction) },
+                onDragReorder = { from, to -> onReorder(from, to) },
+                gridState = gridState
             )
         }
     }
@@ -80,19 +112,44 @@ fun AppGrid(
 @Composable
 fun AppTileItem(
     tile: AppTile,
+    index: Int,
+    rows: Int,
     onClick: () -> Unit,
     onRemove: () -> Unit,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    onMove: (String) -> Unit,
+    onDragReorder: (Int, Int) -> Unit,
+    gridState: LazyGridState
 ) {
     val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    var isXPressed by remember { mutableStateOf(false) }
+
+    var dragOffset by remember { mutableStateOf(IntOffset.Zero) }
+    var isDragging by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
+            .zIndex(if (isDragging) 1f else 0f)
             .onFocusChanged { isFocused = it.isFocused }
             .onKeyEvent { event ->
-                if (event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                val isDown = event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN
+                
+                if (event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_X) {
+                    isXPressed = isDown
+                    return@onKeyEvent true
+                }
+                
+                if (isXPressed && isDown) {
+                    when (event.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_W -> { onMove("UP"); true }
+                        KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_S -> { onMove("DOWN"); true }
+                        KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_A -> { onMove("LEFT"); true }
+                        KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_D -> { onMove("RIGHT"); true }
+                        else -> false
+                    }
+                } else if (isDown) {
                     when (event.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_BUTTON_START,
                         KeyEvent.KEYCODE_MENU -> {
@@ -106,15 +163,52 @@ fun AppTileItem(
                 }
             }
             .focusable()
+            .pointerInput(Unit) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { isDragging = true },
+                    onDragEnd = {
+                        isDragging = false
+                        dragOffset = IntOffset.Zero
+                    },
+                    onDragCancel = {
+                        isDragging = false
+                        dragOffset = IntOffset.Zero
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        dragOffset += IntOffset(dragAmount.x.roundToInt(), dragAmount.y.roundToInt())
+                        
+                        // Check if we dragged over another item
+                        val currentItemInfo = gridState.layoutInfo.visibleItemsInfo.find { it.index == index }
+                        currentItemInfo?.let { info ->
+                            val centerX = info.offset.x + info.size.width / 2 + dragOffset.x
+                            val centerY = info.offset.y + info.size.height / 2 + dragOffset.y
+                            
+                            val targetItem = gridState.layoutInfo.visibleItemsInfo.find { target ->
+                                target.index != index &&
+                                centerX in target.offset.x..(target.offset.x + target.size.width) &&
+                                centerY in target.offset.y..(target.offset.y + target.size.height)
+                            }
+                            
+                            targetItem?.let {
+                                val fromOffset = info.offset
+                                val toOffset = it.offset
+                                onDragReorder(index, it.index)
+                                dragOffset -= IntOffset(toOffset.x - fromOffset.x, toOffset.y - fromOffset.y)
+                            }
+                        }
+                    }
+                )
+            }
             .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
         // Tooltip
-        if (isFocused) {
+        if (isFocused && !isDragging) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-45).dp),
+                    .offset(y = (-40).dp),
                 contentAlignment = Alignment.BottomCenter
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -145,25 +239,29 @@ fun AppTileItem(
         Box(
             modifier = Modifier
                 .size(160.dp)
+                .offset { if (isDragging) dragOffset else IntOffset.Zero }
+                .graphicsLayer {
+                    if (isDragging) {
+                        alpha = 0.8f
+                        scaleX = 1.1f
+                        scaleY = 1.1f
+                    }
+                }
                 .then(
-                    if (isFocused) Modifier.border(2.dp, Color.Black, RoundedCornerShape(22.dp))
+                    if (isFocused || isXPressed) Modifier.border(2.dp, if (isXPressed) Color.Red else Color.Black, RoundedCornerShape(22.dp))
                     else Modifier
                 )
-                .padding(if (isFocused) 6.dp else 0.dp)
+                .padding(if (isFocused || isXPressed) 6.dp else 0.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.LightGray)
                 .combinedClickable(
                     onClick = onClick,
-                    onLongClick = { showMenu = true }
+                    onDoubleClick = { showMenu = true }
                 ),
             contentAlignment = Alignment.Center
         ) {
             val appIcon = remember(tile.packageName) {
-                try {
-                    context.packageManager.getApplicationIcon(tile.packageName)
-                } catch (e: Exception) {
-                    null
-                }
+                IconUtils.getFullSquareIcon(context, tile.packageName)
             }
             
             AsyncImage(

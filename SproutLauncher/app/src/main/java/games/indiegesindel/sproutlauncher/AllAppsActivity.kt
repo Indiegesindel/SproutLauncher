@@ -35,6 +35,7 @@ import androidx.core.graphics.drawable.toBitmap
 import games.indiegesindel.sproutlauncher.data.AppManager
 import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.theme.SproutLauncherTheme
+import games.indiegesindel.sproutlauncher.utils.IconUtils
 
 class AllAppsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,7 +103,7 @@ fun AppListItem(app: ResolveInfo, isSelected: Boolean, onToggle: (Boolean) -> Un
     val context = LocalContext.current
     val pm = context.packageManager
     val label = remember { app.loadLabel(pm).toString() }
-    val icon = remember { app.loadIcon(pm).toBitmap().asImageBitmap() }
+    val icon = remember { IconUtils.getUnmaskedDrawable(app.loadIcon(pm)).toBitmap().asImageBitmap() }
 
     Row(
         modifier = Modifier
