@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
@@ -76,7 +77,7 @@ fun QuickActionsBar(
         Spacer(modifier = Modifier.width(16.dp))
         QuickActionButton(
             id = "action:all_apps",
-            icon = Icons.Filled.Menu,
+            icon = Icons.Filled.Apps,
             label = "All Apps",
             onClick = onAllAppsClick,
             isTargetFocused = focusedItemId == "action:all_apps",
@@ -89,7 +90,7 @@ fun QuickActionsBar(
             modifier = Modifier
                 .width(2.dp)
                 .height(40.dp)
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
         )
         Spacer(modifier = Modifier.width(16.dp))
         
@@ -149,12 +150,12 @@ fun QuickActionButton(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.onSurface)
+                            .background(MaterialTheme.colorScheme.inverseSurface)
                             .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = label,
-                            color = MaterialTheme.colorScheme.surface,
+                            color = MaterialTheme.colorScheme.inverseOnSurface,
                             style = MaterialTheme.typography.labelLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -164,7 +165,7 @@ fun QuickActionButton(
                     Box(
                         modifier = Modifier
                             .size(14.dp, 7.dp)
-                            .background(MaterialTheme.colorScheme.onSurface, shape = TriangleShape)
+                            .background(MaterialTheme.colorScheme.inverseSurface, shape = TriangleShape)
                     )
                 }
             }
@@ -186,7 +187,7 @@ fun QuickActionButton(
                 .padding(if (isFocused) 4.dp else 0.dp)
                 .clip(CircleShape)
                 .combinedClickable(onClick = onClick),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            color = MaterialTheme.colorScheme.secondary,
             shape = CircleShape
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -194,7 +195,7 @@ fun QuickActionButton(
                     imageVector = icon, 
                     contentDescription = label, 
                     modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSecondary
                 )
             }
         }

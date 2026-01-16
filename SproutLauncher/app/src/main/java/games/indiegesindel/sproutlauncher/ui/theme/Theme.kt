@@ -2,6 +2,9 @@ package games.indiegesindel.sproutlauncher.ui.theme
 
 import android.app.Activity
 import android.os.Build
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -9,8 +12,30 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import games.indiegesindel.sproutlauncher.data.AppTheme
+
+private val WineRedColorScheme = darkColorScheme(
+    primary = WineVeryLight,
+    onPrimary = WineBlack,
+    primaryContainer = WineMedium,
+    onPrimaryContainer = WineWhite,
+    secondary = WineLight,
+    onSecondary = WineBlack,
+    secondaryContainer = WineDark,
+    onSecondaryContainer = WineVeryLight,
+    background = WineBlack,
+    onBackground = WineWhite,
+    surface = WineDark,
+    onSurface = WineWhite,
+    surfaceVariant = WineMedium,
+    onSurfaceVariant = WineWhite,
+    inverseSurface = WineLight,
+    inverseOnSurface = WineBlack,
+    outline = WineMedium
+)
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -45,9 +70,26 @@ fun SproutLauncherTheme(
         AppTheme.SYSTEM -> isSystemInDarkTheme()
         AppTheme.LIGHT -> false
         AppTheme.DARK -> true
+        AppTheme.WINE_RED -> true
+    }
+
+    val context = LocalContext.current
+    DisposableEffect(darkTheme) {
+        (context as? ComponentActivity)?.enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ) { darkTheme },
+            navigationBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ) { darkTheme }
+        )
+        onDispose {}
     }
 
     val colorScheme = when {
+        appTheme == AppTheme.WINE_RED -> WineRedColorScheme
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

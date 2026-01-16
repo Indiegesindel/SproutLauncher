@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import games.indiegesindel.sproutlauncher.data.AppManager
 import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.components.AppListItem
+import games.indiegesindel.sproutlauncher.ui.components.HomeDisclaimer
 
 @Composable
 fun HomeTab(
@@ -26,37 +27,41 @@ fun HomeTab(
         selectedTiles.any { it.packageName == app.activityInfo.packageName && it.activityName == app.activityInfo.name }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        items(displayedApps, key = { "${it.activityInfo.packageName}_${it.activityInfo.name}" }) { app ->
-            val itemId = "${app.activityInfo.packageName}_${app.activityInfo.name}"
-            val tile = selectedTiles.find {
-                it.packageName == app.activityInfo.packageName && it.activityName == app.activityInfo.name
-            }
-            val isSelected = tile != null
+    if (displayedApps.isEmpty()) {
+        HomeDisclaimer(modifier = Modifier.fillMaxSize())
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(displayedApps, key = { "${it.activityInfo.packageName}_${it.activityInfo.name}" }) { app ->
+                val itemId = "${app.activityInfo.packageName}_${app.activityInfo.name}"
+                val tile = selectedTiles.find {
+                    it.packageName == app.activityInfo.packageName && it.activityName == app.activityInfo.name
+                }
+                val isSelected = tile != null
 
-            AppListItem(
-                app = app,
-                isSelected = isSelected,
-                tile = tile,
-                onToggle = {
-                    if (!isSelected) {
-                        val newTile = AppTile(
-                            packageName = app.activityInfo.packageName,
-                            activityName = app.activityInfo.name,
-                            label = app.loadLabel(pm).toString()
-                        )
-                        appManager.addAppTile(newTile)
-                    } else {
-                        tile?.let { appManager.removeAppTile(it.id) }
-                    }
-                    onTilesChanged(appManager.getAppTiles())
-                },
-                id = itemId,
-                isTargetFocused = focusedItemId == itemId,
-                onFocused = { onFocusItemIdChanged(it) }
-            )
+                AppListItem(
+                    app = app,
+                    isSelected = isSelected,
+                    tile = tile,
+                    onToggle = {
+                        if (!isSelected) {
+                            val newTile = AppTile(
+                                packageName = app.activityInfo.packageName,
+                                activityName = app.activityInfo.name,
+                                label = app.loadLabel(pm).toString()
+                            )
+                            appManager.addAppTile(newTile)
+                        } else {
+                            tile?.let { appManager.removeAppTile(it.id) }
+                        }
+                        onTilesChanged(appManager.getAppTiles())
+                    },
+                    id = itemId,
+                    isTargetFocused = focusedItemId == itemId,
+                    onFocused = { onFocusItemIdChanged(it) }
+                )
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -90,36 +91,44 @@ fun AppGrid(
         }
     }
 
-    LazyHorizontalGrid(
-        rows = GridCells.Fixed(rows),
-        state = gridState,
-        modifier = modifier
-            .height(if (isPhone) 240.dp else 440.dp)
-            .wrapContentWidth()
-            .onFocusChanged { state ->
-                onFocusChanged(state.hasFocus)
-            },
-        contentPadding = PaddingValues(start = 32.dp, top = 16.dp, end = 32.dp, bottom = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-) {
-        items(appTiles.size, key = { appTiles[it].id }) { index ->
-            val tile = appTiles[index]
-            val tileId = "tile:${tile.id}"
-            AppTileItem(
-                tile = tile,
-                index = index,
-                rows = rows,
-                isPhone = isPhone,
-                onClick = { onAppClick(tile) },
-                onRemove = { onRemove(tile) },
-                onSettings = { onSettings(tile) },
-                onMove = { direction -> moveItem(index, direction) },
-                onDragReorder = { from, to -> onReorder(from, to) },
-                gridState = gridState,
-                isTargetFocused = focusedItemId == tileId,
-                onFocused = { onFocusItemIdChanged(tileId) }
-            )
+    if (appTiles.isEmpty()) {
+        HomeDisclaimer(
+            modifier = modifier
+                .height(if (isPhone) 240.dp else 440.dp)
+                .fillMaxWidth()
+        )
+    } else {
+        LazyHorizontalGrid(
+            rows = GridCells.Fixed(rows),
+            state = gridState,
+            modifier = modifier
+                .height(if (isPhone) 240.dp else 440.dp)
+                .wrapContentWidth()
+                .onFocusChanged { state ->
+                    onFocusChanged(state.hasFocus)
+                },
+            contentPadding = PaddingValues(start = 32.dp, top = 16.dp, end = 32.dp, bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(appTiles.size, key = { appTiles[it].id }) { index ->
+                val tile = appTiles[index]
+                val tileId = "tile:${tile.id}"
+                AppTileItem(
+                    tile = tile,
+                    index = index,
+                    rows = rows,
+                    isPhone = isPhone,
+                    onClick = { onAppClick(tile) },
+                    onRemove = { onRemove(tile) },
+                    onSettings = { onSettings(tile) },
+                    onMove = { direction -> moveItem(index, direction) },
+                    onDragReorder = { from, to -> onReorder(from, to) },
+                    gridState = gridState,
+                    isTargetFocused = focusedItemId == tileId,
+                    onFocused = { onFocusItemIdChanged(tileId) }
+                )
+            }
         }
     }
 }
@@ -245,12 +254,12 @@ fun AppTileItem(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.onSurface)
+                            .background(MaterialTheme.colorScheme.inverseSurface)
                             .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = tile.label,
-                            color = MaterialTheme.colorScheme.surface,
+                            color = MaterialTheme.colorScheme.inverseOnSurface,
                             style = MaterialTheme.typography.labelLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -260,7 +269,7 @@ fun AppTileItem(
                     Box(
                         modifier = Modifier
                             .size(14.dp, 7.dp)
-                            .background(MaterialTheme.colorScheme.onSurface, shape = TriangleShape)
+                            .background(MaterialTheme.colorScheme.inverseSurface, shape = TriangleShape)
                     )
                 }
             }
