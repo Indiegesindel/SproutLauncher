@@ -94,15 +94,24 @@ fun AppGridItem(
                     if (it.isFocused && id != null) onFocused(id)
                 }
                 .onKeyEvent { event ->
-                    if (event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_X &&
-                        event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                    val isDown = event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN
+                    if (isDown && event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_X) {
                         showMenu = true
+                        true
+                    } else if (isDown && (
+                        event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_ENTER ||
+                        event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                        event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_A
+                    )) {
+                        val intent = pm.getLaunchIntentForPackage(app.activityInfo.packageName)
+                        if (intent != null) {
+                            context.startActivity(intent)
+                        }
                         true
                     } else {
                         false
                     }
                 }
-                .focusable()
                 .background(
                     color = when {
                         isFocused -> MaterialTheme.colorScheme.primaryContainer

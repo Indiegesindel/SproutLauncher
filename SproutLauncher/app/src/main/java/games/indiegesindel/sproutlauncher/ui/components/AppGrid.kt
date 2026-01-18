@@ -140,6 +140,8 @@ fun AppGrid(
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
     rows: Int = 2,
+    horizontalSpacing: Int = 0,
+    verticalSpacing: Int = 0,
     onFocusChanged: (Boolean) -> Unit = {},
     focusedItemId: String? = null,
     onFocusItemIdChanged: (String?) -> Unit = {},
@@ -190,8 +192,8 @@ fun AppGrid(
                     onFocusChanged(state.hasFocus)
                 },
             contentPadding = PaddingValues(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(0.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
+            horizontalArrangement = Arrangement.spacedBy(horizontalSpacing.dp),
+            verticalArrangement = Arrangement.spacedBy(verticalSpacing.dp)
         ) {
             items(appTiles.size, key = { appTiles[it].id }) { index ->
                 val tile = appTiles[index]
@@ -269,6 +271,12 @@ fun AppTileItem(
                     }
                 } else if (isDown) {
                     when (event.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_ENTER,
+                        KeyEvent.KEYCODE_DPAD_CENTER,
+                        KeyEvent.KEYCODE_BUTTON_A -> {
+                            onClick()
+                            true
+                        }
                         KeyEvent.KEYCODE_BUTTON_START,
                         KeyEvent.KEYCODE_MENU -> {
                             onSettings()

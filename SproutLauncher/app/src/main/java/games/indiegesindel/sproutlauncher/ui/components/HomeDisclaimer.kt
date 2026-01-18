@@ -47,7 +47,7 @@ fun HomeDisclaimer(modifier: Modifier = Modifier) {
             text = buildAnnotatedString {
                 append("You can add apps by going to the ")
                 appendInlineContent("menu_icon", "[menu]")
-                append(" menu and long press on an app in the \"All\" region.")
+                append(" menu.")
             },
             inlineContent = inlineContent,
             textAlign = TextAlign.Center,
