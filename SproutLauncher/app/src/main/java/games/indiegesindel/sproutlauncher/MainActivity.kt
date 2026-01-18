@@ -69,17 +69,20 @@ class MainActivity : ComponentActivity() {
             SproutLauncherTheme(appTheme = appTheme) {
                 val appManager = remember { AppManager(context) }
                 var appTiles by remember { mutableStateOf(emptyList<AppTile>()) }
+                var isLoading by remember { mutableStateOf(true) }
                 var focusedElement by remember { mutableStateOf(FocusedElement.NONE) }
                 var focusedItemId by rememberSaveable { mutableStateOf<String?>(null) }
 
                 LaunchedEffect(Unit) {
                     appTiles = appManager.getAppTiles()
+                    isLoading = false
                 }
 
                 val lifecycleOwner = LocalLifecycleOwner.current
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                         appTiles = appManager.getAppTiles()
+                        isLoading = false
                     }
                 }
 
@@ -105,6 +108,7 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 AppGrid(
                                     appTiles = appTiles,
+                                    isLoading = isLoading,
                                     onAppClick = { tile ->
                                         try {
                                             val intent = Intent().apply {

@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import games.indiegesindel.sproutlauncher.data.AppManager
 import games.indiegesindel.sproutlauncher.data.SettingsManager
+import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.screens.AllAppsTab
 import games.indiegesindel.sproutlauncher.ui.screens.HomeTab
 import games.indiegesindel.sproutlauncher.ui.screens.SettingsTab
@@ -69,7 +70,14 @@ class ExtendedActivity : ComponentActivity() {
                 val isTablet = configuration.smallestScreenWidthDp >= 600
                 
                 val appManager = remember { AppManager(context) }
-                var selectedTiles by remember { mutableStateOf(appManager.getAppTiles()) }
+                var selectedTiles by remember { mutableStateOf<List<AppTile>>(emptyList()) }
+                var isLoadingTiles by remember { mutableStateOf(true) }
+                var isLoadingApps by remember { mutableStateOf(true) }
+
+                LaunchedEffect(Unit) {
+                    selectedTiles = appManager.getAppTiles()
+                    isLoadingTiles = false
+                }
                 
                 val startTab = remember {
                     intent.getStringExtra("EXTRA_TAB")?.let { tabName ->
@@ -88,6 +96,7 @@ class ExtendedActivity : ComponentActivity() {
                         val apps = packageManager.queryIntentActivities(mainIntent, 0)
                             .sortedBy { it.loadLabel(packageManager).toString().lowercase() }
                         installedApps = apps
+                        isLoadingApps = false
                     }
                 }
 
@@ -183,6 +192,7 @@ class ExtendedActivity : ComponentActivity() {
                             Tab.Home -> HomeTab(
                                 installedApps = installedApps,
                                 selectedTiles = selectedTiles,
+                                isLoading = isLoadingTiles || isLoadingApps,
                                 appManager = appManager,
                                 onTilesChanged = { selectedTiles = it },
                                 focusedItemId = focusedItemId,
@@ -191,6 +201,7 @@ class ExtendedActivity : ComponentActivity() {
                             Tab.All -> AllAppsTab(
                                 installedApps = installedApps,
                                 selectedTiles = selectedTiles,
+                                isLoading = isLoadingApps,
                                 appManager = appManager,
                                 onTilesChanged = { selectedTiles = it },
                                 focusedItemId = focusedItemId,
