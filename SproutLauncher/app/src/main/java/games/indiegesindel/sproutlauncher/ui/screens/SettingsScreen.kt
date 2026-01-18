@@ -143,6 +143,35 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.outlineVariant
             )
 
+            // Home Screen Section
+            SettingsSectionHeader(title = "Home Screen")
+
+            val currentRows by settingsManager.homeScreenRows.collectAsState()
+            var showRowsDialog by remember { mutableStateOf(false) }
+
+            ListItem(
+                headlineContent = { Text("Number of Rows") },
+                supportingContent = { Text(if (currentRows == 1) "1 row" else "$currentRows rows") },
+                modifier = Modifier.clickable { showRowsDialog = true }
+            )
+
+            if (showRowsDialog) {
+                RowsSelectionDialog(
+                    currentRows = currentRows,
+                    onRowsSelected = {
+                        settingsManager.setHomeScreenRows(it)
+                        showRowsDialog = false
+                    },
+                    onDismiss = { showRowsDialog = false }
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+
             // Developer Section
             SettingsSectionHeader(title = "About")
             
@@ -225,4 +254,32 @@ fun ThemeOption(
         Spacer(modifier = Modifier.width(16.dp))
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
     }
+}
+
+@Composable
+fun RowsSelectionDialog(
+    currentRows: Int,
+    onRowsSelected: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Number of Rows") },
+        text = {
+            Column {
+                (1..5).forEach { rows ->
+                    ThemeOption(
+                        label = if (rows == 1) "1 Row" else "$rows Rows",
+                        selected = currentRows == rows,
+                        onClick = { onRowsSelected(rows) }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

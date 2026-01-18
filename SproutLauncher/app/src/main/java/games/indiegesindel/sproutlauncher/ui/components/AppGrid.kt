@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -137,6 +138,7 @@ class ReorderableLazyGridState(
 fun AppGrid(
     appTiles: List<AppTile>,
     isLoading: Boolean = false,
+    rows: Int = 2,
     onAppClick: (AppTile) -> Unit,
     onRemove: (AppTile) -> Unit,
     onSettings: (AppTile) -> Unit,
@@ -149,14 +151,13 @@ fun AppGrid(
 ) {
     val configuration = LocalConfiguration.current
     val isPhone = configuration.smallestScreenWidthDp < 600
-    val rows = if (isPhone) 1 else 2
     val gridState = rememberLazyGridState()
     val reorderableState = rememberReorderableLazyGridState(gridState, onReorder, onDragEnd)
 
     fun moveItem(currentIndex: Int, direction: String) {
         val targetIndex = when (direction) {
-            "UP" -> if (currentIndex % rows == 1) currentIndex - 1 else -1
-            "DOWN" -> if (currentIndex % rows == 0 && rows > 1 && currentIndex + 1 < appTiles.size) currentIndex + 1 else -1
+            "UP" -> if (currentIndex % rows > 0) currentIndex - 1 else -1
+            "DOWN" -> if (currentIndex % rows < rows - 1 && currentIndex + 1 < appTiles.size) currentIndex + 1 else -1
             "LEFT" -> if (currentIndex >= rows) currentIndex - rows else -1
             "RIGHT" -> if (currentIndex + rows < appTiles.size) currentIndex + rows else -1
             else -> -1
@@ -192,9 +193,9 @@ fun AppGrid(
                 .onFocusChanged { state ->
                     onFocusChanged(state.hasFocus)
                 },
-            contentPadding = PaddingValues(start = 32.dp, top = 16.dp, end = 32.dp, bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             items(appTiles.size, key = { appTiles[it].id }) { index ->
                 val tile = appTiles[index]
@@ -295,6 +296,7 @@ fun AppTileItem(
                     }
                 )
             }
+            .fillMaxHeight()
             .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -334,7 +336,7 @@ fun AppTileItem(
 
         Box(
             modifier = Modifier
-                .height(if (isPhone) 140.dp else 160.dp)
+                .fillMaxHeight()
                 .aspectRatio(1f)
                 .offset { dragOffset }
                 .graphicsLayer {

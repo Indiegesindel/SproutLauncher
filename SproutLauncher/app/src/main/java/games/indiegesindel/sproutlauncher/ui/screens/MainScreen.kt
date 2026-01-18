@@ -49,6 +49,7 @@ fun MainScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val focusedItemId by viewModel.focusedItemId.collectAsState()
     val focusedElement by viewModel.focusedElement.collectAsState()
+    val homeScreenRows by viewModel.homeScreenRows.collectAsState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -73,6 +74,7 @@ fun MainScreen(
                     AppGrid(
                         appTiles = appTiles,
                         isLoading = isLoading,
+                        rows = homeScreenRows,
                         onAppClick = { tile ->
                             try {
                                 val intent = Intent().apply {

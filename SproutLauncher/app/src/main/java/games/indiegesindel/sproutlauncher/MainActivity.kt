@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
                 val appManager = remember { AppManager(context) }
                 val viewModel: MainViewModel = ViewModelProvider(
                     this, 
-                    MainViewModelFactory(appManager)
+                    MainViewModelFactory(appManager, settingsManager)
                 )[MainViewModel::class.java]
 
                 LaunchedEffect(Unit) {
