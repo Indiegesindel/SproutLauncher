@@ -1,14 +1,23 @@
 package games.indiegesindel.sproutlauncher
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import games.indiegesindel.sproutlauncher.data.AppManager
 import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.ui.screens.ExtendedScreen
@@ -32,6 +41,32 @@ class ExtendedActivity : ComponentActivity() {
                     this,
                     ExtendedViewModelFactory(appManager, packageManager)
                 )[ExtendedViewModel::class.java]
+
+                val lifecycleOwner = LocalLifecycleOwner.current
+                LaunchedEffect(lifecycleOwner) {
+                    lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                        viewModel.loadApps()
+                        viewModel.loadTiles()
+                    }
+                }
+
+                DisposableEffect(Unit) {
+                    val receiver = object : BroadcastReceiver() {
+                        override fun onReceive(context: Context?, intent: Intent?) {
+                            viewModel.loadApps()
+                        }
+                    }
+                    val filter = IntentFilter().apply {
+                        addAction(Intent.ACTION_PACKAGE_ADDED)
+                        addAction(Intent.ACTION_PACKAGE_REMOVED)
+                        addAction(Intent.ACTION_PACKAGE_REPLACED)
+                        addDataScheme("package")
+                    }
+                    context.registerReceiver(receiver, filter)
+                    onDispose {
+                        context.unregisterReceiver(receiver)
+                    }
+                }
 
                 ExtendedScreen(
                     viewModel = viewModel,
