@@ -124,6 +124,8 @@ fun SettingsScreen(
                             AppTheme.SYSTEM -> "System default"
                             AppTheme.LIGHT -> "Light"
                             AppTheme.DARK -> "Dark"
+                            AppTheme.PURPLE_LIGHT -> "Purple Light"
+                            AppTheme.PURPLE_DARK -> "Purple Dark"
                         }
                     )
                 },
@@ -277,6 +279,16 @@ fun ThemeSelectionDialog(
                     label = "Dark",
                     selected = currentTheme == AppTheme.DARK,
                     onClick = { onThemeSelected(AppTheme.DARK) }
+                )
+                ThemeOption(
+                    label = "Purple Light",
+                    selected = currentTheme == AppTheme.PURPLE_LIGHT,
+                    onClick = { onThemeSelected(AppTheme.PURPLE_LIGHT) }
+                )
+                ThemeOption(
+                    label = "Purple Dark",
+                    selected = currentTheme == AppTheme.PURPLE_DARK,
+                    onClick = { onThemeSelected(AppTheme.PURPLE_DARK) }
                 )
             }
         },
