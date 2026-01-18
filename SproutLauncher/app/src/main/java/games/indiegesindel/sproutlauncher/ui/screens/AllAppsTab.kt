@@ -1,5 +1,6 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import android.content.pm.ResolveInfo
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,7 +43,9 @@ fun AllAppsTab(
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 100.dp),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp)
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(installedApps, key = { app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }) { app ->
                 val itemId = "${app.activityInfo.packageName}_${app.activityInfo.name}"

@@ -20,20 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -100,9 +88,11 @@ fun AppTileSettingsScreen(
         }
     )
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = { Text("Tile Settings") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -116,71 +106,74 @@ fun AppTileSettingsScreen(
                     }) {
                         Icon(Icons.Default.Check, contentDescription = "Save")
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior
             )
         },
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-
-            val appIcon = remember {
-                try {
-                    context.packageManager.getApplicationIcon(tile!!.packageName)
-                } catch (e: Exception) {
-                    null
-                }
-            }
-
-            AsyncImage(
-                model = iconUri ?: appIcon,
-                contentDescription = "Tile Icon",
+            Column(
                 modifier = Modifier
-                    .size(96.dp)
-                    .clip(MaterialTheme.shapes.medium),
-                contentScale = ContentScale.Fit
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = { photoPickerLauncher.launch(arrayOf("image/*")) }
-                ) {
-                    Text("Change Icon")
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                val appIcon = remember {
+                    try {
+                        context.packageManager.getApplicationIcon(tile!!.packageName)
+                    } catch (e: Exception) {
+                        null
+                    }
                 }
-                if (iconUri != null) {
-                    OutlinedButton(
-                        onClick = { viewModel.onIconUriChanged(null) }
+
+                AsyncImage(
+                    model = iconUri ?: appIcon,
+                    contentDescription = "Tile Icon",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(MaterialTheme.shapes.medium),
+                    contentScale = ContentScale.Fit
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { photoPickerLauncher.launch(arrayOf("image/*")) }
                     ) {
-                        Text("Reset")
+                        Text("Change Icon")
+                    }
+                    if (iconUri != null) {
+                        OutlinedButton(
+                            onClick = { viewModel.onIconUriChanged(null) }
+                        ) {
+                            Text("Reset")
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            OutlinedTextField(
-                value = label,
-                onValueChange = { viewModel.onLabelChanged(it) },
-                label = { Text("Label") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+            Column(modifier = Modifier.padding(16.dp)) {
+                OutlinedTextField(
+                    value = label,
+                    onValueChange = { viewModel.onLabelChanged(it) },
+                    label = { Text("Label") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "App Details",
                     style = MaterialTheme.typography.labelLarge,
@@ -188,33 +181,30 @@ fun AppTileSettingsScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Package: ${tile?.packageName}",
-                    style = MaterialTheme.typography.bodyMedium
+                
+                ListItem(
+                    headlineContent = { Text("Package") },
+                    supportingContent = { Text(tile?.packageName ?: "") }
                 )
-                Text(
-                    text = "Activity: ${tile?.activityName}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                ListItem(
+                    headlineContent = { Text("Activity") },
+                    supportingContent = { Text(tile?.activityName ?: "") }
                 )
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = { viewModel.setShowDeleteConfirm(true) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer
-                )
-            ) {
-                Icon(Icons.Default.Delete, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Remove Tile")
+                Button(
+                    onClick = { viewModel.setShowDeleteConfirm(true) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Remove Tile")
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
