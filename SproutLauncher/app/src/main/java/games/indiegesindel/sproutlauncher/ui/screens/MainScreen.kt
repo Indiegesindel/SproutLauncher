@@ -36,6 +36,7 @@ import games.indiegesindel.sproutlauncher.AppTileSettingsActivity
 import games.indiegesindel.sproutlauncher.ExtendedActivity
 import games.indiegesindel.sproutlauncher.FocusedElement
 import games.indiegesindel.sproutlauncher.ui.components.AppGrid
+import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
 import games.indiegesindel.sproutlauncher.ui.components.QuickActionsBar
 import games.indiegesindel.sproutlauncher.ui.viewmodels.MainViewModel
 
@@ -157,7 +158,7 @@ fun MainScreen(
                             FocusedElement.QUICK_ACTION -> {
                                 ButtonPrompt(button = "A", label = "Launch")
                             }
-                            FocusedElement.NONE -> {
+                            else -> {
                                 // Show nothing or default
                             }
                         }
@@ -168,35 +169,3 @@ fun MainScreen(
     }
 }
 
-@Composable
-fun ButtonPrompt(
-    button: String,
-    label: String,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.padding(start = 16.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .background(MaterialTheme.colorScheme.inverseSurface, shape = CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = button,
-                color = MaterialTheme.colorScheme.inverseOnSurface,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = label,
-            color = MaterialTheme.colorScheme.onBackground,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}

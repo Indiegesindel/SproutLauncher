@@ -1,154 +1,193 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
+import android.content.Intent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.displayCutoutPadding
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationRail
-import androidx.compose.material3.NavigationRailItem
-import androidx.compose.material3.PermanentDrawerSheet
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import games.indiegesindel.sproutlauncher.ExtendedActivity
+import games.indiegesindel.sproutlauncher.FocusedElement
+import games.indiegesindel.sproutlauncher.SettingsActivity
 import games.indiegesindel.sproutlauncher.data.AppManager
-import games.indiegesindel.sproutlauncher.data.SettingsManager
+import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
 import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExtendedScreen(
     viewModel: ExtendedViewModel
 ) {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val isTablet = configuration.smallestScreenWidthDp >= 600
-
-    val currentTab by viewModel.currentTab.collectAsState()
+    val currentFilter by viewModel.currentFilter.collectAsState()
     val focusedItemId by viewModel.focusedItemId.collectAsState()
+    val focusedElement by viewModel.focusedElement.collectAsState()
     val selectedTiles by viewModel.selectedTiles.collectAsState()
-    val isLoadingTiles by viewModel.isLoadingTiles.collectAsState()
     val installedApps by viewModel.installedApps.collectAsState()
     val isLoadingApps by viewModel.isLoadingApps.collectAsState()
 
     val appManager = remember { AppManager(context) }
-    val settingsManager = remember { SettingsManager(context) }
+
+    val filteredApps = remember(installedApps, selectedTiles, currentFilter) {
+        if (currentFilter == ExtendedViewModel.Filter.HOMESCREEN) {
+            installedApps.filter { app ->
+                selectedTiles.any { it.packageName == app.activityInfo.packageName && it.activityName == app.activityInfo.name }
+            }
+        } else {
+            installedApps
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.displayCutout),
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (isTablet) {
-                PermanentDrawerSheet(
+            // Top Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Filter Select
+                var expanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .width(200.dp)
-                        .displayCutoutPadding(),
-                    drawerContainerColor = Color.Transparent,
-                    drawerTonalElevation = 0.dp
+                        .width(250.dp)
+                        .onFocusChanged { if (it.isFocused) viewModel.onFocusChanged(FocusedElement.FILTER) }
                 ) {
-                    Spacer(Modifier.height(12.dp))
-                    NavigationDrawerItem(
-                        selected = currentTab == ExtendedActivity.Tab.Home,
-                        onClick = { viewModel.setTab(ExtendedActivity.Tab.Home) },
-                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                        label = { Text("Home") },
-                        modifier = Modifier.padding(horizontal = 12.dp)
+                    OutlinedTextField(
+                        value = when (currentFilter) {
+                            ExtendedViewModel.Filter.ALL -> "All apps"
+                            ExtendedViewModel.Filter.HOMESCREEN -> "Apps on Homescreen"
+                        },
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Filter") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
                     )
-                    NavigationDrawerItem(
-                        selected = currentTab == ExtendedActivity.Tab.All,
-                        onClick = { viewModel.setTab(ExtendedActivity.Tab.All) },
-                        icon = { Icon(Icons.Default.Apps, contentDescription = "All") },
-                        label = { Text("All") },
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
-                    NavigationDrawerItem(
-                        selected = currentTab == ExtendedActivity.Tab.Settings,
-                        onClick = { viewModel.setTab(ExtendedActivity.Tab.Settings) },
-                        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                        label = { Text("Settings") },
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("All apps") },
+                            onClick = {
+                                viewModel.setFilter(ExtendedViewModel.Filter.ALL)
+                                expanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Apps on Homescreen") },
+                            onClick = {
+                                viewModel.setFilter(ExtendedViewModel.Filter.HOMESCREEN)
+                                expanded = false
+                            }
+                        )
+                    }
                 }
-            } else {
-                NavigationRail(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .displayCutoutPadding(),
-                    containerColor = Color.Transparent
+
+                // Settings Button
+                IconButton(
+                    onClick = {
+                        context.startActivity(Intent(context, SettingsActivity::class.java))
+                    },
+                    modifier = Modifier.onFocusChanged {
+                        if (it.isFocused) viewModel.onFocusChanged(FocusedElement.SETTINGS_BUTTON)
+                    }
                 ) {
-                    NavigationRailItem(
-                        selected = currentTab == ExtendedActivity.Tab.Home,
-                        onClick = { viewModel.setTab(ExtendedActivity.Tab.Home) },
-                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                        label = { Text("Home") }
-                    )
-                    NavigationRailItem(
-                        selected = currentTab == ExtendedActivity.Tab.All,
-                        onClick = { viewModel.setTab(ExtendedActivity.Tab.All) },
-                        icon = { Icon(Icons.Default.Apps, contentDescription = "All") },
-                        label = { Text("All") }
-                    )
-                    NavigationRailItem(
-                        selected = currentTab == ExtendedActivity.Tab.Settings,
-                        onClick = { viewModel.setTab(ExtendedActivity.Tab.Settings) },
-                        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                        label = { Text("Settings") }
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
 
-            // Tab Content
-            when (currentTab) {
-                ExtendedActivity.Tab.Home -> {
-                    HomeTab(
-                        installedApps = installedApps,
-                        selectedTiles = selectedTiles,
-                        isLoading = isLoadingTiles || isLoadingApps,
-                        appManager = appManager,
-                        onTilesChanged = { viewModel.loadTiles() },
-                        focusedItemId = focusedItemId,
-                        onFocusItemIdChanged = { viewModel.setFocusedItemId(it) }
-                    )
-                }
-                ExtendedActivity.Tab.All -> {
-                    AllAppsTab(
-                        installedApps = installedApps,
-                        selectedTiles = selectedTiles,
-                        isLoading = isLoadingApps,
-                        appManager = appManager,
-                        onTilesChanged = { viewModel.loadTiles() },
-                        focusedItemId = focusedItemId,
-                        onFocusItemIdChanged = { viewModel.setFocusedItemId(it) }
-                    )
-                }
-                ExtendedActivity.Tab.Settings -> {
-                    SettingsTab(settingsManager = settingsManager)
+            // Grid Content
+            Box(modifier = Modifier.weight(1f)) {
+                AllAppsTab(
+                    installedApps = filteredApps,
+                    selectedTiles = selectedTiles,
+                    isLoading = isLoadingApps,
+                    appManager = appManager,
+                    onTilesChanged = { viewModel.loadTiles() },
+                    focusedItemId = focusedItemId,
+                    onFocusItemIdChanged = { 
+                        viewModel.setFocusedItemId(it)
+                        if (it != null) viewModel.onFocusChanged(FocusedElement.APP_TILE)
+                    }
+                )
+            }
+
+            // Input Prompts
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 32.dp, end = 32.dp, bottom = 12.dp, top = 0.dp)
+                    .height(32.dp),
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    when (focusedElement) {
+                        FocusedElement.FILTER -> {
+                            ButtonPrompt(button = "A", label = "Filter")
+                        }
+                        FocusedElement.SETTINGS_BUTTON -> {
+                            ButtonPrompt(button = "A", label = "Launch")
+                        }
+                        FocusedElement.APP_TILE -> {
+                            ButtonPrompt(button = "A", label = "Launch")
+                            ButtonPrompt(button = "X", label = "Options")
+                        }
+                        else -> {}
+                    }
                 }
             }
         }
