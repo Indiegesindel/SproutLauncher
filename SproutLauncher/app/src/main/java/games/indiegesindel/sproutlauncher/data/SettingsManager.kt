@@ -40,6 +40,15 @@ class SettingsManager(context: Context) {
     private val _wallpaperDim = MutableStateFlow(loadWallpaperDim())
     val wallpaperDim: StateFlow<Float> = _wallpaperDim.asStateFlow()
 
+    private val _showYouTube = MutableStateFlow(loadShowYouTube())
+    val showYouTube: StateFlow<Boolean> = _showYouTube.asStateFlow()
+
+    private val _showDiscord = MutableStateFlow(loadShowDiscord())
+    val showDiscord: StateFlow<Boolean> = _showDiscord.asStateFlow()
+
+    private val _showSpotify = MutableStateFlow(loadShowSpotify())
+    val showSpotify: StateFlow<Boolean> = _showSpotify.asStateFlow()
+
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
             KEY_BASE_THEME -> _baseTheme.value = loadBaseTheme()
@@ -49,6 +58,9 @@ class SettingsManager(context: Context) {
             KEY_VERTICAL_SPACING -> _verticalSpacing.value = loadVerticalSpacing()
             KEY_WALLPAPER_URI -> _wallpaperUri.value = loadWallpaperUri()
             KEY_WALLPAPER_DIM -> _wallpaperDim.value = loadWallpaperDim()
+            KEY_SHOW_YOUTUBE -> _showYouTube.value = loadShowYouTube()
+            KEY_SHOW_DISCORD -> _showDiscord.value = loadShowDiscord()
+            KEY_SHOW_SPOTIFY -> _showSpotify.value = loadShowSpotify()
         }
     }
 
@@ -64,6 +76,9 @@ class SettingsManager(context: Context) {
         private const val KEY_VERTICAL_SPACING = "vertical_spacing"
         private const val KEY_WALLPAPER_URI = "wallpaper_uri"
         private const val KEY_WALLPAPER_DIM = "wallpaper_dim"
+        private const val KEY_SHOW_YOUTUBE = "show_youtube"
+        private const val KEY_SHOW_DISCORD = "show_discord"
+        private const val KEY_SHOW_SPOTIFY = "show_spotify"
     }
 
     private fun loadBaseTheme(): BaseTheme {
@@ -132,5 +147,32 @@ class SettingsManager(context: Context) {
     fun setWallpaperDim(dim: Float) {
         sharedPreferences.edit { putFloat(KEY_WALLPAPER_DIM, dim) }
         _wallpaperDim.value = dim
+    }
+
+    private fun loadShowYouTube(): Boolean {
+        return sharedPreferences.getBoolean(KEY_SHOW_YOUTUBE, true)
+    }
+
+    fun setShowYouTube(show: Boolean) {
+        sharedPreferences.edit { putBoolean(KEY_SHOW_YOUTUBE, show) }
+        _showYouTube.value = show
+    }
+
+    private fun loadShowDiscord(): Boolean {
+        return sharedPreferences.getBoolean(KEY_SHOW_DISCORD, true)
+    }
+
+    fun setShowDiscord(show: Boolean) {
+        sharedPreferences.edit { putBoolean(KEY_SHOW_DISCORD, show) }
+        _showDiscord.value = show
+    }
+
+    private fun loadShowSpotify(): Boolean {
+        return sharedPreferences.getBoolean(KEY_SHOW_SPOTIFY, true)
+    }
+
+    fun setShowSpotify(show: Boolean) {
+        sharedPreferences.edit { putBoolean(KEY_SHOW_SPOTIFY, show) }
+        _showSpotify.value = show
     }
 }

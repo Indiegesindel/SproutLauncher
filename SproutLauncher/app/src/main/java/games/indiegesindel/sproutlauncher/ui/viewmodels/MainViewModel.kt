@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 class MainViewModel(
     private val appManager: AppManager,
-    private val settingsManager: SettingsManager
+    settingsManager: SettingsManager
 ) : ViewModel() {
     private val _appTiles = MutableStateFlow<List<AppTile>>(emptyList())
     val appTiles: StateFlow<List<AppTile>> = _appTiles.asStateFlow()
@@ -27,6 +27,9 @@ class MainViewModel(
     val verticalSpacing: StateFlow<Int> = settingsManager.verticalSpacing
     val wallpaperUri: StateFlow<String?> = settingsManager.wallpaperUri
     val wallpaperDim: StateFlow<Float> = settingsManager.wallpaperDim
+    val showYouTube: StateFlow<Boolean> = settingsManager.showYouTube
+    val showDiscord: StateFlow<Boolean> = settingsManager.showDiscord
+    val showSpotify: StateFlow<Boolean> = settingsManager.showSpotify
 
     private val _focusedElement = MutableStateFlow(FocusedElement.NONE)
     val focusedElement: StateFlow<FocusedElement> = _focusedElement.asStateFlow()

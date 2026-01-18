@@ -54,6 +54,9 @@ fun MainScreen(
     val installedQuickActions by viewModel.installedQuickActions.collectAsState()
     val wallpaperUri by viewModel.wallpaperUri.collectAsState()
     val wallpaperDim by viewModel.wallpaperDim.collectAsState()
+    val showYouTube by viewModel.showYouTube.collectAsState()
+    val showDiscord by viewModel.showDiscord.collectAsState()
+    val showSpotify by viewModel.showSpotify.collectAsState()
 
     fun launchApp(packageName: String) {
         try {
@@ -177,16 +180,16 @@ fun MainScreen(
                                         ).show()
                                     }
                                 },
-                                onYouTubeClick = if (installedQuickActions["com.google.android.youtube"] == true) {
+                                onYouTubeClick = if (showYouTube && installedQuickActions["com.google.android.youtube"] == true) {
                                     { launchApp("com.google.android.youtube") }
                                 } else null,
                                 onPlayStoreClick = if (installedQuickActions["com.android.vending"] == true) {
                                     { launchApp("com.android.vending") }
                                 } else null,
-                                onDiscordClick = if (installedQuickActions["com.discord"] == true) {
+                                onDiscordClick = if (showDiscord && installedQuickActions["com.discord"] == true) {
                                     { launchApp("com.discord") }
                                 } else null,
-                                onSpotifyClick = if (installedQuickActions["com.spotify.music"] == true) {
+                                onSpotifyClick = if (showSpotify && installedQuickActions["com.spotify.music"] == true) {
                                     { launchApp("com.spotify.music") }
                                 } else null,
                                 onPhotosClick = if (installedQuickActions["com.google.android.apps.photos"] == true) {

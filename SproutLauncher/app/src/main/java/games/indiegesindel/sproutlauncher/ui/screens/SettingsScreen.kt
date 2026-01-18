@@ -12,7 +12,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.ui.res.painterResource
+import games.indiegesindel.sproutlauncher.R
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +27,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
+import coil.compose.AsyncImage
 import games.indiegesindel.sproutlauncher.data.BaseTheme
 import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.ui.theme.*
@@ -40,6 +42,9 @@ fun SettingsScreen(
     val context = LocalContext.current
     val currentBaseTheme by settingsManager.baseTheme.collectAsState()
     val isDarkMode by settingsManager.isDarkMode.collectAsState()
+    val showYouTube by settingsManager.showYouTube.collectAsState()
+    val showDiscord by settingsManager.showDiscord.collectAsState()
+    val showSpotify by settingsManager.showSpotify.collectAsState()
     
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val versionName = packageInfo.versionName ?: "Unknown"
@@ -81,20 +86,13 @@ fun SettingsScreen(
                     .padding(vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(
+                AsyncImage(
+                    model = R.mipmap.ic_launcher,
+                    contentDescription = null,
                     modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
+                )
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
@@ -139,6 +137,7 @@ fun SettingsScreen(
                             onCheckedChange = { settingsManager.setIsDarkMode(it) }
                         )
                     },
+                    modifier = Modifier.clickable { settingsManager.setIsDarkMode(!isDarkMode) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
 
@@ -222,6 +221,46 @@ fun SettingsScreen(
                 )
             }
 
+            SettingsSectionHeader(title = "Quick Actions")
+
+            SettingsCard {
+                ListItem(
+                    headlineContent = { Text("Show YouTube") },
+                    trailingContent = {
+                        Switch(
+                            checked = showYouTube,
+                            onCheckedChange = { settingsManager.setShowYouTube(it) }
+                        )
+                    },
+                    modifier = Modifier.clickable { settingsManager.setShowYouTube(!showYouTube) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+
+                ListItem(
+                    headlineContent = { Text("Show Discord") },
+                    trailingContent = {
+                        Switch(
+                            checked = showDiscord,
+                            onCheckedChange = { settingsManager.setShowDiscord(it) }
+                        )
+                    },
+                    modifier = Modifier.clickable { settingsManager.setShowDiscord(!showDiscord) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+
+                ListItem(
+                    headlineContent = { Text("Show Spotify") },
+                    trailingContent = {
+                        Switch(
+                            checked = showSpotify,
+                            onCheckedChange = { settingsManager.setShowSpotify(it) }
+                        )
+                    },
+                    modifier = Modifier.clickable { settingsManager.setShowSpotify(!showSpotify) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -294,14 +333,6 @@ fun ThemePreviewButton(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            if (theme == BaseTheme.SYSTEM) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(

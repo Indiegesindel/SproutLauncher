@@ -203,10 +203,7 @@ fun AppGrid(
                 AppTileItem(
                     tile = tile,
                     index = index,
-                    rows = rows,
-                    isPhone = isPhone,
                     onClick = { onAppClick(tile) },
-                    onRemove = { onRemove(tile) },
                     onSettings = { onSettings(tile) },
                     onMove = { direction -> moveItem(index, direction) },
                     reorderableState = reorderableState,
@@ -223,10 +220,7 @@ fun AppGrid(
 fun AppTileItem(
     tile: AppTile,
     index: Int,
-    rows: Int,
-    isPhone: Boolean,
     onClick: () -> Unit,
-    onRemove: () -> Unit,
     onSettings: () -> Unit,
     onMove: (String) -> Unit,
     reorderableState: ReorderableLazyGridState,
