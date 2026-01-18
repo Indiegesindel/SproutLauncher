@@ -1,6 +1,5 @@
 package games.indiegesindel.sproutlauncher.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -13,7 +12,6 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import games.indiegesindel.sproutlauncher.data.AppTheme
 

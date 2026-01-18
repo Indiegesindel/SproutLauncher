@@ -1,6 +1,5 @@
 package games.indiegesindel.sproutlauncher.ui.viewmodels
 
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ResolveInfo
 import androidx.lifecycle.ViewModel
@@ -28,9 +27,6 @@ class ExtendedViewModel(
     private val _installedApps = MutableStateFlow<List<ResolveInfo>>(emptyList())
     val installedApps: StateFlow<List<ResolveInfo>> = _installedApps.asStateFlow()
 
-    private val _isLoadingTiles = MutableStateFlow(true)
-    val isLoadingTiles: StateFlow<Boolean> = _isLoadingTiles.asStateFlow()
-
     private val _isLoadingApps = MutableStateFlow(true)
     val isLoadingApps: StateFlow<Boolean> = _isLoadingApps.asStateFlow()
 
@@ -51,7 +47,6 @@ class ExtendedViewModel(
     fun loadTiles() {
         viewModelScope.launch {
             _selectedTiles.value = appManager.getAppTiles()
-            _isLoadingTiles.value = false
         }
     }
 

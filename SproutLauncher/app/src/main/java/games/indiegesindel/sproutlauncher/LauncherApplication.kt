@@ -9,7 +9,6 @@ import coil.fetch.FetchResult
 import coil.fetch.Fetcher
 import coil.request.Options
 import android.content.pm.ResolveInfo
-import androidx.core.graphics.drawable.toBitmap
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 
 class LauncherApplication : Application(), ImageLoaderFactory {
@@ -29,7 +28,7 @@ class ResolveInfoFetcher(
     override suspend fun fetch(): FetchResult {
         val pm = options.context.packageManager
         val icon = data.loadIcon(pm)
-        val unmaskedIcon = IconUtils.getUnmaskedDrawable(icon)
+        val unmaskedIcon = IconUtils.getUnmaskedDrawable(options.context, icon)
         return DrawableResult(
             drawable = unmaskedIcon,
             isSampled = false,

@@ -1,45 +1,44 @@
 package games.indiegesindel.sproutlauncher.utils
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.os.Build
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.drawable.toDrawable
 
 object IconUtils {
     fun getFullSquareIcon(context: Context, packageName: String): Drawable? {
         return try {
             val pm = context.packageManager
             val drawable = pm.getApplicationIcon(packageName)
-            getUnmaskedDrawable(drawable)
+            getUnmaskedDrawable(context, drawable)
         } catch (e: Exception) {
             null
         }
     }
 
-    fun getUnmaskedDrawable(drawable: Drawable): Drawable {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && drawable is AdaptiveIconDrawable) {
+    fun getUnmaskedDrawable(context: Context, drawable: Drawable): Drawable {
+        if (drawable is AdaptiveIconDrawable) {
             val background = drawable.background
             val foreground = drawable.foreground
 
             val width = drawable.intrinsicWidth.takeIf { it > 0 } ?: 512
             val height = drawable.intrinsicHeight.takeIf { it > 0 } ?: 512
 
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val bitmap = createBitmap(width, height)
             val canvas = Canvas(bitmap)
 
-            background?.let {
+            background.let {
                 it.setBounds(0, 0, width, height)
                 it.draw(canvas)
             }
-            foreground?.let {
+            foreground.let {
                 it.setBounds(0, 0, width, height)
                 it.draw(canvas)
             }
 
-            return BitmapDrawable(null, bitmap)
+            return bitmap.toDrawable(context.resources)
         }
         return drawable
     }

@@ -2,6 +2,7 @@ package games.indiegesindel.sproutlauncher.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import games.indiegesindel.sproutlauncher.model.AppTile
 import org.json.JSONArray
 import org.json.JSONObject
@@ -51,14 +52,6 @@ class AppManager(context: Context) {
         saveAppTiles(currentTiles)
     }
 
-    fun reorderAppTile(fromIndex: Int, toIndex: Int) {
-        val currentTiles = getAppTiles().toMutableList()
-        if (fromIndex in currentTiles.indices && toIndex in currentTiles.indices) {
-            val tile = currentTiles.removeAt(fromIndex)
-            currentTiles.add(toIndex, tile)
-            saveAppTiles(currentTiles)
-        }
-    }
 
     fun saveAppTiles(tiles: List<AppTile>) {
         val jsonArray = JSONArray()
@@ -71,6 +64,6 @@ class AppManager(context: Context) {
             obj.put("iconUri", tile.iconUri)
             jsonArray.put(obj)
         }
-        sharedPreferences.edit().putString(KEY_APP_TILES, jsonArray.toString()).apply()
+        sharedPreferences.edit { putString(KEY_APP_TILES, jsonArray.toString()) }
     }
 }
