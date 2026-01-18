@@ -28,9 +28,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             val settingsManager = remember { SettingsManager(context) }
-            val appTheme by settingsManager.theme.collectAsState()
+            val baseTheme by settingsManager.baseTheme.collectAsState()
+            val isDarkMode by settingsManager.isDarkMode.collectAsState()
 
-            SproutLauncherTheme(appTheme = appTheme) {
+            SproutLauncherTheme(baseTheme = baseTheme, isDarkMode = isDarkMode) {
                 val appManager = remember { AppManager(context) }
                 val viewModel: MainViewModel = ViewModelProvider(
                     this, 

@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.core.content.edit
 
-enum class AppTheme {
-    SYSTEM, LIGHT, DARK, PURPLE_LIGHT, PURPLE_DARK
+enum class BaseTheme {
+    SYSTEM, PURPLE, MINT_GREEN, DEEP_BLUE, FIRE_RED, REFRESHING_ORANGE
 }
 
 class SettingsManager(context: Context) {
@@ -19,8 +19,11 @@ class SettingsManager(context: Context) {
     private val defaultRows = if (isPhone) 1 else 2
     private val defaultSpacing = 8
 
-    private val _theme = MutableStateFlow(loadTheme())
-    val theme: StateFlow<AppTheme> = _theme.asStateFlow()
+    private val _baseTheme = MutableStateFlow(loadBaseTheme())
+    val baseTheme: StateFlow<BaseTheme> = _baseTheme.asStateFlow()
+
+    private val _isDarkMode = MutableStateFlow(loadIsDarkMode())
+    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 
     private val _homeScreenRows = MutableStateFlow(loadHomeScreenRows())
     val homeScreenRows: StateFlow<Int> = _homeScreenRows.asStateFlow()
@@ -39,7 +42,8 @@ class SettingsManager(context: Context) {
 
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
-            KEY_THEME -> _theme.value = loadTheme()
+            KEY_BASE_THEME -> _baseTheme.value = loadBaseTheme()
+            KEY_IS_DARK_MODE -> _isDarkMode.value = loadIsDarkMode()
             KEY_HOME_SCREEN_ROWS -> _homeScreenRows.value = loadHomeScreenRows()
             KEY_HORIZONTAL_SPACING -> _horizontalSpacing.value = loadHorizontalSpacing()
             KEY_VERTICAL_SPACING -> _verticalSpacing.value = loadVerticalSpacing()
@@ -53,7 +57,8 @@ class SettingsManager(context: Context) {
     }
 
     companion object {
-        private const val KEY_THEME = "app_theme"
+        private const val KEY_BASE_THEME = "base_theme"
+        private const val KEY_IS_DARK_MODE = "is_dark_mode"
         private const val KEY_HOME_SCREEN_ROWS = "home_screen_rows"
         private const val KEY_HORIZONTAL_SPACING = "horizontal_spacing"
         private const val KEY_VERTICAL_SPACING = "vertical_spacing"
@@ -61,18 +66,27 @@ class SettingsManager(context: Context) {
         private const val KEY_WALLPAPER_DIM = "wallpaper_dim"
     }
 
-    private fun loadTheme(): AppTheme {
-        val themeName = sharedPreferences.getString(KEY_THEME, AppTheme.SYSTEM.name)
+    private fun loadBaseTheme(): BaseTheme {
+        val themeName = sharedPreferences.getString(KEY_BASE_THEME, BaseTheme.SYSTEM.name)
         return try {
-            AppTheme.valueOf(themeName!!)
+            BaseTheme.valueOf(themeName!!)
         } catch (e: Exception) {
-            AppTheme.SYSTEM
+            BaseTheme.SYSTEM
         }
     }
 
-    fun setTheme(theme: AppTheme) {
-        sharedPreferences.edit { putString(KEY_THEME, theme.name) }
-        _theme.value = theme
+    fun setBaseTheme(theme: BaseTheme) {
+        sharedPreferences.edit { putString(KEY_BASE_THEME, theme.name) }
+        _baseTheme.value = theme
+    }
+
+    private fun loadIsDarkMode(): Boolean {
+        return sharedPreferences.getBoolean(KEY_IS_DARK_MODE, false)
+    }
+
+    fun setIsDarkMode(isDark: Boolean) {
+        sharedPreferences.edit { putBoolean(KEY_IS_DARK_MODE, isDark) }
+        _isDarkMode.value = isDark
     }
 
     private fun loadHomeScreenRows(): Int {
