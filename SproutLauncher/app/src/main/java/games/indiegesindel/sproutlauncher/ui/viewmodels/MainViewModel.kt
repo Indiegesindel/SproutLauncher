@@ -32,11 +32,27 @@ class MainViewModel(
     private val _focusedItemId = MutableStateFlow<String?>(null)
     val focusedItemId: StateFlow<String?> = _focusedItemId.asStateFlow()
 
+    private val _installedQuickActions = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val installedQuickActions: StateFlow<Map<String, Boolean>> = _installedQuickActions.asStateFlow()
+
     fun loadAppTiles() {
         viewModelScope.launch {
             _appTiles.value = appManager.getAppTiles()
+            checkInstalledQuickActions()
             _isLoading.value = false
         }
+    }
+
+    private fun checkInstalledQuickActions() {
+        val apps = listOf(
+            "com.google.android.youtube",
+            "com.android.vending",
+            "com.discord",
+            "com.spotify.music",
+            "com.google.android.apps.photos"
+        )
+        val status = apps.associateWith { appManager.isPackageInstalled(it) }
+        _installedQuickActions.value = status
     }
 
     fun removeAppTile(tileId: String) {

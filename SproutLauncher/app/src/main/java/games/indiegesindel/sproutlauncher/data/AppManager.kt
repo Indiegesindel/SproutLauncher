@@ -7,7 +7,7 @@ import games.indiegesindel.sproutlauncher.model.AppTile
 import org.json.JSONArray
 import org.json.JSONObject
 
-class AppManager(context: Context) {
+class AppManager(private val context: Context) {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("sprout_launcher_prefs", Context.MODE_PRIVATE)
 
@@ -65,5 +65,14 @@ class AppManager(context: Context) {
             jsonArray.put(obj)
         }
         sharedPreferences.edit { putString(KEY_APP_TILES, jsonArray.toString()) }
+    }
+
+    fun isPackageInstalled(packageName: String): Boolean {
+        return try {
+            context.packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 }
