@@ -25,6 +25,8 @@ class MainViewModel(
     val homeScreenRows: StateFlow<Int> = settingsManager.homeScreenRows
     val horizontalSpacing: StateFlow<Int> = settingsManager.horizontalSpacing
     val verticalSpacing: StateFlow<Int> = settingsManager.verticalSpacing
+    val wallpaperUri: StateFlow<String?> = settingsManager.wallpaperUri
+    val wallpaperDim: StateFlow<Float> = settingsManager.wallpaperDim
 
     private val _focusedElement = MutableStateFlow(FocusedElement.NONE)
     val focusedElement: StateFlow<FocusedElement> = _focusedElement.asStateFlow()
