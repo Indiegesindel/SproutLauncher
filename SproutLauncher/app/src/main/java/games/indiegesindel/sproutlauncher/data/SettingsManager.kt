@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import androidx.core.content.edit
 
 enum class AppTheme {
-    SYSTEM, LIGHT, DARK
+    SYSTEM, LIGHT, DARK, PURPLE_LIGHT, PURPLE_DARK
 }
 
 class SettingsManager(context: Context) {
