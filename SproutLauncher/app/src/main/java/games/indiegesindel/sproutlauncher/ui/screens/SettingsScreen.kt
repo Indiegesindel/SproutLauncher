@@ -1,6 +1,8 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
 import android.content.Intent
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,6 +35,7 @@ import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.ui.theme.*
 import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
 import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
+import games.indiegesindel.sproutlauncher.utils.FileUtils
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -148,11 +151,30 @@ fun SettingsScreen(
                     contract = ActivityResultContracts.PickVisualMedia(),
                     onResult = { uri ->
                         if (uri != null) {
-                            context.contentResolver.takePersistableUriPermission(
-                                uri,
-                                Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            )
-                            settingsManager.setWallpaperUri(uri.toString())
+                            // Cleanup old wallpaper files and copy new one with unique name
+                            // to ensure StateFlow/Coil see it as a change and ensure persistence
+                            FileUtils.cleanupWallpaperFiles(context)
+                            val fileName = "wallpaper_${System.currentTimeMillis()}"
+                            val localUri = FileUtils.saveUriToInternalStorage(context, uri, fileName)
+                            if (localUri != null) {
+                                settingsManager.setWallpaperUri(localUri.toString())
+                            } else {
+                                // Fallback to original URI if copy fails
+                                try {
+                                    context.contentResolver.takePersistableUriPermission(
+                                        uri,
+                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    )
+                                } catch (e: SecurityException) {
+                                    Log.e("SettingsScreen", "Failed to take persistable URI permission", e)
+                                    Toast.makeText(
+                                        context,
+                                        "Could not persist wallpaper. It might reset after a reboot.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                                settingsManager.setWallpaperUri(uri.toString())
+                            }
                         }
                     }
                 )
@@ -164,7 +186,10 @@ fun SettingsScreen(
                     },
                     trailingContent = {
                         if (wallpaperUri != null) {
-                            TextButton(onClick = { settingsManager.setWallpaperUri(null) }) {
+                            TextButton(onClick = {
+                                settingsManager.setWallpaperUri(null)
+                                FileUtils.cleanupWallpaperFiles(context)
+                            }) {
                                 Text("Reset")
                             }
                         }
