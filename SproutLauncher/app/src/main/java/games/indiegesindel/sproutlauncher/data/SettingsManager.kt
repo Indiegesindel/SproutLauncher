@@ -31,12 +31,20 @@ class SettingsManager(context: Context) {
     private val _verticalSpacing = MutableStateFlow(loadVerticalSpacing())
     val verticalSpacing: StateFlow<Int> = _verticalSpacing.asStateFlow()
 
+    private val _wallpaperUri = MutableStateFlow(loadWallpaperUri())
+    val wallpaperUri: StateFlow<String?> = _wallpaperUri.asStateFlow()
+
+    private val _wallpaperDim = MutableStateFlow(loadWallpaperDim())
+    val wallpaperDim: StateFlow<Float> = _wallpaperDim.asStateFlow()
+
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
             KEY_THEME -> _theme.value = loadTheme()
             KEY_HOME_SCREEN_ROWS -> _homeScreenRows.value = loadHomeScreenRows()
             KEY_HORIZONTAL_SPACING -> _horizontalSpacing.value = loadHorizontalSpacing()
             KEY_VERTICAL_SPACING -> _verticalSpacing.value = loadVerticalSpacing()
+            KEY_WALLPAPER_URI -> _wallpaperUri.value = loadWallpaperUri()
+            KEY_WALLPAPER_DIM -> _wallpaperDim.value = loadWallpaperDim()
         }
     }
 
@@ -49,6 +57,8 @@ class SettingsManager(context: Context) {
         private const val KEY_HOME_SCREEN_ROWS = "home_screen_rows"
         private const val KEY_HORIZONTAL_SPACING = "horizontal_spacing"
         private const val KEY_VERTICAL_SPACING = "vertical_spacing"
+        private const val KEY_WALLPAPER_URI = "wallpaper_uri"
+        private const val KEY_WALLPAPER_DIM = "wallpaper_dim"
     }
 
     private fun loadTheme(): AppTheme {
@@ -90,5 +100,23 @@ class SettingsManager(context: Context) {
     fun setVerticalSpacing(spacing: Int) {
         sharedPreferences.edit { putInt(KEY_VERTICAL_SPACING, spacing) }
         _verticalSpacing.value = spacing
+    }
+
+    private fun loadWallpaperUri(): String? {
+        return sharedPreferences.getString(KEY_WALLPAPER_URI, null)
+    }
+
+    fun setWallpaperUri(uri: String?) {
+        sharedPreferences.edit { putString(KEY_WALLPAPER_URI, uri) }
+        _wallpaperUri.value = uri
+    }
+
+    private fun loadWallpaperDim(): Float {
+        return sharedPreferences.getFloat(KEY_WALLPAPER_DIM, 0f)
+    }
+
+    fun setWallpaperDim(dim: Float) {
+        sharedPreferences.edit { putFloat(KEY_WALLPAPER_DIM, dim) }
+        _wallpaperDim.value = dim
     }
 }

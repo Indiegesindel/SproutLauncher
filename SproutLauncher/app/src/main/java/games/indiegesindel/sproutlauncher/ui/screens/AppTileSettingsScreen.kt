@@ -37,6 +37,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 import games.indiegesindel.sproutlauncher.ui.viewmodels.AppTileSettingsViewModel
+import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,26 +58,12 @@ fun AppTileSettingsScreen(
     }
 
     if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { viewModel.setShowDeleteConfirm(false) },
-            title = { Text("Remove Tile") },
-            text = { Text("Are you sure you want to remove this tile from your home screen?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.removeTile()
-                        onDone()
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Remove")
-                }
+        RemoveTileConfirmationDialog(
+            onConfirm = {
+                viewModel.removeTile()
+                onDone()
             },
-            dismissButton = {
-                TextButton(onClick = { viewModel.setShowDeleteConfirm(false) }) {
-                    Text("Cancel")
-                }
-            }
+            onDismiss = { viewModel.setShowDeleteConfirm(false) }
         )
     }
 

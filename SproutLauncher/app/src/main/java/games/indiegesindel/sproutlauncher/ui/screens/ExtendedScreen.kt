@@ -42,6 +42,7 @@ import games.indiegesindel.sproutlauncher.FocusedElement
 import games.indiegesindel.sproutlauncher.SettingsActivity
 import games.indiegesindel.sproutlauncher.data.AppManager
 import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
+import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +58,7 @@ fun ExtendedScreen(
     val selectedTiles by viewModel.selectedTiles.collectAsState()
     val installedApps by viewModel.installedApps.collectAsState()
     val isLoadingApps by viewModel.isLoadingApps.collectAsState()
+    val tileToRemove by viewModel.tileToRemove.collectAsState()
 
     val appManager = remember { AppManager(context) }
 
@@ -71,6 +73,13 @@ fun ExtendedScreen(
     }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    if (tileToRemove != null) {
+        RemoveTileConfirmationDialog(
+            onConfirm = { viewModel.confirmRemoveTile() },
+            onDismiss = { viewModel.dismissRemoveConfirmation() }
+        )
+    }
 
     Scaffold(
         modifier = Modifier
@@ -157,50 +166,58 @@ fun ExtendedScreen(
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.displayCutout),
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Grid Content
-            Box(modifier = Modifier.weight(1f)) {
-                AllAppsTab(
-                    installedApps = filteredApps,
-                    selectedTiles = selectedTiles,
-                    isLoading = isLoadingApps,
-                    appManager = appManager,
-                    onTilesChanged = { viewModel.loadTiles() },
-                    focusedItemId = focusedItemId,
-                    onFocusItemIdChanged = { 
-                        viewModel.setFocusedItemId(it)
-                        if (it != null) viewModel.onFocusChanged(FocusedElement.APP_TILE)
-                    }
-                )
-            }
-
-            // Input Prompts
-            Box(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 32.dp, end = 32.dp, bottom = 12.dp, top = 0.dp)
-                    .height(32.dp),
-                contentAlignment = Alignment.BottomEnd
+                    .fillMaxSize()
+                    .padding(innerPadding)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+                // Grid Content
+                Box(modifier = Modifier.weight(1f)) {
+                    AllAppsTab(
+                        installedApps = filteredApps,
+                        selectedTiles = selectedTiles,
+                        isLoading = isLoadingApps,
+                        appManager = appManager,
+                        onTilesChanged = { viewModel.loadTiles() },
+                        onRequestRemove = { viewModel.requestRemoveTile(it) },
+                        focusedItemId = focusedItemId,
+                        onFocusItemIdChanged = {
+                            viewModel.setFocusedItemId(it)
+                            if (it != null) viewModel.onFocusChanged(FocusedElement.APP_TILE)
+                        }
+                    )
+                }
+
+                // Input Prompts
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 32.dp, end = 32.dp, bottom = 12.dp, top = 0.dp)
+                        .height(32.dp),
+                    contentAlignment = Alignment.BottomEnd
                 ) {
-                    when (focusedElement) {
-                        FocusedElement.FILTER -> {
-                            ButtonPrompt(button = "A", label = "Filter")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        when (focusedElement) {
+                            FocusedElement.FILTER -> {
+                                ButtonPrompt(button = "A", label = "Filter")
+                            }
+
+                            FocusedElement.SETTINGS_BUTTON -> {
+                                ButtonPrompt(button = "A", label = "Launch")
+                            }
+
+                            FocusedElement.APP_TILE -> {
+                                ButtonPrompt(button = "A", label = "Launch")
+                                ButtonPrompt(button = "X", label = "Options")
+                            }
+
+                            else -> {}
                         }
-                        FocusedElement.SETTINGS_BUTTON -> {
-                            ButtonPrompt(button = "A", label = "Launch")
-                        }
-                        FocusedElement.APP_TILE -> {
-                            ButtonPrompt(button = "A", label = "Launch")
-                            ButtonPrompt(button = "X", label = "Options")
-                        }
-                        else -> {}
                     }
                 }
             }

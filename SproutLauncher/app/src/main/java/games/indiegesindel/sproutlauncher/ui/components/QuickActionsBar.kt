@@ -65,7 +65,6 @@ fun QuickActionsBar(
     onDiscordClick: (() -> Unit)? = null,
     onSpotifyClick: (() -> Unit)? = null,
     onPhotosClick: (() -> Unit)? = null,
-    onPowerClick: () -> Unit,
     onFocusChanged: (Boolean) -> Unit = {},
     focusedItemId: String? = null,
     onFocusItemIdChanged: (String?) -> Unit = {}
@@ -177,16 +176,6 @@ fun QuickActionsBar(
             label = "Settings",
             onClick = onSettingsClick,
             isTargetFocused = focusedItemId == "action:settings",
-            onFocused = { onFocusItemIdChanged(it) }
-        )
-
-        Spacer(modifier = Modifier.width(16.dp))
-        QuickActionButton(
-            id = "action:power",
-            icon = Icons.Filled.PowerSettingsNew,
-            label = "Power",
-            onClick = onPowerClick,
-            isTargetFocused = focusedItemId == "action:power",
             onFocused = { onFocusItemIdChanged(it) }
         )
     }

@@ -39,6 +39,9 @@ class ExtendedViewModel(
     private val _focusedElement = MutableStateFlow(FocusedElement.NONE)
     val focusedElement: StateFlow<FocusedElement> = _focusedElement.asStateFlow()
 
+    private val _tileToRemove = MutableStateFlow<AppTile?>(null)
+    val tileToRemove: StateFlow<AppTile?> = _tileToRemove.asStateFlow()
+
     init {
         loadTiles()
         loadApps()
@@ -80,6 +83,22 @@ class ExtendedViewModel(
 
     fun onFocusChanged(element: FocusedElement) {
         _focusedElement.value = element
+    }
+
+    fun requestRemoveTile(tile: AppTile) {
+        _tileToRemove.value = tile
+    }
+
+    fun dismissRemoveConfirmation() {
+        _tileToRemove.value = null
+    }
+
+    fun confirmRemoveTile() {
+        _tileToRemove.value?.let {
+            appManager.removeAppTile(it.id)
+            loadTiles()
+            _tileToRemove.value = null
+        }
     }
 }
 

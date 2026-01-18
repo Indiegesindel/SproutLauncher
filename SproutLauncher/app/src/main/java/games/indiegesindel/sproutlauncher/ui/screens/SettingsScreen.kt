@@ -1,5 +1,9 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -134,6 +138,49 @@ fun SettingsScreen(
                         expanded = false
                     },
                     onDismiss = { expanded = false }
+                )
+            }
+
+            val wallpaperUri by settingsManager.wallpaperUri.collectAsState()
+            val launcher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.PickVisualMedia(),
+                onResult = { uri ->
+                    if (uri != null) {
+                        context.contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                        settingsManager.setWallpaperUri(uri.toString())
+                    }
+                }
+            )
+
+            ListItem(
+                headlineContent = { Text("Wallpaper") },
+                supportingContent = {
+                    Text(if (wallpaperUri != null) "Custom Image" else "Default color background")
+                },
+                trailingContent = {
+                    if (wallpaperUri != null) {
+                        TextButton(onClick = { settingsManager.setWallpaperUri(null) }) {
+                            Text("Reset")
+                        }
+                    }
+                },
+                modifier = Modifier.clickable {
+                    launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                }
+            )
+
+            if (wallpaperUri != null) {
+                val wallpaperDim by settingsManager.wallpaperDim.collectAsState()
+                SliderSetting(
+                    label = "Wallpaper Dimming",
+                    value = (wallpaperDim * 100f).roundToInt(),
+                    valueRange = 0f..100f,
+                    steps = 99,
+                    onValueChange = { settingsManager.setWallpaperDim(it / 100f) },
+                    valueDisplay = { "$it%" }
                 )
             }
 

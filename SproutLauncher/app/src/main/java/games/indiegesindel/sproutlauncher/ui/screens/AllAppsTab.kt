@@ -27,6 +27,7 @@ fun AllAppsTab(
     isLoading: Boolean = false,
     appManager: AppManager,
     onTilesChanged: (List<AppTile>) -> Unit,
+    onRequestRemove: (AppTile) -> Unit = {},
     focusedItemId: String? = null,
     onFocusItemIdChanged: (String?) -> Unit = {}
 ) {
@@ -71,10 +72,10 @@ fun AllAppsTab(
                                 label = app.loadLabel(pm).toString()
                             )
                             appManager.addAppTile(newTile)
+                            onTilesChanged(appManager.getAppTiles())
                         } else {
-                            tile?.let { appManager.removeAppTile(it.id) }
+                            tile?.let { onRequestRemove(it) }
                         }
-                        onTilesChanged(appManager.getAppTiles())
                     },
                     id = itemId,
                     isTargetFocused = focusedItemId == itemId,
