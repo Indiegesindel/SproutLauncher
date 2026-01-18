@@ -38,7 +38,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import coil.imageLoader
+import coil.size.Size
 import games.indiegesindel.sproutlauncher.model.AppTile
 import android.content.pm.ResolveInfo
 import androidx.compose.ui.focus.FocusRequester
@@ -58,7 +60,7 @@ fun AppGridItem(
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
-    val label = remember(app) { app.loadLabel(pm).toString() }
+    val label = remember(app.activityInfo.packageName, app.activityInfo.name) { app.loadLabel(pm).toString() }
     var isFocused by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
@@ -69,14 +71,16 @@ fun AppGridItem(
         }
     }
 
-    val iconPainter: Painter = if (tile?.iconUri != null) {
-        rememberAsyncImagePainter(tile.iconUri)
-    } else {
-        rememberAsyncImagePainter(
-            model = app,
-            imageLoader = context.imageLoader
-        )
-    }
+    val iconPainter: Painter = rememberAsyncImagePainter(
+        model = remember(app.activityInfo.packageName, app.activityInfo.name, tile?.iconUri) {
+            ImageRequest.Builder(context)
+                .data(tile?.iconUri ?: app)
+                .size(Size(512, 512))
+                .crossfade(true)
+                .build()
+        },
+        imageLoader = context.imageLoader
+    )
 
     Box(
         contentAlignment = Alignment.Center

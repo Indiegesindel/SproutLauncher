@@ -37,10 +37,6 @@ class MainActivity : ComponentActivity() {
                     MainViewModelFactory(appManager, settingsManager)
                 )[MainViewModel::class.java]
 
-                LaunchedEffect(Unit) {
-                    viewModel.loadAppTiles()
-                }
-
                 val lifecycleOwner = LocalLifecycleOwner.current
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {

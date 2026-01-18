@@ -57,8 +57,12 @@ class ExtendedViewModel(
                     addCategory(Intent.CATEGORY_LAUNCHER)
                 }
                 val apps = packageManager.queryIntentActivities(mainIntent, 0)
-                    .sortedBy { it.loadLabel(packageManager).toString().lowercase() }
-                _installedApps.value = apps
+                
+                val appsWithLabels = apps.map {
+                    it to it.loadLabel(packageManager).toString()
+                }.sortedBy { it.second.lowercase() }
+
+                _installedApps.value = appsWithLabels.map { it.first }
                 _isLoadingApps.value = false
             }
         }

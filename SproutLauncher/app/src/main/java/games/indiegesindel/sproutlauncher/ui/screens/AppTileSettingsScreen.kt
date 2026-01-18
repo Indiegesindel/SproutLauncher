@@ -34,6 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import games.indiegesindel.sproutlauncher.utils.IconUtils
 import games.indiegesindel.sproutlauncher.ui.viewmodels.AppTileSettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -130,16 +132,18 @@ fun AppTileSettingsScreen(
                     .padding(vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val appIcon = remember {
-                    try {
-                        context.packageManager.getApplicationIcon(tile!!.packageName)
-                    } catch (e: Exception) {
-                        null
-                    }
+                val appIcon = remember(tile?.packageName) {
+                    tile?.let { IconUtils.getFullSquareIcon(context, it.packageName, 512) }
                 }
 
                 AsyncImage(
-                    model = iconUri ?: appIcon,
+                    model = remember(iconUri, appIcon) {
+                        ImageRequest.Builder(context)
+                            .data(iconUri ?: appIcon)
+                            .size(coil.size.Size(512, 512))
+                            .crossfade(true)
+                            .build()
+                    },
                     contentDescription = "Tile Icon",
                     modifier = Modifier
                         .size(80.dp)
