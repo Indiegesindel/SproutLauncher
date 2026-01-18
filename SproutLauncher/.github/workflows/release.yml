@@ -1,0 +1,72 @@
+name: Release Build
+
+on:
+  workflow_dispatch:
+  create:
+  push:
+    branches:
+      - dev
+      - 'release/**'
+
+jobs:
+  build:
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') || (github.event_name == 'create' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'release/'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build APK
+        run: ./gradlew assembleRelease
+
+      - name: Determine Release Type
+        id: release_type
+        run: |
+          if [[ "${{ github.event_name }}" == "create" && "${{ github.event.ref_type }}" == "branch" && "${{ github.event.ref }}" == release/* ]]; then
+            # Release branch creation
+            VERSION_NAME=$(echo "${{ github.event.ref }}" | sed 's/release\///')
+            echo "name=Release $VERSION_NAME" >> $GITHUB_OUTPUT
+            echo "tag=$VERSION_NAME" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref_name }}" == release/* ]]; then
+            # Release branch push
+            VERSION_NAME=$(echo "${{ github.ref_name }}" | sed 's/release\///')
+            echo "name=Release $VERSION_NAME" >> $GITHUB_OUTPUT
+            echo "tag=$VERSION_NAME" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref_name }}" == "dev" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Nightly / Dev build
+            TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+            echo "name=Nightly Build $TIMESTAMP" >> $GITHUB_OUTPUT
+            echo "tag=nightly-$TIMESTAMP" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            # Fallback
+            echo "name=Dev Build" >> $GITHUB_OUTPUT
+            echo "tag=dev-${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.release_type.outputs.name }}
+          tag_name: ${{ steps.release_type.outputs.tag }}
+          draft: false
+          prerelease: ${{ steps.release_type.outputs.prerelease }}
+          files: |
+            app/build/outputs/apk/release/*.apk
