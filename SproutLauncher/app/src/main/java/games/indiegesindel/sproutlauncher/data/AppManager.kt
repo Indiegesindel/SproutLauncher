@@ -10,7 +10,7 @@ import org.json.JSONObject
 /**
  * Manages the persistence of app tiles using SharedPreferences.
  */
-class AppManager(context: Context) {
+class AppManager(private val context: Context) {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("sprout_launcher_prefs", Context.MODE_PRIVATE)
 
@@ -83,5 +83,17 @@ class AppManager(context: Context) {
             jsonArray.put(obj)
         }
         sharedPreferences.edit { putString(KEY_APP_TILES, jsonArray.toString()) }
+    }
+
+    /**
+     * Checks if a package is installed on the device.
+     */
+    fun isPackageInstalled(packageName: String): Boolean {
+        return try {
+            context.packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 }

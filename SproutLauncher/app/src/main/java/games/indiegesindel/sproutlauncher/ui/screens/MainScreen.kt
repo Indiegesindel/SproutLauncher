@@ -45,6 +45,20 @@ fun MainScreen(
     val homeScreenRows by viewModel.homeScreenRows.collectAsState()
     val horizontalSpacing by viewModel.horizontalSpacing.collectAsState()
     val verticalSpacing by viewModel.verticalSpacing.collectAsState()
+    val installedQuickActions by viewModel.installedQuickActions.collectAsState()
+
+    fun launchApp(packageName: String) {
+        try {
+            val intent = context.packageManager.getLaunchIntentForPackage(packageName)
+            if (intent != null) {
+                context.startActivity(intent)
+            } else {
+                Toast.makeText(context, "Could not launch $packageName", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Could not launch $packageName", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -119,11 +133,50 @@ fun MainScreen(
                                     Toast.makeText(context, "Could not open browser", Toast.LENGTH_SHORT).show()
                                 }
                             },
+                            onYouTubeClick = if (installedQuickActions["com.google.android.youtube"] == true) {
+                                { launchApp("com.google.android.youtube") }
+                            } else null,
+                            onPlayStoreClick = if (installedQuickActions["com.android.vending"] == true) {
+                                { launchApp("com.android.vending") }
+                            } else null,
+                            onDiscordClick = if (installedQuickActions["com.discord"] == true) {
+                                { launchApp("com.discord") }
+                            } else null,
+                            onSpotifyClick = if (installedQuickActions["com.spotify.music"] == true) {
+                                { launchApp("com.spotify.music") }
+                            } else null,
+                            onPhotosClick = if (installedQuickActions["com.google.android.apps.photos"] == true) {
+                                { launchApp("com.google.android.apps.photos") }
+                            } else null,
                             onSettingsClick = {
                                 try {
                                     context.startActivity(Intent(Settings.ACTION_SETTINGS))
                                 } catch (e: Exception) {
                                     Toast.makeText(context, "Could not open settings", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onPowerClick = {
+                                try {
+                                    // Try to invoke system power controls/menu
+                                    val intent = Intent("android.intent.action.ACTION_POWER_MENU")
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    try {
+                                        // Fallback to Power Menu settings instead of Battery/Power Usage
+                                        val intent = Intent("android.settings.POWER_MENU_SETTINGS")
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        context.startActivity(intent)
+                                    } catch (e2: Exception) {
+                                        try {
+                                            // If that fails, go to general settings
+                                            val intent = Intent(Settings.ACTION_SETTINGS)
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            context.startActivity(intent)
+                                        } catch (e3: Exception) {
+                                            Toast.makeText(context, "Could not open power controls", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
                                 }
                             },
                             onFocusChanged = { viewModel.onQuickActionsFocusChanged(it) },

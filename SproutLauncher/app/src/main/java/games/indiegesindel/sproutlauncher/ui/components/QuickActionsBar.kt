@@ -21,8 +21,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -54,6 +60,12 @@ fun QuickActionsBar(
     onAllAppsClick: () -> Unit,
     onBrowserClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onYouTubeClick: (() -> Unit)? = null,
+    onPlayStoreClick: (() -> Unit)? = null,
+    onDiscordClick: (() -> Unit)? = null,
+    onSpotifyClick: (() -> Unit)? = null,
+    onPhotosClick: (() -> Unit)? = null,
+    onPowerClick: () -> Unit,
     onFocusChanged: (Boolean) -> Unit = {},
     focusedItemId: String? = null,
     onFocusItemIdChanged: (String?) -> Unit = {}
@@ -97,6 +109,67 @@ fun QuickActionsBar(
             isTargetFocused = focusedItemId == "action:browser",
             onFocused = { onFocusItemIdChanged(it) }
         )
+        
+        if (onYouTubeClick != null) {
+            Spacer(modifier = Modifier.width(16.dp))
+            QuickActionButton(
+                id = "action:youtube",
+                icon = Icons.Filled.PlayArrow,
+                label = "YouTube",
+                onClick = onYouTubeClick,
+                isTargetFocused = focusedItemId == "action:youtube",
+                onFocused = { onFocusItemIdChanged(it) }
+            )
+        }
+
+        if (onPlayStoreClick != null) {
+            Spacer(modifier = Modifier.width(16.dp))
+            QuickActionButton(
+                id = "action:play_store",
+                icon = Icons.Filled.Shop,
+                label = "Play Store",
+                onClick = onPlayStoreClick,
+                isTargetFocused = focusedItemId == "action:play_store",
+                onFocused = { onFocusItemIdChanged(it) }
+            )
+        }
+
+        if (onDiscordClick != null) {
+            Spacer(modifier = Modifier.width(16.dp))
+            QuickActionButton(
+                id = "action:discord",
+                icon = Icons.Filled.Chat,
+                label = "Discord",
+                onClick = onDiscordClick,
+                isTargetFocused = focusedItemId == "action:discord",
+                onFocused = { onFocusItemIdChanged(it) }
+            )
+        }
+
+        if (onSpotifyClick != null) {
+            Spacer(modifier = Modifier.width(16.dp))
+            QuickActionButton(
+                id = "action:spotify",
+                icon = Icons.Filled.MusicNote,
+                label = "Spotify",
+                onClick = onSpotifyClick,
+                isTargetFocused = focusedItemId == "action:spotify",
+                onFocused = { onFocusItemIdChanged(it) }
+            )
+        }
+
+        if (onPhotosClick != null) {
+            Spacer(modifier = Modifier.width(16.dp))
+            QuickActionButton(
+                id = "action:photos",
+                icon = Icons.Filled.Image,
+                label = "Photos",
+                onClick = onPhotosClick,
+                isTargetFocused = focusedItemId == "action:photos",
+                onFocused = { onFocusItemIdChanged(it) }
+            )
+        }
+
         Spacer(modifier = Modifier.width(16.dp))
         QuickActionButton(
             id = "action:settings",
@@ -104,6 +177,16 @@ fun QuickActionsBar(
             label = "Settings",
             onClick = onSettingsClick,
             isTargetFocused = focusedItemId == "action:settings",
+            onFocused = { onFocusItemIdChanged(it) }
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+        QuickActionButton(
+            id = "action:power",
+            icon = Icons.Filled.PowerSettingsNew,
+            label = "Power",
+            onClick = onPowerClick,
+            isTargetFocused = focusedItemId == "action:power",
             onFocused = { onFocusItemIdChanged(it) }
         )
     }
