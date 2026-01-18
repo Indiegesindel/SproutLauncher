@@ -61,6 +61,77 @@ import kotlin.math.roundToInt
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+
+@Composable
+fun rememberReorderableLazyGridState(
+    gridState: LazyGridState,
+    onReorder: (Int, Int) -> Unit,
+    onDragEnd: () -> Unit
+): ReorderableLazyGridState {
+    return remember(gridState) {
+        ReorderableLazyGridState(gridState, onReorder, onDragEnd)
+    }
+}
+
+class ReorderableLazyGridState(
+    val gridState: LazyGridState,
+    private val onReorder: (Int, Int) -> Unit,
+    private val onDragEndCallback: () -> Unit
+) {
+    var draggedIndex by mutableStateOf<Int?>(null)
+        private set
+    var dragOffset by mutableStateOf(IntOffset.Zero)
+        private set
+
+    fun onDragStart(index: Int) {
+        draggedIndex = index
+    }
+
+    fun onDrag(dragAmount: IntOffset) {
+        draggedIndex?.let { index ->
+            dragOffset += dragAmount
+            
+            val layoutInfo = gridState.layoutInfo
+            val currentItem = layoutInfo.visibleItemsInfo.find { it.index == index } ?: return
+            
+            val centerX = currentItem.offset.x + currentItem.size.width / 2 + dragOffset.x
+            val centerY = currentItem.offset.y + currentItem.size.height / 2 + dragOffset.y
+            
+            val targetItem = layoutInfo.visibleItemsInfo.find { target ->
+                target.index != index &&
+                centerX in target.offset.x..(target.offset.x + target.size.width) &&
+                centerY in target.offset.y..(target.offset.y + target.size.height)
+            }
+            
+            targetItem?.let { target ->
+                if (index != target.index) {
+                    val fromOffset = currentItem.offset
+                    val toOffset = target.offset
+                    
+                    onReorder(index, target.index)
+                    draggedIndex = target.index
+                    
+                    // Adjust dragOffset to maintain the item under the finger
+                    // We need to subtract the change in the item's static position
+                    dragOffset -= IntOffset(toOffset.x - fromOffset.x, toOffset.y - fromOffset.y)
+                }
+            }
+        }
+    }
+
+    fun onDragEnd() {
+        draggedIndex = null
+        dragOffset = IntOffset.Zero
+        onDragEndCallback()
+    }
+
+    fun onDragCancel() {
+        draggedIndex = null
+        dragOffset = IntOffset.Zero
+    }
+}
 
 @Composable
 fun AppGrid(
@@ -73,12 +144,14 @@ fun AppGrid(
     onFocusChanged: (Boolean) -> Unit = {},
     focusedItemId: String? = null,
     onFocusItemIdChanged: (String?) -> Unit = {},
+    onDragEnd: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
     val isPhone = configuration.smallestScreenWidthDp < 600
     val rows = if (isPhone) 1 else 2
     val gridState = rememberLazyGridState()
+    val reorderableState = rememberReorderableLazyGridState(gridState, onReorder, onDragEnd)
 
     fun moveItem(currentIndex: Int, direction: String) {
         val targetIndex = when (direction) {
@@ -90,6 +163,7 @@ fun AppGrid(
         }
         if (targetIndex != -1 && targetIndex in appTiles.indices) {
             onReorder(currentIndex, targetIndex)
+            onDragEnd() // Trigger save for D-pad reordering
         }
     }
 
@@ -134,8 +208,7 @@ fun AppGrid(
                     onRemove = { onRemove(tile) },
                     onSettings = { onSettings(tile) },
                     onMove = { direction -> moveItem(index, direction) },
-                    onDragReorder = { from, to -> onReorder(from, to) },
-                    gridState = gridState,
+                    reorderableState = reorderableState,
                     isTargetFocused = focusedItemId == tileId,
                     onFocused = { onFocusItemIdChanged(tileId) }
                 )
@@ -155,8 +228,7 @@ fun AppTileItem(
     onRemove: () -> Unit,
     onSettings: () -> Unit,
     onMove: (String) -> Unit,
-    onDragReorder: (Int, Int) -> Unit,
-    gridState: LazyGridState,
+    reorderableState: ReorderableLazyGridState,
     isTargetFocused: Boolean,
     onFocused: () -> Unit
 ) {
@@ -171,8 +243,8 @@ fun AppTileItem(
         }
     }
 
-    var dragOffset by remember { mutableStateOf(IntOffset.Zero) }
-    var isDragging by remember { mutableStateOf(false) }
+    val isDragging = reorderableState.draggedIndex == index
+    val dragOffset = if (isDragging) reorderableState.dragOffset else IntOffset.Zero
 
     Box(
         modifier = Modifier
@@ -214,38 +286,12 @@ fun AppTileItem(
             .focusable()
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
-                    onDragStart = { isDragging = true },
-                    onDragEnd = {
-                        isDragging = false
-                        dragOffset = IntOffset.Zero
-                    },
-                    onDragCancel = {
-                        isDragging = false
-                        dragOffset = IntOffset.Zero
-                    },
+                    onDragStart = { reorderableState.onDragStart(index) },
+                    onDragEnd = { reorderableState.onDragEnd() },
+                    onDragCancel = { reorderableState.onDragCancel() },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        dragOffset += IntOffset(dragAmount.x.roundToInt(), dragAmount.y.roundToInt())
-                        
-                        // Check if we dragged over another item
-                        val currentItemInfo = gridState.layoutInfo.visibleItemsInfo.find { it.index == index }
-                        currentItemInfo?.let { info ->
-                            val centerX = info.offset.x + info.size.width / 2 + dragOffset.x
-                            val centerY = info.offset.y + info.size.height / 2 + dragOffset.y
-                            
-                            val targetItem = gridState.layoutInfo.visibleItemsInfo.find { target ->
-                                target.index != index &&
-                                centerX in target.offset.x..(target.offset.x + target.size.width) &&
-                                centerY in target.offset.y..(target.offset.y + target.size.height)
-                            }
-                            
-                            targetItem?.let {
-                                val fromOffset = info.offset
-                                val toOffset = it.offset
-                                onDragReorder(index, it.index)
-                                dragOffset -= IntOffset(toOffset.x - fromOffset.x, toOffset.y - fromOffset.y)
-                            }
-                        }
+                        reorderableState.onDrag(IntOffset(dragAmount.x.roundToInt(), dragAmount.y.roundToInt()))
                     }
                 )
             }
@@ -290,12 +336,12 @@ fun AppTileItem(
             modifier = Modifier
                 .height(if (isPhone) 140.dp else 160.dp)
                 .aspectRatio(1f)
-                .offset { if (isDragging) dragOffset else IntOffset.Zero }
+                .offset { dragOffset }
                 .graphicsLayer {
                     if (isDragging || isXPressed) {
                         alpha = 0.8f
-                        scaleX = 1.1f
-                        scaleY = 1.1f
+                        scaleX = 1.15f
+                        scaleY = 1.15f
                     }
                 }
                 .then(

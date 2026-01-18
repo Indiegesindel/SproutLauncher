@@ -2,8 +2,10 @@ package games.indiegesindel.sproutlauncher.ui.screens
 
 import android.content.pm.ResolveInfo
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -14,9 +16,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import games.indiegesindel.sproutlauncher.data.AppManager
 import games.indiegesindel.sproutlauncher.model.AppTile
-import games.indiegesindel.sproutlauncher.ui.components.AppListItem
+import games.indiegesindel.sproutlauncher.ui.components.AppGridItem
 import games.indiegesindel.sproutlauncher.ui.components.HomeDisclaimer
 
 @Composable
@@ -49,8 +52,10 @@ fun HomeTab(
     } else if (displayedApps.isEmpty()) {
         HomeDisclaimer(modifier = Modifier.fillMaxSize())
     } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 100.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp)
         ) {
             items(displayedApps, key = { app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }) { app ->
                 val itemId = "${app.activityInfo.packageName}_${app.activityInfo.name}"
@@ -59,11 +64,11 @@ fun HomeTab(
                 }
                 val isSelected = tile != null
 
-                AppListItem(
+                AppGridItem(
                     app = app,
-                    isSelected = isSelected,
+                    isOnHomeScreen = isSelected,
                     tile = tile,
-                    onToggle = {
+                    onToggleHomeScreen = {
                         if (!isSelected) {
                             val newTile = AppTile(
                                 packageName = app.activityInfo.packageName,

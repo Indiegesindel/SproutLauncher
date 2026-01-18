@@ -136,8 +136,10 @@ class MainActivity : ComponentActivity() {
                                             val tile = newList.removeAt(from)
                                             newList.add(to, tile)
                                             appTiles = newList
-                                            appManager.saveAppTiles(newList)
                                         }
+                                    },
+                                    onDragEnd = {
+                                        appManager.saveAppTiles(appTiles)
                                     },
                                     onFocusChanged = { focused ->
                                         if (focused) {
