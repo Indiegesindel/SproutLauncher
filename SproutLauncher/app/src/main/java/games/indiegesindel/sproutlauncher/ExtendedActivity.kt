@@ -17,16 +17,10 @@ import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
 import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModelFactory
 
 class ExtendedActivity : ComponentActivity() {
-    enum class Tab { Home, All, Settings }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        val startTab = intent.getStringExtra("EXTRA_TAB")?.let { tabName ->
-            try { Tab.valueOf(tabName) } catch (e: Exception) { Tab.Home }
-        } ?: Tab.Home
-
         setContent {
             val context = LocalContext.current
             val settingsManager = remember { SettingsManager(context) }
@@ -36,7 +30,7 @@ class ExtendedActivity : ComponentActivity() {
                 val appManager = remember { AppManager(context) }
                 val viewModel: ExtendedViewModel = ViewModelProvider(
                     this,
-                    ExtendedViewModelFactory(appManager, packageManager, startTab)
+                    ExtendedViewModelFactory(appManager, packageManager)
                 )[ExtendedViewModel::class.java]
 
                 ExtendedScreen(viewModel = viewModel)

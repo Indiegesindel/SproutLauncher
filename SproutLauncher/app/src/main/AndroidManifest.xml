@@ -42,6 +42,11 @@
             android:exported="false"
             android:screenOrientation="landscape"
             android:theme="@style/Theme.SproutLauncher" />
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.SproutLauncher" />
     </application>
 
 </manifest>
