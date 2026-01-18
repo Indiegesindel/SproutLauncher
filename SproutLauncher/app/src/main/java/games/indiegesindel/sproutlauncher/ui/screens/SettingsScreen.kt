@@ -10,7 +10,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -50,7 +49,11 @@ fun SettingsScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -117,7 +120,6 @@ fun SettingsScreen(
                             AppTheme.SYSTEM -> "System default"
                             AppTheme.LIGHT -> "Light"
                             AppTheme.DARK -> "Dark"
-                            AppTheme.WINE_RED -> "Wine Red"
                         }
                     )
                 },
@@ -195,11 +197,6 @@ fun ThemeSelectionDialog(
                     label = "Dark",
                     selected = currentTheme == AppTheme.DARK,
                     onClick = { onThemeSelected(AppTheme.DARK) }
-                )
-                ThemeOption(
-                    label = "Wine Red",
-                    selected = currentTheme == AppTheme.WINE_RED,
-                    onClick = { onThemeSelected(AppTheme.WINE_RED) }
                 )
             }
         },

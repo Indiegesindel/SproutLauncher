@@ -20,9 +20,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,8 +103,12 @@ fun AppGridItem(
                 }
                 .focusable()
                 .background(
-                    if (isFocused) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                    RoundedCornerShape(16.dp)
+                    color = when {
+                        isFocused -> MaterialTheme.colorScheme.primaryContainer
+                        isOnHomeScreen -> MaterialTheme.colorScheme.secondaryContainer
+                        else -> Color.Transparent
+                    },
+                    shape = RoundedCornerShape(16.dp)
                 )
                 .combinedClickable(
                     onClick = {
@@ -122,12 +129,18 @@ fun AppGridItem(
                     modifier = Modifier.size(64.dp)
                 )
                 if (isOnHomeScreen) {
-                    Box(
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .size(12.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
-                            .border(1.dp, MaterialTheme.colorScheme.onPrimary, CircleShape)
+                            .size(16.dp)
+                            .background(
+                                color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                                shape = CircleShape
+                            )
+                            .padding(2.dp),
+                        tint = if (isFocused) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary
                     )
                 }
             }
@@ -139,7 +152,11 @@ fun AppGridItem(
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
-                color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                color = when {
+                    isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
+                    isOnHomeScreen -> MaterialTheme.colorScheme.onSecondaryContainer
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
             )
         }
 

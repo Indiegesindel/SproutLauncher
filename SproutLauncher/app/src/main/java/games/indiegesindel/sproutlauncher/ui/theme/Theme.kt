@@ -17,29 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import games.indiegesindel.sproutlauncher.data.AppTheme
 
-private val WineRedColorScheme = darkColorScheme(
-    primary = WineVeryLight,
-    onPrimary = WineBlack,
-    primaryContainer = WineMedium,
-    onPrimaryContainer = WineWhite,
-    secondary = WineLight,
-    onSecondary = WineWhite,
-    secondaryContainer = WineDark,
-    onSecondaryContainer = WineVeryLight,
-    tertiary = WinePrimary,
-    onTertiary = WineOnPrimary,
-    background = WineBlack,
-    onBackground = WineWhite,
-    surface = WineDark,
-    onSurface = WineWhite,
-    surfaceVariant = WineMedium,
-    onSurfaceVariant = WineWhite,
-    inverseSurface = WineWhite,
-    inverseOnSurface = WineBlack,
-    outline = WineLight,
-    outlineVariant = WineMedium
-)
-
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
@@ -73,7 +50,6 @@ fun SproutLauncherTheme(
         AppTheme.SYSTEM -> isSystemInDarkTheme()
         AppTheme.LIGHT -> false
         AppTheme.DARK -> true
-        AppTheme.WINE_RED -> true
     }
 
     val context = LocalContext.current
@@ -92,7 +68,6 @@ fun SproutLauncherTheme(
     }
 
     val colorScheme = when {
-        appTheme == AppTheme.WINE_RED -> WineRedColorScheme
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

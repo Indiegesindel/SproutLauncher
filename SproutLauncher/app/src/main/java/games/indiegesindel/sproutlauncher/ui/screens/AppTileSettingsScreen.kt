@@ -107,7 +107,11 @@ fun AppTileSettingsScreen(
                         Icon(Icons.Default.Check, contentDescription = "Save")
                     }
                 },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
             )
         },
         modifier = Modifier

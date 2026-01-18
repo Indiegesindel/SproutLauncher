@@ -55,7 +55,7 @@ class ExtendedViewModel(
         }
     }
 
-    private fun loadApps() {
+    fun loadApps() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
