@@ -16,19 +16,27 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import games.indiegesindel.sproutlauncher.ui.components.TopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,7 +57,8 @@ import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExtendedScreen(
-    viewModel: ExtendedViewModel
+    viewModel: ExtendedViewModel,
+    onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val currentFilter by viewModel.currentFilter.collectAsState()
@@ -71,8 +80,86 @@ fun ExtendedScreen(
         }
     }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeTopAppBar(
+                title = { Text("Apps", style = MaterialTheme.typography.headlineMedium) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back to Home"
+                        )
+                    }
+                },
+                actions = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        FilterChip(
+                            selected = currentFilter == ExtendedViewModel.Filter.ALL,
+                            onClick = { viewModel.setFilter(ExtendedViewModel.Filter.ALL) },
+                            label = { Text("All") },
+                            modifier = Modifier.onFocusChanged {
+                                if (it.isFocused) viewModel.onFocusChanged(FocusedElement.FILTER)
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = Color.Transparent,
+                                labelColor = MaterialTheme.colorScheme.onSurface,
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = currentFilter == ExtendedViewModel.Filter.ALL,
+                                borderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        FilterChip(
+                            selected = currentFilter == ExtendedViewModel.Filter.HOMESCREEN,
+                            onClick = { viewModel.setFilter(ExtendedViewModel.Filter.HOMESCREEN) },
+                            label = { Text("Homescreen") },
+                            modifier = Modifier.onFocusChanged {
+                                if (it.isFocused) viewModel.onFocusChanged(FocusedElement.FILTER)
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = Color.Transparent,
+                                labelColor = MaterialTheme.colorScheme.onSurface,
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = currentFilter == ExtendedViewModel.Filter.HOMESCREEN,
+                                borderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        IconButton(
+                            onClick = {
+                                context.startActivity(Intent(context, SettingsActivity::class.java))
+                            },
+                            modifier = Modifier.onFocusChanged {
+                                if (it.isFocused) viewModel.onFocusChanged(FocusedElement.SETTINGS_BUTTON)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings"
+                            )
+                        }
+                    }
+                },
+                scrollBehavior = scrollBehavior
+            )
+        },
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.displayCutout),
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
@@ -81,73 +168,6 @@ fun ExtendedScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Top Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Filter Select
-                var expanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded },
-                    modifier = Modifier
-                        .width(250.dp)
-                        .onFocusChanged { if (it.isFocused) viewModel.onFocusChanged(FocusedElement.FILTER) }
-                ) {
-                    OutlinedTextField(
-                        value = when (currentFilter) {
-                            ExtendedViewModel.Filter.ALL -> "All apps"
-                            ExtendedViewModel.Filter.HOMESCREEN -> "Apps on Homescreen"
-                        },
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Filter") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("All apps") },
-                            onClick = {
-                                viewModel.setFilter(ExtendedViewModel.Filter.ALL)
-                                expanded = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Apps on Homescreen") },
-                            onClick = {
-                                viewModel.setFilter(ExtendedViewModel.Filter.HOMESCREEN)
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-
-                // Settings Button
-                IconButton(
-                    onClick = {
-                        context.startActivity(Intent(context, SettingsActivity::class.java))
-                    },
-                    modifier = Modifier.onFocusChanged {
-                        if (it.isFocused) viewModel.onFocusChanged(FocusedElement.SETTINGS_BUTTON)
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-
             // Grid Content
             Box(modifier = Modifier.weight(1f)) {
                 AllAppsTab(

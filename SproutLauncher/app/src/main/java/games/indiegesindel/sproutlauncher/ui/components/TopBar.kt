@@ -42,11 +42,11 @@ fun TopBar() {
         Clock()
         
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.BatteryFull, contentDescription = null, modifier = Modifier.size(24.dp), tint = Color.Black)
+            Icon(Icons.Filled.BatteryFull, contentDescription = null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.width(4.dp))
-            Text(text = "67%", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color.Black)
+            Text(text = "67%", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.width(16.dp))
-            Icon(Icons.Filled.Wifi, contentDescription = null, modifier = Modifier.size(24.dp), tint = Color.Black)
+            Icon(Icons.Filled.Wifi, contentDescription = null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onBackground)
         }
     }
 }
@@ -68,6 +68,6 @@ fun Clock() {
             fontWeight = FontWeight.Bold,
             fontSize = 24.sp
         ),
-        color = Color.Black
+        color = MaterialTheme.colorScheme.onBackground
     )
 }

@@ -33,7 +33,10 @@ class ExtendedActivity : ComponentActivity() {
                     ExtendedViewModelFactory(appManager, packageManager)
                 )[ExtendedViewModel::class.java]
 
-                ExtendedScreen(viewModel = viewModel)
+                ExtendedScreen(
+                    viewModel = viewModel,
+                    onBack = { finish() }
+                )
             }
         }
     }

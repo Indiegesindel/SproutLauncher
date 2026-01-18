@@ -23,18 +23,21 @@ private val WineRedColorScheme = darkColorScheme(
     primaryContainer = WineMedium,
     onPrimaryContainer = WineWhite,
     secondary = WineLight,
-    onSecondary = WineBlack,
+    onSecondary = WineWhite,
     secondaryContainer = WineDark,
     onSecondaryContainer = WineVeryLight,
+    tertiary = WinePrimary,
+    onTertiary = WineOnPrimary,
     background = WineBlack,
     onBackground = WineWhite,
     surface = WineDark,
     onSurface = WineWhite,
     surfaceVariant = WineMedium,
     onSurfaceVariant = WineWhite,
-    inverseSurface = WineLight,
+    inverseSurface = WineWhite,
     inverseOnSurface = WineBlack,
-    outline = WineMedium
+    outline = WineLight,
+    outlineVariant = WineMedium
 )
 
 private val DarkColorScheme = darkColorScheme(

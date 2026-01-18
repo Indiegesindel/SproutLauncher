@@ -1,5 +1,6 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,11 +10,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,20 +36,21 @@ fun SettingsScreen(
     val versionName = packageInfo.versionName ?: "Unknown"
     val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = { Text("Settings") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                )
+                scrollBehavior = scrollBehavior
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -56,166 +60,172 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // App Icon and Info Header (Android 15-ish style)
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Box(
+            // App Info Header
+            Column(
                 modifier = Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = appName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Text(
+                    text = "Version $versionName",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
-                text = appName,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
             )
+
+            // Appearance Section
+            SettingsSectionHeader(title = "Appearance")
             
-            Text(
-                text = "Version $versionName",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            var expanded by remember { mutableStateOf(false) }
             
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            // Theme Selection Section
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(24.dp)
-                        .fillMaxWidth()
-                ) {
+            ListItem(
+                headlineContent = { Text("Theme") },
+                supportingContent = { 
                     Text(
-                        text = "Appearance",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    var expanded by remember { mutableStateOf(false) }
-                    
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = !expanded },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = when (currentTheme) {
-                                AppTheme.SYSTEM -> "System default"
-                                AppTheme.LIGHT -> "Light"
-                                AppTheme.DARK -> "Dark"
-                                AppTheme.WINE_RED -> "Wine Red"
-                            },
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Theme") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                            modifier = Modifier
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth()
-                        )
-                        
-                        ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("System default") },
-                                onClick = {
-                                    settingsManager.setTheme(AppTheme.SYSTEM)
-                                    expanded = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Light") },
-                                onClick = {
-                                    settingsManager.setTheme(AppTheme.LIGHT)
-                                    expanded = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Dark") },
-                                onClick = {
-                                    settingsManager.setTheme(AppTheme.DARK)
-                                    expanded = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Wine Red") },
-                                onClick = {
-                                    settingsManager.setTheme(AppTheme.WINE_RED)
-                                    expanded = false
-                                }
-                            )
+                        when (currentTheme) {
+                            AppTheme.SYSTEM -> "System default"
+                            AppTheme.LIGHT -> "Light"
+                            AppTheme.DARK -> "Dark"
+                            AppTheme.WINE_RED -> "Wine Red"
                         }
-                    }
-                }
+                    )
+                },
+                modifier = Modifier.clickable { expanded = true }
+            )
+
+            if (expanded) {
+                ThemeSelectionDialog(
+                    currentTheme = currentTheme,
+                    onThemeSelected = {
+                        settingsManager.setTheme(it)
+                        expanded = false
+                    },
+                    onDismiss = { expanded = false }
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+
             // Developer Section
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(24.dp)
-                        .fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Developer",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Indiegesindel",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Handcrafted with passion",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            SettingsSectionHeader(title = "About")
+            
+            ListItem(
+                headlineContent = { Text("Developer") },
+                supportingContent = { Text("Indiegesindel") }
+            )
+            
+            ListItem(
+                headlineContent = { Text("Made with passion") },
+                supportingContent = { Text("Handcrafted for you") }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+fun SettingsSectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
+    )
+}
+
+@Composable
+fun ThemeSelectionDialog(
+    currentTheme: AppTheme,
+    onThemeSelected: (AppTheme) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Theme") },
+        text = {
+            Column {
+                ThemeOption(
+                    label = "System default",
+                    selected = currentTheme == AppTheme.SYSTEM,
+                    onClick = { onThemeSelected(AppTheme.SYSTEM) }
+                )
+                ThemeOption(
+                    label = "Light",
+                    selected = currentTheme == AppTheme.LIGHT,
+                    onClick = { onThemeSelected(AppTheme.LIGHT) }
+                )
+                ThemeOption(
+                    label = "Dark",
+                    selected = currentTheme == AppTheme.DARK,
+                    onClick = { onThemeSelected(AppTheme.DARK) }
+                )
+                ThemeOption(
+                    label = "Wine Red",
+                    selected = currentTheme == AppTheme.WINE_RED,
+                    onClick = { onThemeSelected(AppTheme.WINE_RED) }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
             }
         }
+    )
+}
+
+@Composable
+fun ThemeOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
     }
 }
