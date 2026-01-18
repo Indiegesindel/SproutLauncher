@@ -3,6 +3,7 @@ package games.indiegesindel.sproutlauncher.ui.components
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -173,14 +174,13 @@ fun QuickActionButton(
                     isFocused = it.isFocused
                     if (it.isFocused) onFocused(id)
                 }
-                .focusable()
                 .then(
                     if (isFocused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     else Modifier
                 )
                 .padding(if (isFocused) 4.dp else 0.dp)
                 .clip(CircleShape)
-                .combinedClickable(onClick = onClick),
+                .clickable(onClick = onClick),
             color = MaterialTheme.colorScheme.secondary,
             shape = CircleShape
         ) {

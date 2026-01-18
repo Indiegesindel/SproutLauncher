@@ -43,6 +43,8 @@ fun MainScreen(
     val focusedItemId by viewModel.focusedItemId.collectAsState()
     val focusedElement by viewModel.focusedElement.collectAsState()
     val homeScreenRows by viewModel.homeScreenRows.collectAsState()
+    val horizontalSpacing by viewModel.horizontalSpacing.collectAsState()
+    val verticalSpacing by viewModel.verticalSpacing.collectAsState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -68,6 +70,8 @@ fun MainScreen(
                         appTiles = appTiles,
                         isLoading = isLoading,
                         rows = homeScreenRows,
+                        horizontalSpacing = horizontalSpacing,
+                        verticalSpacing = verticalSpacing,
                         onAppClick = { tile ->
                             try {
                                 val intent = Intent().apply {
@@ -122,6 +126,7 @@ fun MainScreen(
                                     Toast.makeText(context, "Could not open settings", Toast.LENGTH_SHORT).show()
                                 }
                             },
+                            onFocusChanged = { viewModel.onQuickActionsFocusChanged(it) },
                             focusedItemId = focusedItemId,
                             onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) }
                         )

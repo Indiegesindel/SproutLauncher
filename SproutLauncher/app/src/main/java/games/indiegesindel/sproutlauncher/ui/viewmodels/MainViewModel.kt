@@ -23,6 +23,8 @@ class MainViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     val homeScreenRows: StateFlow<Int> = settingsManager.homeScreenRows
+    val horizontalSpacing: StateFlow<Int> = settingsManager.horizontalSpacing
+    val verticalSpacing: StateFlow<Int> = settingsManager.verticalSpacing
 
     private val _focusedElement = MutableStateFlow(FocusedElement.NONE)
     val focusedElement: StateFlow<FocusedElement> = _focusedElement.asStateFlow()
@@ -63,8 +65,23 @@ class MainViewModel(
         }
     }
 
+    fun onQuickActionsFocusChanged(focused: Boolean) {
+        if (focused) {
+            _focusedElement.value = FocusedElement.QUICK_ACTION
+        } else if (_focusedElement.value == FocusedElement.QUICK_ACTION) {
+            _focusedElement.value = FocusedElement.NONE
+        }
+    }
+
     fun onFocusedItemIdChanged(id: String?) {
         _focusedItemId.value = id
+        if (id == null) {
+            _focusedElement.value = FocusedElement.NONE
+        } else if (id.startsWith("action:")) {
+            _focusedElement.value = FocusedElement.QUICK_ACTION
+        } else if (id.startsWith("tile:")) {
+            _focusedElement.value = FocusedElement.APP_TILE
+        }
     }
 }
 

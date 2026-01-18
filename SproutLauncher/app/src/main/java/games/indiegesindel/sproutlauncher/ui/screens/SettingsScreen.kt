@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import games.indiegesindel.sproutlauncher.data.AppTheme
 import games.indiegesindel.sproutlauncher.data.SettingsManager
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,24 +138,37 @@ fun SettingsScreen(
             }
 
             val currentRows by settingsManager.homeScreenRows.collectAsState()
-            var showRowsDialog by remember { mutableStateOf(false) }
+            val horizontalSpacing by settingsManager.horizontalSpacing.collectAsState()
+            val verticalSpacing by settingsManager.verticalSpacing.collectAsState()
 
-            ListItem(
-                headlineContent = { Text("Number of Rows") },
-                supportingContent = { Text(if (currentRows == 1) "1 row" else "$currentRows rows") },
-                modifier = Modifier.clickable { showRowsDialog = true }
+            SliderSetting(
+                label = "Number of Rows",
+                value = currentRows,
+                valueRange = 1f..5f,
+                steps = 3,
+                onValueChange = { settingsManager.setHomeScreenRows(it) },
+                valueDisplay = { if (it == 1) "1 Row" else "$it Rows" }
             )
 
-            if (showRowsDialog) {
-                RowsSelectionDialog(
-                    currentRows = currentRows,
-                    onRowsSelected = {
-                        settingsManager.setHomeScreenRows(it)
-                        showRowsDialog = false
-                    },
-                    onDismiss = { showRowsDialog = false }
-                )
-            }
+            SettingsSectionHeader(title = "Grid Spacing")
+
+            SliderSetting(
+                label = "Horizontal Spacing",
+                value = horizontalSpacing,
+                valueRange = 0f..64f,
+                steps = 63,
+                onValueChange = { settingsManager.setHorizontalSpacing(it) },
+                valueDisplay = { "${it}dp" }
+            )
+
+            SliderSetting(
+                label = "Vertical Spacing",
+                value = verticalSpacing,
+                valueRange = 0f..64f,
+                steps = 63,
+                onValueChange = { settingsManager.setVerticalSpacing(it) },
+                valueDisplay = { "${it}dp" }
+            )
 
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -247,29 +261,40 @@ fun ThemeOption(
 }
 
 @Composable
-fun RowsSelectionDialog(
-    currentRows: Int,
-    onRowsSelected: (Int) -> Unit,
-    onDismiss: () -> Unit
+fun SliderSetting(
+    label: String,
+    value: Int,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int,
+    onValueChange: (Int) -> Unit,
+    valueDisplay: (Int) -> String = { it.toString() }
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select Number of Rows") },
-        text = {
-            Column {
-                (1..5).forEach { rows ->
-                    ThemeOption(
-                        label = if (rows == 1) "1 Row" else "$rows Rows",
-                        selected = currentRows == rows,
-                        onClick = { onRowsSelected(rows) }
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = valueDisplay(value),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
-    )
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onValueChange(it.roundToInt()) },
+            valueRange = valueRange,
+            steps = steps
+        )
+    }
 }

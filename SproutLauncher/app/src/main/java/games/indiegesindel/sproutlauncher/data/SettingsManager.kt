@@ -17,6 +17,7 @@ class SettingsManager(context: Context) {
 
     private val isPhone = context.resources.configuration.smallestScreenWidthDp < 600
     private val defaultRows = if (isPhone) 1 else 2
+    private val defaultSpacing = 8
 
     private val _theme = MutableStateFlow(loadTheme())
     val theme: StateFlow<AppTheme> = _theme.asStateFlow()
@@ -24,10 +25,18 @@ class SettingsManager(context: Context) {
     private val _homeScreenRows = MutableStateFlow(loadHomeScreenRows())
     val homeScreenRows: StateFlow<Int> = _homeScreenRows.asStateFlow()
 
+    private val _horizontalSpacing = MutableStateFlow(loadHorizontalSpacing())
+    val horizontalSpacing: StateFlow<Int> = _horizontalSpacing.asStateFlow()
+
+    private val _verticalSpacing = MutableStateFlow(loadVerticalSpacing())
+    val verticalSpacing: StateFlow<Int> = _verticalSpacing.asStateFlow()
+
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
             KEY_THEME -> _theme.value = loadTheme()
             KEY_HOME_SCREEN_ROWS -> _homeScreenRows.value = loadHomeScreenRows()
+            KEY_HORIZONTAL_SPACING -> _horizontalSpacing.value = loadHorizontalSpacing()
+            KEY_VERTICAL_SPACING -> _verticalSpacing.value = loadVerticalSpacing()
         }
     }
 
@@ -38,6 +47,8 @@ class SettingsManager(context: Context) {
     companion object {
         private const val KEY_THEME = "app_theme"
         private const val KEY_HOME_SCREEN_ROWS = "home_screen_rows"
+        private const val KEY_HORIZONTAL_SPACING = "horizontal_spacing"
+        private const val KEY_VERTICAL_SPACING = "vertical_spacing"
     }
 
     private fun loadTheme(): AppTheme {
@@ -61,5 +72,23 @@ class SettingsManager(context: Context) {
     fun setHomeScreenRows(rows: Int) {
         sharedPreferences.edit { putInt(KEY_HOME_SCREEN_ROWS, rows) }
         _homeScreenRows.value = rows
+    }
+
+    private fun loadHorizontalSpacing(): Int {
+        return sharedPreferences.getInt(KEY_HORIZONTAL_SPACING, defaultSpacing)
+    }
+
+    fun setHorizontalSpacing(spacing: Int) {
+        sharedPreferences.edit { putInt(KEY_HORIZONTAL_SPACING, spacing) }
+        _horizontalSpacing.value = spacing
+    }
+
+    private fun loadVerticalSpacing(): Int {
+        return sharedPreferences.getInt(KEY_VERTICAL_SPACING, defaultSpacing)
+    }
+
+    fun setVerticalSpacing(spacing: Int) {
+        sharedPreferences.edit { putInt(KEY_VERTICAL_SPACING, spacing) }
+        _verticalSpacing.value = spacing
     }
 }

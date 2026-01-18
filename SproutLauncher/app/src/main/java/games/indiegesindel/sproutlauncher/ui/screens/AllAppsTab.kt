@@ -19,10 +19,6 @@ import androidx.compose.ui.unit.dp
 import games.indiegesindel.sproutlauncher.data.AppManager
 import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.components.AppGridItem
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import coil.size.Size
-import coil.imageLoader
 
 @Composable
 fun AllAppsTab(
