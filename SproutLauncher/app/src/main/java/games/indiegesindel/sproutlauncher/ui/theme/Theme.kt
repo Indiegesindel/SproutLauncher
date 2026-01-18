@@ -121,7 +121,11 @@ private val MintGreenLightScheme = lightColorScheme(
     onSurfaceVariant = mintGreenOnSurfaceVariantLight,
     outline = mintGreenOutlineLight,
     outlineVariant = mintGreenOutlineVariantLight,
+    surfaceContainerLowest = mintGreenSurfaceContainerLowestLight,
+    surfaceContainerLow = mintGreenSurfaceContainerLowLight,
     surfaceContainer = mintGreenSurfaceContainerLight,
+    surfaceContainerHigh = mintGreenSurfaceContainerHighLight,
+    surfaceContainerHighest = mintGreenSurfaceContainerHighestLight,
 )
 
 private val MintGreenDarkScheme = darkColorScheme(
@@ -141,7 +145,11 @@ private val MintGreenDarkScheme = darkColorScheme(
     onSurfaceVariant = mintGreenOnSurfaceVariantDark,
     outline = mintGreenOutlineDark,
     outlineVariant = mintGreenOutlineVariantDark,
+    surfaceContainerLowest = mintGreenSurfaceContainerLowestDark,
+    surfaceContainerLow = mintGreenSurfaceContainerLowDark,
     surfaceContainer = mintGreenSurfaceContainerDark,
+    surfaceContainerHigh = mintGreenSurfaceContainerHighDark,
+    surfaceContainerHighest = mintGreenSurfaceContainerHighestDark,
 )
 
 private val DeepBlueLightScheme = lightColorScheme(
@@ -161,7 +169,11 @@ private val DeepBlueLightScheme = lightColorScheme(
     onSurfaceVariant = deepBlueOnSurfaceVariantLight,
     outline = deepBlueOutlineLight,
     outlineVariant = deepBlueOutlineVariantLight,
+    surfaceContainerLowest = deepBlueSurfaceContainerLowestLight,
+    surfaceContainerLow = deepBlueSurfaceContainerLowLight,
     surfaceContainer = deepBlueSurfaceContainerLight,
+    surfaceContainerHigh = deepBlueSurfaceContainerHighLight,
+    surfaceContainerHighest = deepBlueSurfaceContainerHighestLight,
 )
 
 private val DeepBlueDarkScheme = darkColorScheme(
@@ -181,7 +193,11 @@ private val DeepBlueDarkScheme = darkColorScheme(
     onSurfaceVariant = deepBlueOnSurfaceVariantDark,
     outline = deepBlueOutlineDark,
     outlineVariant = deepBlueOutlineVariantDark,
+    surfaceContainerLowest = deepBlueSurfaceContainerLowestDark,
+    surfaceContainerLow = deepBlueSurfaceContainerLowDark,
     surfaceContainer = deepBlueSurfaceContainerDark,
+    surfaceContainerHigh = deepBlueSurfaceContainerHighDark,
+    surfaceContainerHighest = deepBlueSurfaceContainerHighestDark,
 )
 
 private val FireRedLightScheme = lightColorScheme(
@@ -201,7 +217,11 @@ private val FireRedLightScheme = lightColorScheme(
     onSurfaceVariant = fireRedOnSurfaceVariantLight,
     outline = fireRedOutlineLight,
     outlineVariant = fireRedOutlineVariantLight,
+    surfaceContainerLowest = fireRedSurfaceContainerLowestLight,
+    surfaceContainerLow = fireRedSurfaceContainerLowLight,
     surfaceContainer = fireRedSurfaceContainerLight,
+    surfaceContainerHigh = fireRedSurfaceContainerHighLight,
+    surfaceContainerHighest = fireRedSurfaceContainerHighestLight,
 )
 
 private val FireRedDarkScheme = darkColorScheme(
@@ -221,7 +241,11 @@ private val FireRedDarkScheme = darkColorScheme(
     onSurfaceVariant = fireRedOnSurfaceVariantDark,
     outline = fireRedOutlineDark,
     outlineVariant = fireRedOutlineVariantDark,
+    surfaceContainerLowest = fireRedSurfaceContainerLowestDark,
+    surfaceContainerLow = fireRedSurfaceContainerLowDark,
     surfaceContainer = fireRedSurfaceContainerDark,
+    surfaceContainerHigh = fireRedSurfaceContainerHighDark,
+    surfaceContainerHighest = fireRedSurfaceContainerHighestDark,
 )
 
 private val OrangeLightScheme = lightColorScheme(
@@ -241,7 +265,11 @@ private val OrangeLightScheme = lightColorScheme(
     onSurfaceVariant = orangeOnSurfaceVariantLight,
     outline = orangeOutlineLight,
     outlineVariant = orangeOutlineVariantLight,
+    surfaceContainerLowest = orangeSurfaceContainerLowestLight,
+    surfaceContainerLow = orangeSurfaceContainerLowLight,
     surfaceContainer = orangeSurfaceContainerLight,
+    surfaceContainerHigh = orangeSurfaceContainerHighLight,
+    surfaceContainerHighest = orangeSurfaceContainerHighestLight,
 )
 
 private val OrangeDarkScheme = darkColorScheme(
@@ -261,7 +289,11 @@ private val OrangeDarkScheme = darkColorScheme(
     onSurfaceVariant = orangeOnSurfaceVariantDark,
     outline = orangeOutlineDark,
     outlineVariant = orangeOutlineVariantDark,
+    surfaceContainerLowest = orangeSurfaceContainerLowestDark,
+    surfaceContainerLow = orangeSurfaceContainerLowDark,
     surfaceContainer = orangeSurfaceContainerDark,
+    surfaceContainerHigh = orangeSurfaceContainerHighDark,
+    surfaceContainerHighest = orangeSurfaceContainerHighestDark,
 )
 
 @Composable
