@@ -7,6 +7,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
 import games.indiegesindel.sproutlauncher.data.AppManager
 import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.components.AppListItem
@@ -15,6 +19,7 @@ import games.indiegesindel.sproutlauncher.ui.components.AppListItem
 fun AllAppsTab(
     installedApps: List<ResolveInfo>,
     selectedTiles: List<AppTile>,
+    isLoading: Boolean = false,
     appManager: AppManager,
     onTilesChanged: (List<AppTile>) -> Unit,
     focusedItemId: String? = null,
@@ -23,9 +28,17 @@ fun AllAppsTab(
     val context = LocalContext.current
     val pm = context.packageManager
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
         items(installedApps, key = { app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }) { app ->
             val itemId = "${app.activityInfo.packageName}_${app.activityInfo.name}"
             val tile = selectedTiles.find {
@@ -56,4 +69,5 @@ fun AllAppsTab(
             )
         }
     }
+}
 }

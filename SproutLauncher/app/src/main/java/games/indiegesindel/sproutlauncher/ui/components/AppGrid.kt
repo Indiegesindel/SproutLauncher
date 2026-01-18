@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import coil.compose.AsyncImage
+import androidx.compose.material3.CircularProgressIndicator
 import games.indiegesindel.sproutlauncher.model.AppTile
 import android.view.KeyEvent
 import games.indiegesindel.sproutlauncher.utils.IconUtils
@@ -64,6 +65,7 @@ import androidx.compose.runtime.LaunchedEffect
 @Composable
 fun AppGrid(
     appTiles: List<AppTile>,
+    isLoading: Boolean = false,
     onAppClick: (AppTile) -> Unit,
     onRemove: (AppTile) -> Unit,
     onSettings: (AppTile) -> Unit,
@@ -91,7 +93,16 @@ fun AppGrid(
         }
     }
 
-    if (appTiles.isEmpty()) {
+    if (isLoading) {
+        Box(
+            modifier = modifier
+                .height(if (isPhone) 240.dp else 440.dp)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+    } else if (appTiles.isEmpty()) {
         HomeDisclaimer(
             modifier = modifier
                 .height(if (isPhone) 240.dp else 440.dp)

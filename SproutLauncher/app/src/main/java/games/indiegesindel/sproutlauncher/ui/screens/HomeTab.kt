@@ -10,6 +10,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
 import games.indiegesindel.sproutlauncher.data.AppManager
 import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.components.AppListItem
@@ -19,6 +23,7 @@ import games.indiegesindel.sproutlauncher.ui.components.HomeDisclaimer
 fun HomeTab(
     installedApps: List<ResolveInfo>,
     selectedTiles: List<AppTile>,
+    isLoading: Boolean = false,
     appManager: AppManager,
     onTilesChanged: (List<AppTile>) -> Unit,
     focusedItemId: String? = null,
@@ -34,7 +39,14 @@ fun HomeTab(
         }
     }
 
-    if (displayedApps.isEmpty()) {
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+    } else if (displayedApps.isEmpty()) {
         HomeDisclaimer(modifier = Modifier.fillMaxSize())
     } else {
         LazyColumn(
