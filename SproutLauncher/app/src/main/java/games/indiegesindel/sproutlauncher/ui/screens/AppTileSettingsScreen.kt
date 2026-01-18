@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -38,6 +40,8 @@ import coil.request.ImageRequest
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 import games.indiegesindel.sproutlauncher.ui.viewmodels.AppTileSettingsViewModel
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
+import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
+import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,11 +102,12 @@ fun AppTileSettingsScreen(
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -156,50 +161,52 @@ fun AppTileSettingsScreen(
                 }
             }
 
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-            Column(modifier = Modifier.padding(16.dp)) {
+            SettingsSectionHeader(title = "General")
+            SettingsCard {
                 OutlinedTextField(
                     value = label,
                     onValueChange = { viewModel.onLabelChanged(it) },
                     label = { Text("Label") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     singleLine = true
                 )
+            }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "App Details",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                
+            SettingsSectionHeader(title = "App Details")
+            SettingsCard {
                 ListItem(
                     headlineContent = { Text("Package") },
-                    supportingContent = { Text(tile?.packageName ?: "") }
+                    supportingContent = { Text(tile?.packageName ?: "") },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
                 ListItem(
                     headlineContent = { Text("Activity") },
-                    supportingContent = { Text(tile?.activityName ?: "") }
+                    supportingContent = { Text(tile?.activityName ?: "") },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
+            }
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Button(
-                    onClick = { viewModel.setShowDeleteConfirm(true) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Remove Tile")
-                }
+            SettingsSectionHeader(title = "Actions")
+            SettingsCard {
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            "Remove Tile",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    modifier = Modifier.clickable { viewModel.setShowDeleteConfirm(true) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))

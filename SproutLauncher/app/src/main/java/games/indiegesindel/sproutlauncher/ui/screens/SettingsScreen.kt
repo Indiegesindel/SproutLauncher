@@ -31,6 +31,8 @@ import coil.compose.AsyncImage
 import games.indiegesindel.sproutlauncher.data.BaseTheme
 import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.ui.theme.*
+import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
+import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -264,31 +266,6 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
-}
-
-@Composable
-fun SettingsSectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontWeight = FontWeight.Medium,
-        modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 8.dp)
-    )
-}
-
-@Composable
-fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        content = content
-    )
 }
 
 @Composable
