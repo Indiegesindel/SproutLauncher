@@ -13,7 +13,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
-import games.indiegesindel.sproutlauncher.data.AppTheme
+import games.indiegesindel.sproutlauncher.data.BaseTheme
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -113,20 +113,175 @@ private val PurpleDarkScheme = darkColorScheme(
     surfaceContainerHighest = surfaceContainerHighestDark,
 )
 
+private val MintGreenLightScheme = lightColorScheme(
+    primary = mintGreenPrimaryLight,
+    onPrimary = mintGreenOnPrimaryLight,
+    primaryContainer = mintGreenPrimaryContainerLight,
+    onPrimaryContainer = mintGreenOnPrimaryContainerLight,
+    secondary = mintGreenSecondaryLight,
+    onSecondary = mintGreenOnSecondaryLight,
+    secondaryContainer = mintGreenSecondaryContainerLight,
+    onSecondaryContainer = mintGreenOnSecondaryContainerLight,
+    background = mintGreenBackgroundLight,
+    onBackground = mintGreenOnBackgroundLight,
+    surface = mintGreenSurfaceLight,
+    onSurface = mintGreenOnSurfaceLight,
+    surfaceVariant = mintGreenSurfaceVariantLight,
+    onSurfaceVariant = mintGreenOnSurfaceVariantLight,
+    outline = mintGreenOutlineLight,
+    outlineVariant = mintGreenOutlineVariantLight,
+    surfaceContainer = mintGreenSurfaceContainerLight,
+)
+
+private val MintGreenDarkScheme = darkColorScheme(
+    primary = mintGreenPrimaryDark,
+    onPrimary = mintGreenOnPrimaryDark,
+    primaryContainer = mintGreenPrimaryContainerDark,
+    onPrimaryContainer = mintGreenOnPrimaryContainerDark,
+    secondary = mintGreenSecondaryDark,
+    onSecondary = mintGreenOnSecondaryDark,
+    secondaryContainer = mintGreenSecondaryContainerDark,
+    onSecondaryContainer = mintGreenOnSecondaryContainerDark,
+    background = mintGreenBackgroundDark,
+    onBackground = mintGreenOnBackgroundDark,
+    surface = mintGreenSurfaceDark,
+    onSurface = mintGreenOnSurfaceDark,
+    surfaceVariant = mintGreenSurfaceVariantDark,
+    onSurfaceVariant = mintGreenOnSurfaceVariantDark,
+    outline = mintGreenOutlineDark,
+    outlineVariant = mintGreenOutlineVariantDark,
+    surfaceContainer = mintGreenSurfaceContainerDark,
+)
+
+private val DeepBlueLightScheme = lightColorScheme(
+    primary = deepBluePrimaryLight,
+    onPrimary = deepBlueOnPrimaryLight,
+    primaryContainer = deepBluePrimaryContainerLight,
+    onPrimaryContainer = deepBlueOnPrimaryContainerLight,
+    secondary = deepBlueSecondaryLight,
+    onSecondary = deepBlueOnSecondaryLight,
+    secondaryContainer = deepBlueSecondaryContainerLight,
+    onSecondaryContainer = deepBlueOnSecondaryContainerLight,
+    background = deepBlueBackgroundLight,
+    onBackground = deepBlueOnBackgroundLight,
+    surface = deepBlueSurfaceLight,
+    onSurface = deepBlueOnSurfaceLight,
+    surfaceVariant = deepBlueSurfaceVariantLight,
+    onSurfaceVariant = deepBlueOnSurfaceVariantLight,
+    outline = deepBlueOutlineLight,
+    outlineVariant = deepBlueOutlineVariantLight,
+    surfaceContainer = deepBlueSurfaceContainerLight,
+)
+
+private val DeepBlueDarkScheme = darkColorScheme(
+    primary = deepBluePrimaryDark,
+    onPrimary = deepBlueOnPrimaryDark,
+    primaryContainer = deepBluePrimaryContainerDark,
+    onPrimaryContainer = deepBlueOnPrimaryContainerDark,
+    secondary = deepBlueSecondaryDark,
+    onSecondary = deepBlueOnSecondaryDark,
+    secondaryContainer = deepBlueSecondaryContainerDark,
+    onSecondaryContainer = deepBlueOnSecondaryContainerDark,
+    background = deepBlueBackgroundDark,
+    onBackground = deepBlueOnBackgroundDark,
+    surface = deepBlueSurfaceDark,
+    onSurface = deepBlueOnSurfaceDark,
+    surfaceVariant = deepBlueSurfaceVariantDark,
+    onSurfaceVariant = deepBlueOnSurfaceVariantDark,
+    outline = deepBlueOutlineDark,
+    outlineVariant = deepBlueOutlineVariantDark,
+    surfaceContainer = deepBlueSurfaceContainerDark,
+)
+
+private val FireRedLightScheme = lightColorScheme(
+    primary = fireRedPrimaryLight,
+    onPrimary = fireRedOnPrimaryLight,
+    primaryContainer = fireRedPrimaryContainerLight,
+    onPrimaryContainer = fireRedOnPrimaryContainerLight,
+    secondary = fireRedSecondaryLight,
+    onSecondary = fireRedOnSecondaryLight,
+    secondaryContainer = fireRedSecondaryContainerLight,
+    onSecondaryContainer = fireRedOnSecondaryContainerLight,
+    background = fireRedBackgroundLight,
+    onBackground = fireRedOnBackgroundLight,
+    surface = fireRedSurfaceLight,
+    onSurface = fireRedOnSurfaceLight,
+    surfaceVariant = fireRedSurfaceVariantLight,
+    onSurfaceVariant = fireRedOnSurfaceVariantLight,
+    outline = fireRedOutlineLight,
+    outlineVariant = fireRedOutlineVariantLight,
+    surfaceContainer = fireRedSurfaceContainerLight,
+)
+
+private val FireRedDarkScheme = darkColorScheme(
+    primary = fireRedPrimaryDark,
+    onPrimary = fireRedOnPrimaryDark,
+    primaryContainer = fireRedPrimaryContainerDark,
+    onPrimaryContainer = fireRedOnPrimaryContainerDark,
+    secondary = fireRedSecondaryDark,
+    onSecondary = fireRedOnSecondaryDark,
+    secondaryContainer = fireRedSecondaryContainerDark,
+    onSecondaryContainer = fireRedOnSecondaryContainerDark,
+    background = fireRedBackgroundDark,
+    onBackground = fireRedOnBackgroundDark,
+    surface = fireRedSurfaceDark,
+    onSurface = fireRedOnSurfaceDark,
+    surfaceVariant = fireRedSurfaceVariantDark,
+    onSurfaceVariant = fireRedOnSurfaceVariantDark,
+    outline = fireRedOutlineDark,
+    outlineVariant = fireRedOutlineVariantDark,
+    surfaceContainer = fireRedSurfaceContainerDark,
+)
+
+private val OrangeLightScheme = lightColorScheme(
+    primary = orangePrimaryLight,
+    onPrimary = orangeOnPrimaryLight,
+    primaryContainer = orangePrimaryContainerLight,
+    onPrimaryContainer = orangeOnPrimaryContainerLight,
+    secondary = orangeSecondaryLight,
+    onSecondary = orangeOnSecondaryLight,
+    secondaryContainer = orangeSecondaryContainerLight,
+    onSecondaryContainer = orangeOnSecondaryContainerLight,
+    background = orangeBackgroundLight,
+    onBackground = orangeOnBackgroundLight,
+    surface = orangeSurfaceLight,
+    onSurface = orangeOnSurfaceLight,
+    surfaceVariant = orangeSurfaceVariantLight,
+    onSurfaceVariant = orangeOnSurfaceVariantLight,
+    outline = orangeOutlineLight,
+    outlineVariant = orangeOutlineVariantLight,
+    surfaceContainer = orangeSurfaceContainerLight,
+)
+
+private val OrangeDarkScheme = darkColorScheme(
+    primary = orangePrimaryDark,
+    onPrimary = orangeOnPrimaryDark,
+    primaryContainer = orangePrimaryContainerDark,
+    onPrimaryContainer = orangeOnPrimaryContainerDark,
+    secondary = orangeSecondaryDark,
+    onSecondary = orangeOnSecondaryDark,
+    secondaryContainer = orangeSecondaryContainerDark,
+    onSecondaryContainer = orangeOnSecondaryContainerDark,
+    background = orangeBackgroundDark,
+    onBackground = orangeOnBackgroundDark,
+    surface = orangeSurfaceDark,
+    onSurface = orangeOnSurfaceDark,
+    surfaceVariant = orangeSurfaceVariantDark,
+    onSurfaceVariant = orangeOnSurfaceVariantDark,
+    outline = orangeOutlineDark,
+    outlineVariant = orangeOutlineVariantDark,
+    surfaceContainer = orangeSurfaceContainerDark,
+)
+
 @Composable
 fun SproutLauncherTheme(
-    appTheme: AppTheme = AppTheme.SYSTEM,
+    baseTheme: BaseTheme = BaseTheme.SYSTEM,
+    isDarkMode: Boolean = false,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val darkTheme = when (appTheme) {
-        AppTheme.SYSTEM -> isSystemInDarkTheme()
-        AppTheme.LIGHT -> false
-        AppTheme.DARK -> true
-        AppTheme.PURPLE_LIGHT -> false
-        AppTheme.PURPLE_DARK -> true
-    }
+    val darkTheme = isDarkMode
 
     val context = LocalContext.current
     DisposableEffect(darkTheme) {
@@ -144,14 +299,16 @@ fun SproutLauncherTheme(
     }
 
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && 
-                appTheme != AppTheme.PURPLE_LIGHT && appTheme != AppTheme.PURPLE_DARK -> {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && baseTheme == BaseTheme.SYSTEM -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
-        appTheme == AppTheme.PURPLE_LIGHT -> PurpleLightScheme
-        appTheme == AppTheme.PURPLE_DARK -> PurpleDarkScheme
+        baseTheme == BaseTheme.PURPLE -> if (darkTheme) PurpleDarkScheme else PurpleLightScheme
+        baseTheme == BaseTheme.MINT_GREEN -> if (darkTheme) MintGreenDarkScheme else MintGreenLightScheme
+        baseTheme == BaseTheme.DEEP_BLUE -> if (darkTheme) DeepBlueDarkScheme else DeepBlueLightScheme
+        baseTheme == BaseTheme.FIRE_RED -> if (darkTheme) FireRedDarkScheme else FireRedLightScheme
+        baseTheme == BaseTheme.REFRESHING_ORANGE -> if (darkTheme) OrangeDarkScheme else OrangeLightScheme
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

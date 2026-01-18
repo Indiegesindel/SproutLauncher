@@ -22,8 +22,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import games.indiegesindel.sproutlauncher.data.AppTheme
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Color
+import games.indiegesindel.sproutlauncher.data.BaseTheme
 import games.indiegesindel.sproutlauncher.data.SettingsManager
+import games.indiegesindel.sproutlauncher.ui.theme.*
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +37,8 @@ fun SettingsScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val currentTheme by settingsManager.theme.collectAsState()
+    val currentBaseTheme by settingsManager.baseTheme.collectAsState()
+    val isDarkMode by settingsManager.isDarkMode.collectAsState()
     
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val versionName = packageInfo.versionName ?: "Unknown"
@@ -54,7 +59,7 @@ fun SettingsScreen(
                     }
                 },
                 scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.largeTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
@@ -113,35 +118,32 @@ fun SettingsScreen(
 
             // Appearance Section
             SettingsSectionHeader(title = "Appearance")
-            
-            var expanded by remember { mutableStateOf(false) }
-            
-            ListItem(
-                headlineContent = { Text("Theme") },
-                supportingContent = { 
-                    Text(
-                        when (currentTheme) {
-                            AppTheme.SYSTEM -> "System default"
-                            AppTheme.LIGHT -> "Light"
-                            AppTheme.DARK -> "Dark"
-                            AppTheme.PURPLE_LIGHT -> "Purple Light"
-                            AppTheme.PURPLE_DARK -> "Purple Dark"
-                        }
-                    )
-                },
-                modifier = Modifier.clickable { expanded = true }
-            )
 
-            if (expanded) {
-                ThemeSelectionDialog(
-                    currentTheme = currentTheme,
-                    onThemeSelected = {
-                        settingsManager.setTheme(it)
-                        expanded = false
-                    },
-                    onDismiss = { expanded = false }
-                )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                BaseTheme.entries.forEach { theme ->
+                    ThemePreviewButton(
+                        theme = theme,
+                        selected = currentBaseTheme == theme,
+                        onClick = { settingsManager.setBaseTheme(theme) }
+                    )
+                }
             }
+
+            ListItem(
+                headlineContent = { Text("Dark Mode") },
+                trailingContent = {
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = { settingsManager.setIsDarkMode(it) }
+                    )
+                }
+            )
 
             val wallpaperUri by settingsManager.wallpaperUri.collectAsState()
             val launcher = rememberLauncherForActivityResult(
@@ -225,19 +227,6 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.outlineVariant
             )
 
-            // Developer Section
-            SettingsSectionHeader(title = "About")
-            
-            ListItem(
-                headlineContent = { Text("Developer") },
-                supportingContent = { Text("Indiegesindel") }
-            )
-            
-            ListItem(
-                headlineContent = { Text("Made with passion") },
-                supportingContent = { Text("Handcrafted for you") }
-            )
-
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -255,67 +244,62 @@ fun SettingsSectionHeader(title: String) {
 }
 
 @Composable
-fun ThemeSelectionDialog(
-    currentTheme: AppTheme,
-    onThemeSelected: (AppTheme) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select Theme") },
-        text = {
-            Column {
-                ThemeOption(
-                    label = "System default",
-                    selected = currentTheme == AppTheme.SYSTEM,
-                    onClick = { onThemeSelected(AppTheme.SYSTEM) }
-                )
-                ThemeOption(
-                    label = "Light",
-                    selected = currentTheme == AppTheme.LIGHT,
-                    onClick = { onThemeSelected(AppTheme.LIGHT) }
-                )
-                ThemeOption(
-                    label = "Dark",
-                    selected = currentTheme == AppTheme.DARK,
-                    onClick = { onThemeSelected(AppTheme.DARK) }
-                )
-                ThemeOption(
-                    label = "Purple Light",
-                    selected = currentTheme == AppTheme.PURPLE_LIGHT,
-                    onClick = { onThemeSelected(AppTheme.PURPLE_LIGHT) }
-                )
-                ThemeOption(
-                    label = "Purple Dark",
-                    selected = currentTheme == AppTheme.PURPLE_DARK,
-                    onClick = { onThemeSelected(AppTheme.PURPLE_DARK) }
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun ThemeOption(
-    label: String,
+fun ThemePreviewButton(
+    theme: BaseTheme,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+    val color = when (theme) {
+        BaseTheme.SYSTEM -> MaterialTheme.colorScheme.outline
+        BaseTheme.PURPLE -> primaryLight
+        BaseTheme.MINT_GREEN -> mintGreenPrimaryLight
+        BaseTheme.DEEP_BLUE -> deepBluePrimaryLight
+        BaseTheme.FIRE_RED -> fireRedPrimaryLight
+        BaseTheme.REFRESHING_ORANGE -> orangePrimaryLight
+    }
+
+    val label = when (theme) {
+        BaseTheme.SYSTEM -> "System"
+        BaseTheme.PURPLE -> "Purple"
+        BaseTheme.MINT_GREEN -> "Mint"
+        BaseTheme.DEEP_BLUE -> "Blue"
+        BaseTheme.FIRE_RED -> "Red"
+        BaseTheme.REFRESHING_ORANGE -> "Orange"
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable(onClick = onClick)
     ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(color)
+                .then(
+                    if (selected) {
+                        Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    } else {
+                        Modifier
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (theme == BaseTheme.SYSTEM) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
