@@ -23,6 +23,8 @@
             android:exported="true"
             android:screenOrientation="landscape"
             android:windowLayoutInDisplayCutoutMode="shortEdges"
+            tools:targetApi="o_mr1"
+            tools:ignore="DiscouragedApi"
             android:theme="@style/Theme.SproutLauncher">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,16 +38,19 @@
             android:name=".ExtendedActivity"
             android:exported="false"
             android:screenOrientation="landscape"
+            tools:ignore="DiscouragedApi"
             android:theme="@style/Theme.SproutLauncher" />
         <activity
             android:name=".AppTileSettingsActivity"
             android:exported="false"
             android:screenOrientation="landscape"
+            tools:ignore="DiscouragedApi"
             android:theme="@style/Theme.SproutLauncher" />
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:screenOrientation="landscape"
+            tools:ignore="DiscouragedApi"
             android:theme="@style/Theme.SproutLauncher" />
     </application>
 

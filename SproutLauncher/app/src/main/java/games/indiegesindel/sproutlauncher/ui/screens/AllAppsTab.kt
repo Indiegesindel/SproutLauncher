@@ -67,7 +67,7 @@ fun AllAppsTab(
                             )
                             appManager.addAppTile(newTile)
                         } else {
-                            tile?.let { appManager.removeAppTile(it.id) }
+                            tile.let { appManager.removeAppTile(it.id) }
                         }
                         onTilesChanged(appManager.getAppTiles())
                     },

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.input.key.onKeyEvent
@@ -62,8 +60,6 @@ import kotlin.math.roundToInt
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 
 @Composable
 fun rememberReorderableLazyGridState(
@@ -137,17 +133,17 @@ class ReorderableLazyGridState(
 @Composable
 fun AppGrid(
     appTiles: List<AppTile>,
-    isLoading: Boolean = false,
-    rows: Int = 2,
     onAppClick: (AppTile) -> Unit,
     onRemove: (AppTile) -> Unit,
     onSettings: (AppTile) -> Unit,
     onReorder: (Int, Int) -> Unit,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    rows: Int = 2,
     onFocusChanged: (Boolean) -> Unit = {},
     focusedItemId: String? = null,
     onFocusItemIdChanged: (String?) -> Unit = {},
-    onDragEnd: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onDragEnd: () -> Unit = {}
 ) {
     val configuration = LocalConfiguration.current
     val isPhone = configuration.smallestScreenWidthDp < 600

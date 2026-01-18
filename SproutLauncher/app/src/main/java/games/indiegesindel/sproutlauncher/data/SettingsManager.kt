@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import androidx.core.content.edit
 
 enum class AppTheme {
     SYSTEM, LIGHT, DARK
@@ -23,7 +24,7 @@ class SettingsManager(context: Context) {
     private val _homeScreenRows = MutableStateFlow(loadHomeScreenRows())
     val homeScreenRows: StateFlow<Int> = _homeScreenRows.asStateFlow()
 
-    private val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+    private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
             KEY_THEME -> _theme.value = loadTheme()
             KEY_HOME_SCREEN_ROWS -> _homeScreenRows.value = loadHomeScreenRows()
@@ -42,14 +43,14 @@ class SettingsManager(context: Context) {
     private fun loadTheme(): AppTheme {
         val themeName = sharedPreferences.getString(KEY_THEME, AppTheme.SYSTEM.name)
         return try {
-            AppTheme.valueOf(themeName ?: AppTheme.SYSTEM.name)
+            AppTheme.valueOf(themeName!!)
         } catch (e: Exception) {
             AppTheme.SYSTEM
         }
     }
 
     fun setTheme(theme: AppTheme) {
-        sharedPreferences.edit().putString(KEY_THEME, theme.name).apply()
+        sharedPreferences.edit { putString(KEY_THEME, theme.name) }
         _theme.value = theme
     }
 
@@ -58,7 +59,7 @@ class SettingsManager(context: Context) {
     }
 
     fun setHomeScreenRows(rows: Int) {
-        sharedPreferences.edit().putInt(KEY_HOME_SCREEN_ROWS, rows).apply()
+        sharedPreferences.edit { putInt(KEY_HOME_SCREEN_ROWS, rows) }
         _homeScreenRows.value = rows
     }
 }
