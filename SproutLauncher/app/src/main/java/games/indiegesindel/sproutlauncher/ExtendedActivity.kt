@@ -42,14 +42,6 @@ class ExtendedActivity : ComponentActivity() {
                     ExtendedViewModelFactory(appManager, packageManager)
                 )[ExtendedViewModel::class.java]
 
-                val lifecycleOwner = LocalLifecycleOwner.current
-                LaunchedEffect(lifecycleOwner) {
-                    lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                        viewModel.loadApps()
-                        viewModel.loadTiles()
-                    }
-                }
-
                 DisposableEffect(Unit) {
                     val receiver = object : BroadcastReceiver() {
                         override fun onReceive(context: Context?, intent: Intent?) {

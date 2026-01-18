@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
 import androidx.compose.material3.CircularProgressIndicator
 import games.indiegesindel.sproutlauncher.model.AppTile
 import android.view.KeyEvent
@@ -356,11 +358,17 @@ fun AppTileItem(
             contentAlignment = Alignment.Center
         ) {
             val appIcon = remember(tile.packageName) {
-                IconUtils.getFullSquareIcon(context, tile.packageName)
+                IconUtils.getFullSquareIcon(context, tile.packageName, 512)
             }
             
             AsyncImage(
-                model = tile.iconUri ?: appIcon,
+                model = remember(tile.iconUri, appIcon) {
+                    ImageRequest.Builder(context)
+                        .data(tile.iconUri ?: appIcon)
+                        .size(Size(512, 512))
+                        .crossfade(true)
+                        .build()
+                },
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds
