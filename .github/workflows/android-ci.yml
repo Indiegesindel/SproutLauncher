@@ -26,11 +26,16 @@ jobs:
         with:
           packages: |
             platform-tools
-            platforms;android-36
-            build-tools;36.0.0
+            platforms;android-35
+            build-tools;35.0.0
 
       - name: Setup Gradle caching
         uses: gradle/actions/setup-gradle@v4
+        with:
+          build-root-directory: SproutLauncher
+
+      - name: Remove local.properties (CI)
+        run: rm -f SproutLauncher/local.properties
 
       - name: Make Gradle wrapper executable (Linux)
         working-directory: SproutLauncher
