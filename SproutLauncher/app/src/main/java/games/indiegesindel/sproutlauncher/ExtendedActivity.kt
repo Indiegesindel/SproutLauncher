@@ -43,9 +43,11 @@ class ExtendedActivity : ComponentActivity() {
                 LaunchedEffect(intent) {
                     val filter = intent.getStringExtra("FILTER")
                     if (filter == "HOMESCREEN") {
-                        viewModel.setFilter(ExtendedViewModel.Filter.HOMESCREEN)
+                        viewModel.setTab(ExtendedViewModel.Tab.HOMESCREEN)
                     } else if (filter == "ALL") {
-                        viewModel.setFilter(ExtendedViewModel.Filter.ALL)
+                        viewModel.setTab(ExtendedViewModel.Tab.ALL)
+                    } else if (filter == "SETTINGS") {
+                        viewModel.setTab(ExtendedViewModel.Tab.SETTINGS)
                     }
                 }
 
@@ -76,6 +78,7 @@ class ExtendedActivity : ComponentActivity() {
 
                 ExtendedScreen(
                     viewModel = viewModel,
+                    settingsManager = settingsManager,
                     onBack = { finish() }
                 )
             }

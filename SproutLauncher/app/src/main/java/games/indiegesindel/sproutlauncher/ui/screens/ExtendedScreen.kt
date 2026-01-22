@@ -36,8 +36,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import games.indiegesindel.sproutlauncher.FocusedElement
-import games.indiegesindel.sproutlauncher.SettingsActivity
 import games.indiegesindel.sproutlauncher.data.AppManager
+import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
@@ -45,35 +45,10 @@ import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
 @Composable
 fun ExtendedScreen(
     viewModel: ExtendedViewModel,
+    settingsManager: SettingsManager,
     onBack: () -> Unit
 ) {
-    val context = LocalContext.current
-    val currentFilter by viewModel.currentFilter.collectAsState()
-    val focusedItemId by viewModel.focusedItemId.collectAsState()
-    val focusedElement by viewModel.focusedElement.collectAsState()
-    val selectedTiles by viewModel.selectedTiles.collectAsState()
-    val installedApps by viewModel.installedApps.collectAsState()
-    val isLoadingApps by viewModel.isLoadingApps.collectAsState()
-    val tileToRemove by viewModel.tileToRemove.collectAsState()
-
-    val appManager = remember { AppManager(context) }
-
-    val filteredApps = remember(installedApps, selectedTiles, currentFilter) {
-        if (currentFilter == ExtendedViewModel.Filter.HOMESCREEN) {
-            installedApps.filter { app ->
-                selectedTiles.any { it.packageName == app.activityInfo.packageName && it.activityName == app.activityInfo.name }
-            }
-        } else {
-            installedApps
-        }
-    }
-
-    if (tileToRemove != null) {
-        RemoveTileConfirmationDialog(
-            onConfirm = { viewModel.confirmRemoveTile() },
-            onDismiss = { viewModel.dismissRemoveConfirmation() }
-        )
-    }
+    val currentTab by viewModel.currentTab.collectAsState()
 
     Row(modifier = Modifier.fillMaxSize()) {
         NavigationRail(
@@ -95,8 +70,8 @@ fun ExtendedScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
             NavigationRailItem(
-                selected = currentFilter == ExtendedViewModel.Filter.ALL,
-                onClick = { viewModel.setFilter(ExtendedViewModel.Filter.ALL) },
+                selected = currentTab == ExtendedViewModel.Tab.ALL,
+                onClick = { viewModel.setTab(ExtendedViewModel.Tab.ALL) },
                 icon = { Icon(Icons.Default.Apps, contentDescription = "All Apps") },
                 label = { Text("All") },
                 modifier = Modifier.onFocusChanged {
@@ -104,8 +79,8 @@ fun ExtendedScreen(
                 }
             )
             NavigationRailItem(
-                selected = currentFilter == ExtendedViewModel.Filter.HOMESCREEN,
-                onClick = { viewModel.setFilter(ExtendedViewModel.Filter.HOMESCREEN) },
+                selected = currentTab == ExtendedViewModel.Tab.HOMESCREEN,
+                onClick = { viewModel.setTab(ExtendedViewModel.Tab.HOMESCREEN) },
                 icon = { Icon(Icons.Default.Home, contentDescription = "Homescreen") },
                 label = { Text("Homescreen") },
                 modifier = Modifier.onFocusChanged {
@@ -114,10 +89,8 @@ fun ExtendedScreen(
             )
             Spacer(modifier = Modifier.weight(1f))
             NavigationRailItem(
-                selected = false,
-                onClick = {
-                    context.startActivity(Intent(context, SettingsActivity::class.java))
-                },
+                selected = currentTab == ExtendedViewModel.Tab.SETTINGS,
+                onClick = { viewModel.setTab(ExtendedViewModel.Tab.SETTINGS) },
                 icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
                 label = { Text("Settings") },
                 modifier = Modifier.onFocusChanged {
@@ -126,61 +99,17 @@ fun ExtendedScreen(
             )
         }
 
-        Scaffold(
-            modifier = Modifier.weight(1f),
-            contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.displayCutout),
-            containerColor = MaterialTheme.colorScheme.background
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    // Grid Content
-                    Box(modifier = Modifier.weight(1f)) {
-                        AllAppsTab(
-                            installedApps = filteredApps,
-                            selectedTiles = selectedTiles,
-                            isLoading = isLoadingApps,
-                            appManager = appManager,
-                            onTilesChanged = { viewModel.loadTiles() },
-                            onRequestRemove = { viewModel.requestRemoveTile(it) },
-                            focusedItemId = focusedItemId,
-                            onFocusItemIdChanged = {
-                                viewModel.setFocusedItemId(it)
-                                if (it != null) viewModel.onFocusChanged(FocusedElement.APP_TILE)
-                            }
-                        )
-                    }
+        Box(modifier = Modifier.weight(1f)) {
+            when (currentTab) {
+                ExtendedViewModel.Tab.ALL, ExtendedViewModel.Tab.HOMESCREEN -> {
+                    AppListTab(viewModel = viewModel)
+                }
 
-                    // Input Prompts
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 32.dp, end = 32.dp, bottom = 12.dp, top = 0.dp)
-                            .height(32.dp),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            when (focusedElement) {
-                                FocusedElement.NAVIGATION_ITEM -> {
-                                    ButtonPrompt(button = "A", label = "Select")
-                                }
-
-                                FocusedElement.APP_TILE -> {
-                                    ButtonPrompt(button = "A", label = "Launch")
-                                    ButtonPrompt(button = "X", label = "Options")
-                                }
-
-                                else -> {}
-                            }
-                        }
-                    }
+                ExtendedViewModel.Tab.SETTINGS -> {
+                    SettingsTab(
+                        settingsManager = settingsManager,
+                        onBack = onBack
+                    )
                 }
             }
         }

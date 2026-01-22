@@ -46,7 +46,7 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
+fun SettingsTab(
     settingsManager: SettingsManager,
     onBack: () -> Unit
 ) {
@@ -71,69 +71,10 @@ fun SettingsScreen(
     val versionName = packageInfo.versionName ?: "Unknown"
     val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
-    Row(modifier = Modifier.fillMaxSize()) {
-        NavigationRail(
-            header = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            NavigationRailItem(
-                selected = false,
-                onClick = {
-                    val intent = Intent(context, ExtendedActivity::class.java).apply {
-                        putExtra("FILTER", "ALL")
-                    }
-                    context.startActivity(intent)
-                },
-                icon = { Icon(Icons.Default.Apps, contentDescription = "All Apps") },
-                label = { Text("All") }
-            )
-            NavigationRailItem(
-                selected = false,
-                onClick = {
-                    val intent = Intent(context, ExtendedActivity::class.java).apply {
-                        putExtra("FILTER", "HOMESCREEN")
-                    }
-                    context.startActivity(intent)
-                },
-                icon = { Icon(Icons.Default.Home, contentDescription = "Homescreen") },
-                label = { Text("Homescreen") }
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            NavigationRailItem(
-                selected = true,
-                onClick = { /* Already here */ },
-                icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                label = { Text("Settings") }
-            )
-        }
-
-        Scaffold(
-            modifier = Modifier
-                .weight(1f)
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = {
-                LargeTopAppBar(
-                    title = { Text("Settings") },
-                    scrollBehavior = scrollBehavior,
-                    colors = TopAppBarDefaults.largeTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
-                )
-            },
-            containerColor = MaterialTheme.colorScheme.background
-        ) { innerPadding ->
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -329,7 +270,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
-    }
     }
 
     if (showWallpaperDimDialog) {

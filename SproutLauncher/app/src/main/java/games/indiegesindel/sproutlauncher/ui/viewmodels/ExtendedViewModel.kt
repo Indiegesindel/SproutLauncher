@@ -19,7 +19,7 @@ class ExtendedViewModel(
     private val appManager: AppManager,
     private val packageManager: android.content.pm.PackageManager
 ) : ViewModel() {
-    enum class Filter { ALL, HOMESCREEN }
+    enum class Tab { ALL, HOMESCREEN, SETTINGS }
 
     private val _selectedTiles = MutableStateFlow<List<AppTile>>(emptyList())
     val selectedTiles: StateFlow<List<AppTile>> = _selectedTiles.asStateFlow()
@@ -30,8 +30,8 @@ class ExtendedViewModel(
     private val _isLoadingApps = MutableStateFlow(true)
     val isLoadingApps: StateFlow<Boolean> = _isLoadingApps.asStateFlow()
 
-    private val _currentFilter = MutableStateFlow(Filter.ALL)
-    val currentFilter: StateFlow<Filter> = _currentFilter.asStateFlow()
+    private val _currentTab = MutableStateFlow(Tab.ALL)
+    val currentTab: StateFlow<Tab> = _currentTab.asStateFlow()
 
     private val _focusedItemId = MutableStateFlow<String?>(null)
     val focusedItemId: StateFlow<String?> = _focusedItemId.asStateFlow()
@@ -72,8 +72,8 @@ class ExtendedViewModel(
         }
     }
 
-    fun setFilter(filter: Filter) {
-        _currentFilter.value = filter
+    fun setTab(tab: Tab) {
+        _currentTab.value = tab
         _focusedItemId.value = null
     }
 
