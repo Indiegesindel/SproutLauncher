@@ -35,6 +35,8 @@ import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.ui.theme.*
 import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
 import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
+import games.indiegesindel.sproutlauncher.ui.components.SettingsDialogItem
+import games.indiegesindel.sproutlauncher.ui.components.SproutAlertDialog
 import games.indiegesindel.sproutlauncher.utils.FileUtils
 import kotlin.math.roundToInt
 
@@ -50,6 +52,16 @@ fun SettingsScreen(
     val showYouTube by settingsManager.showYouTube.collectAsState()
     val showDiscord by settingsManager.showDiscord.collectAsState()
     val showSpotify by settingsManager.showSpotify.collectAsState()
+
+    val currentRows by settingsManager.homeScreenRows.collectAsState()
+    val horizontalSpacing by settingsManager.horizontalSpacing.collectAsState()
+    val verticalSpacing by settingsManager.verticalSpacing.collectAsState()
+    val wallpaperDim by settingsManager.wallpaperDim.collectAsState()
+
+    var showWallpaperDimDialog by remember { mutableStateOf(false) }
+    var showRowsDialog by remember { mutableStateOf(false) }
+    var showHorizontalSpacingDialog by remember { mutableStateOf(false) }
+    var showVerticalSpacingDialog by remember { mutableStateOf(false) }
     
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val versionName = packageInfo.versionName ?: "Unknown"
@@ -201,50 +213,33 @@ fun SettingsScreen(
                 )
 
                 if (wallpaperUri != null) {
-                    val wallpaperDim by settingsManager.wallpaperDim.collectAsState()
-                    SliderSetting(
+                    SettingsDialogItem(
                         label = "Wallpaper Dimming",
-                        value = (wallpaperDim * 100f).roundToInt(),
-                        valueRange = 0f..100f,
-                        steps = 99,
-                        onValueChange = { settingsManager.setWallpaperDim(it / 100f) },
-                        valueDisplay = { "$it%" }
+                        value = "${(wallpaperDim * 100f).roundToInt()}%",
+                        onClick = { showWallpaperDimDialog = true }
                     )
                 }
             }
 
-            val currentRows by settingsManager.homeScreenRows.collectAsState()
-            val horizontalSpacing by settingsManager.horizontalSpacing.collectAsState()
-            val verticalSpacing by settingsManager.verticalSpacing.collectAsState()
-
             SettingsSectionHeader(title = "Grid Spacing")
 
             SettingsCard {
-                SliderSetting(
+                SettingsDialogItem(
                     label = "Number of Rows",
-                    value = currentRows,
-                    valueRange = 1f..5f,
-                    steps = 3,
-                    onValueChange = { settingsManager.setHomeScreenRows(it) },
-                    valueDisplay = { if (it == 1) "1 Row" else "$it Rows" }
+                    value = if (currentRows == 1) "1 Row" else "$currentRows Rows",
+                    onClick = { showRowsDialog = true }
                 )
 
-                SliderSetting(
+                SettingsDialogItem(
                     label = "Horizontal Spacing",
-                    value = horizontalSpacing,
-                    valueRange = 0f..64f,
-                    steps = 63,
-                    onValueChange = { settingsManager.setHorizontalSpacing(it) },
-                    valueDisplay = { "${it}dp" }
+                    value = "${horizontalSpacing}dp",
+                    onClick = { showHorizontalSpacingDialog = true }
                 )
 
-                SliderSetting(
+                SettingsDialogItem(
                     label = "Vertical Spacing",
-                    value = verticalSpacing,
-                    valueRange = 0f..64f,
-                    steps = 63,
-                    onValueChange = { settingsManager.setVerticalSpacing(it) },
-                    valueDisplay = { "${it}dp" }
+                    value = "${verticalSpacing}dp",
+                    onClick = { showVerticalSpacingDialog = true }
                 )
             }
 
@@ -290,6 +285,94 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+
+    if (showWallpaperDimDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showWallpaperDimDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showWallpaperDimDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("Wallpaper Dimming") },
+            text = {
+                SliderSetting(
+                    label = "Amount",
+                    value = (wallpaperDim * 100f).roundToInt(),
+                    valueRange = 0f..100f,
+                    steps = 99,
+                    onValueChange = { settingsManager.setWallpaperDim(it / 100f) },
+                    valueDisplay = { "$it%" }
+                )
+            }
+        )
+    }
+
+    if (showRowsDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showRowsDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showRowsDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("Number of Rows") },
+            text = {
+                SliderSetting(
+                    label = "Rows",
+                    value = currentRows,
+                    valueRange = 1f..5f,
+                    steps = 3,
+                    onValueChange = { settingsManager.setHomeScreenRows(it) },
+                    valueDisplay = { if (it == 1) "1 Row" else "$it Rows" }
+                )
+            }
+        )
+    }
+
+    if (showHorizontalSpacingDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showHorizontalSpacingDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showHorizontalSpacingDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("Horizontal Spacing") },
+            text = {
+                SliderSetting(
+                    label = "Spacing",
+                    value = horizontalSpacing,
+                    valueRange = 0f..64f,
+                    steps = 63,
+                    onValueChange = { settingsManager.setHorizontalSpacing(it) },
+                    valueDisplay = { "${it}dp" }
+                )
+            }
+        )
+    }
+
+    if (showVerticalSpacingDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showVerticalSpacingDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showVerticalSpacingDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("Vertical Spacing") },
+            text = {
+                SliderSetting(
+                    label = "Spacing",
+                    value = verticalSpacing,
+                    valueRange = 0f..64f,
+                    steps = 63,
+                    onValueChange = { settingsManager.setVerticalSpacing(it) },
+                    valueDisplay = { "${it}dp" }
+                )
+            }
+        )
     }
 }
 

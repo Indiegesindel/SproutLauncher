@@ -42,6 +42,10 @@ import games.indiegesindel.sproutlauncher.ui.viewmodels.AppTileSettingsViewModel
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
 import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
+import games.indiegesindel.sproutlauncher.ui.components.SettingsDialogItem
+import games.indiegesindel.sproutlauncher.ui.components.SproutAlertDialog
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +59,8 @@ fun AppTileSettingsScreen(
     val label by viewModel.label.collectAsState()
     val iconUri by viewModel.iconUri.collectAsState()
     val showDeleteConfirm by viewModel.showDeleteConfirm.collectAsState()
+
+    var showLabelDialog by remember { mutableStateOf(false) }
 
     if (tile == null) {
         onDone()
@@ -163,14 +169,10 @@ fun AppTileSettingsScreen(
 
             SettingsSectionHeader(title = "General")
             SettingsCard {
-                OutlinedTextField(
+                SettingsDialogItem(
+                    label = "Label",
                     value = label,
-                    onValueChange = { viewModel.onLabelChanged(it) },
-                    label = { Text("Label") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    singleLine = true
+                    onClick = { showLabelDialog = true }
                 )
             }
 
@@ -211,5 +213,26 @@ fun AppTileSettingsScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+
+    if (showLabelDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showLabelDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showLabelDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("Edit Label") },
+            text = {
+                OutlinedTextField(
+                    value = label,
+                    onValueChange = { viewModel.onLabelChanged(it) },
+                    label = { Text("Label") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        )
     }
 }
