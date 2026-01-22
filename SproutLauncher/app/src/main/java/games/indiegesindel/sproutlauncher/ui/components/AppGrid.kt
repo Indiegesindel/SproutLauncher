@@ -48,8 +48,13 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
 import androidx.compose.material3.CircularProgressIndicator
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import games.indiegesindel.sproutlauncher.model.AppTile
 import android.view.KeyEvent
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -205,6 +210,7 @@ fun AppGrid(
                     index = index,
                     onClick = { onAppClick(tile) },
                     onSettings = { onSettings(tile) },
+                    onRemove = { onRemove(tile) },
                     onMove = { direction -> moveItem(index, direction) },
                     reorderableState = reorderableState,
                     isTargetFocused = focusedItemId == tileId,
@@ -222,6 +228,7 @@ fun AppTileItem(
     index: Int,
     onClick: () -> Unit,
     onSettings: () -> Unit,
+    onRemove: () -> Unit,
     onMove: (String) -> Unit,
     reorderableState: ReorderableLazyGridState,
     isTargetFocused: Boolean,
@@ -231,6 +238,7 @@ fun AppTileItem(
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     var isXPressed by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(isTargetFocused) {
         if (isTargetFocused) {
@@ -275,7 +283,7 @@ fun AppTileItem(
                         }
                         KeyEvent.KEYCODE_BUTTON_START,
                         KeyEvent.KEYCODE_MENU -> {
-                            onSettings()
+                            showMenu = true
                             true
                         }
                         else -> false
@@ -355,7 +363,7 @@ fun AppTileItem(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .combinedClickable(
                     onClick = onClick,
-                    onDoubleClick = onSettings
+                    onLongClick = { showMenu = true }
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -374,6 +382,57 @@ fun AppTileItem(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds
+            )
+        }
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Launch") },
+                onClick = {
+                    showMenu = false
+                    onClick()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Edit") },
+                onClick = {
+                    showMenu = false
+                    onSettings()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Details") },
+                onClick = {
+                    showMenu = false
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:${tile.packageName}")
+                    }
+                    context.startActivity(intent)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Remove from Homescreen") },
+                onClick = {
+                    showMenu = false
+                    onRemove()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Uninstall") },
+                onClick = {
+                    showMenu = false
+                    val intent = Intent(Intent.ACTION_DELETE).apply {
+                        data = Uri.parse("package:${tile.packageName}")
+                    }
+                    try {
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        // Log or handle error
+                    }
+                }
             )
         }
     }

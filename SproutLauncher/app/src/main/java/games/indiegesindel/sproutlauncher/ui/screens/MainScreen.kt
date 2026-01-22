@@ -37,6 +37,7 @@ import games.indiegesindel.sproutlauncher.FocusedElement
 import games.indiegesindel.sproutlauncher.ui.components.AppGrid
 import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
 import games.indiegesindel.sproutlauncher.ui.components.QuickActionsBar
+import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.viewmodels.MainViewModel
 
 @Composable
@@ -57,6 +58,7 @@ fun MainScreen(
     val showYouTube by viewModel.showYouTube.collectAsState()
     val showDiscord by viewModel.showDiscord.collectAsState()
     val showSpotify by viewModel.showSpotify.collectAsState()
+    val tileToRemove by viewModel.tileToRemove.collectAsState()
 
     fun launchApp(packageName: String) {
         try {
@@ -69,6 +71,13 @@ fun MainScreen(
         } catch (e: Exception) {
             Toast.makeText(context, "Could not launch $packageName", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    if (tileToRemove != null) {
+        RemoveTileConfirmationDialog(
+            onConfirm = { viewModel.confirmRemoveTile() },
+            onDismiss = { viewModel.dismissRemoveConfirmation() }
+        )
     }
 
     Scaffold(
@@ -130,7 +139,7 @@ fun MainScreen(
                                 }
                             },
                             onRemove = { tile ->
-                                viewModel.removeAppTile(tile.id)
+                                viewModel.requestRemoveTile(tile)
                             },
                             onSettings = { tile ->
                                 val intent =

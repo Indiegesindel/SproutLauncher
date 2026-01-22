@@ -1,5 +1,8 @@
 package games.indiegesindel.sproutlauncher.ui.components
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.view.KeyEvent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -53,6 +56,7 @@ fun AppGridItem(
     isOnHomeScreen: Boolean,
     tile: AppTile?,
     onToggleHomeScreen: () -> Unit,
+    onEdit: () -> Unit = {},
     id: String? = null,
     isTargetFocused: Boolean = false,
     onFocused: (String) -> Unit = {}
@@ -114,7 +118,6 @@ fun AppGridItem(
                 .background(
                     color = when {
                         isFocused -> MaterialTheme.colorScheme.primaryContainer
-                        isOnHomeScreen -> MaterialTheme.colorScheme.secondaryContainer
                         else -> Color.Transparent
                     },
                     shape = RoundedCornerShape(16.dp)
@@ -137,21 +140,6 @@ fun AppGridItem(
                     contentDescription = null,
                     modifier = Modifier.size(64.dp)
                 )
-                if (isOnHomeScreen) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .size(16.dp)
-                            .background(
-                                color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                                shape = CircleShape
-                            )
-                            .padding(2.dp),
-                        tint = if (isFocused) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary
-                    )
-                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -163,7 +151,6 @@ fun AppGridItem(
                 modifier = Modifier.fillMaxWidth(),
                 color = when {
                     isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
-                    isOnHomeScreen -> MaterialTheme.colorScheme.onSecondaryContainer
                     else -> MaterialTheme.colorScheme.onSurface
                 }
             )
@@ -183,11 +170,44 @@ fun AppGridItem(
                     }
                 }
             )
+            if (isOnHomeScreen) {
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    onClick = {
+                        showMenu = false
+                        onEdit()
+                    }
+                )
+            }
+            DropdownMenuItem(
+                text = { Text("Details") },
+                onClick = {
+                    showMenu = false
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:${app.activityInfo.packageName}")
+                    }
+                    context.startActivity(intent)
+                }
+            )
             DropdownMenuItem(
                 text = { Text(if (isOnHomeScreen) "Remove from Homescreen" else "Add to Homescreen") },
                 onClick = {
                     showMenu = false
                     onToggleHomeScreen()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Uninstall") },
+                onClick = {
+                    showMenu = false
+                    val intent = Intent(Intent.ACTION_DELETE).apply {
+                        data = Uri.parse("package:${app.activityInfo.packageName}")
+                    }
+                    try {
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        // Log or handle error
+                    }
                 }
             )
         }

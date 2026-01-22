@@ -67,6 +67,14 @@ class AppManager(private val context: Context) {
         saveAppTiles(currentTiles)
     }
 
+    /**
+     * Removes all app tiles associated with a given package name.
+     */
+    fun removeTilesForPackage(packageName: String) {
+        val currentTiles = getAppTiles().filter { it.packageName != packageName }
+        saveAppTiles(currentTiles)
+    }
+
 
     /**
      * Saves the entire list of app tiles.
