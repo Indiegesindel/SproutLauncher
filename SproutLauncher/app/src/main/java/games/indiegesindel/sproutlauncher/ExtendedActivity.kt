@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -38,6 +39,15 @@ class ExtendedActivity : ComponentActivity() {
                     this,
                     ExtendedViewModelFactory(appManager, packageManager)
                 )[ExtendedViewModel::class.java]
+
+                LaunchedEffect(intent) {
+                    val filter = intent.getStringExtra("FILTER")
+                    if (filter == "HOMESCREEN") {
+                        viewModel.setFilter(ExtendedViewModel.Filter.HOMESCREEN)
+                    } else if (filter == "ALL") {
+                        viewModel.setFilter(ExtendedViewModel.Filter.ALL)
+                    }
+                }
 
                 DisposableEffect(Unit) {
                     val receiver = object : BroadcastReceiver() {
@@ -70,5 +80,10 @@ class ExtendedActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
     }
 }
