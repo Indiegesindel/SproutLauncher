@@ -1,9 +1,14 @@
 package games.indiegesindel.sproutlauncher
-
+ 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,6 +47,30 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                         viewModel.loadAppTiles()
+                    }
+                }
+
+                DisposableEffect(Unit) {
+                    val receiver = object : BroadcastReceiver() {
+                        override fun onReceive(context: Context?, intent: Intent?) {
+                            if (intent?.action == Intent.ACTION_PACKAGE_REMOVED) {
+                                val packageName = intent.data?.schemeSpecificPart
+                                if (packageName != null && !intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) {
+                                    appManager.removeTilesForPackage(packageName)
+                                }
+                            }
+                            viewModel.loadAppTiles()
+                        }
+                    }
+                    val filter = IntentFilter().apply {
+                        addAction(Intent.ACTION_PACKAGE_ADDED)
+                        addAction(Intent.ACTION_PACKAGE_REMOVED)
+                        addAction(Intent.ACTION_PACKAGE_REPLACED)
+                        addDataScheme("package")
+                    }
+                    context.registerReceiver(receiver, filter)
+                    onDispose {
+                        context.unregisterReceiver(receiver)
                     }
                 }
 

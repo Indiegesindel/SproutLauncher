@@ -52,6 +52,11 @@ class AppManager(private val context: Context) {
         saveAppTiles(currentTiles)
     }
 
+    fun removeTilesForPackage(packageName: String) {
+        val currentTiles = getAppTiles().filter { it.packageName != packageName }
+        saveAppTiles(currentTiles)
+    }
+
 
     fun saveAppTiles(tiles: List<AppTile>) {
         val jsonArray = JSONArray()

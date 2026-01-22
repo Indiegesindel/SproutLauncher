@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
+import games.indiegesindel.sproutlauncher.AppTileSettingsActivity
 import games.indiegesindel.sproutlauncher.data.AppManager
+import android.content.Intent
 import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.components.AppGridItem
 
@@ -79,6 +81,14 @@ fun AllAppsTab(
                             onTilesChanged(appManager.getAppTiles())
                         } else {
                             tile.let { onRequestRemove(it) }
+                        }
+                    },
+                    onEdit = {
+                        tile?.let {
+                            val intent = Intent(context, AppTileSettingsActivity::class.java).apply {
+                                putExtra("TILE_ID", it.id)
+                            }
+                            context.startActivity(intent)
                         }
                     },
                     id = itemId,

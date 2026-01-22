@@ -42,7 +42,14 @@ class ExtendedActivity : ComponentActivity() {
                 DisposableEffect(Unit) {
                     val receiver = object : BroadcastReceiver() {
                         override fun onReceive(context: Context?, intent: Intent?) {
+                            if (intent?.action == Intent.ACTION_PACKAGE_REMOVED) {
+                                val packageName = intent.data?.schemeSpecificPart
+                                if (packageName != null && !intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) {
+                                    appManager.removeTilesForPackage(packageName)
+                                }
+                            }
                             viewModel.loadApps()
+                            viewModel.loadTiles()
                         }
                     }
                     val filter = IntentFilter().apply {

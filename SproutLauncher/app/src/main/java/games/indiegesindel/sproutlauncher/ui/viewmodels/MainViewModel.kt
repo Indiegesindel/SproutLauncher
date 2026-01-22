@@ -37,6 +37,9 @@ class MainViewModel(
     private val _focusedItemId = MutableStateFlow<String?>(null)
     val focusedItemId: StateFlow<String?> = _focusedItemId.asStateFlow()
 
+    private val _tileToRemove = MutableStateFlow<AppTile?>(null)
+    val tileToRemove: StateFlow<AppTile?> = _tileToRemove.asStateFlow()
+
     private val _installedQuickActions = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val installedQuickActions: StateFlow<Map<String, Boolean>> = _installedQuickActions.asStateFlow()
 
@@ -58,6 +61,22 @@ class MainViewModel(
         )
         val status = apps.associateWith { appManager.isPackageInstalled(it) }
         _installedQuickActions.value = status
+    }
+
+    fun requestRemoveTile(tile: AppTile) {
+        _tileToRemove.value = tile
+    }
+
+    fun dismissRemoveConfirmation() {
+        _tileToRemove.value = null
+    }
+
+    fun confirmRemoveTile() {
+        _tileToRemove.value?.let {
+            appManager.removeAppTile(it.id)
+            loadAppTiles()
+            _tileToRemove.value = null
+        }
     }
 
     fun removeAppTile(tileId: String) {
