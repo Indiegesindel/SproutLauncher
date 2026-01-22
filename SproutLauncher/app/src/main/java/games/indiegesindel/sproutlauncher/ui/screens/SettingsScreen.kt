@@ -14,6 +14,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.res.painterResource
 import games.indiegesindel.sproutlauncher.R
 import androidx.compose.material3.*
@@ -32,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import coil.compose.AsyncImage
 import games.indiegesindel.sproutlauncher.data.BaseTheme
 import games.indiegesindel.sproutlauncher.data.SettingsManager
+import games.indiegesindel.sproutlauncher.ExtendedActivity
 import games.indiegesindel.sproutlauncher.ui.theme.*
 import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
 import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
@@ -69,27 +73,67 @@ fun SettingsScreen(
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+    Row(modifier = Modifier.fillMaxSize()) {
+        NavigationRail(
+            header = {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            NavigationRailItem(
+                selected = false,
+                onClick = {
+                    val intent = Intent(context, ExtendedActivity::class.java).apply {
+                        putExtra("FILTER", "ALL")
                     }
+                    context.startActivity(intent)
                 },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                icon = { Icon(Icons.Default.Apps, contentDescription = "All Apps") },
+                label = { Text("All") }
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
+            NavigationRailItem(
+                selected = false,
+                onClick = {
+                    val intent = Intent(context, ExtendedActivity::class.java).apply {
+                        putExtra("FILTER", "HOMESCREEN")
+                    }
+                    context.startActivity(intent)
+                },
+                icon = { Icon(Icons.Default.Home, contentDescription = "Homescreen") },
+                label = { Text("Homescreen") }
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            NavigationRailItem(
+                selected = true,
+                onClick = { /* Already here */ },
+                icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                label = { Text("Settings") }
+            )
+        }
+
+        Scaffold(
+            modifier = Modifier
+                .weight(1f)
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text("Settings") },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -285,6 +329,7 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
     }
 
     if (showWallpaperDimDialog) {

@@ -15,20 +15,17 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.ui.graphics.Color
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,7 +42,6 @@ import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExtendedScreen(
     viewModel: ExtendedViewModel,
@@ -72,8 +68,6 @@ fun ExtendedScreen(
         }
     }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
     if (tileToRemove != null) {
         RemoveTileConfirmationDialog(
             onConfirm = { viewModel.confirmRemoveTile() },
@@ -81,142 +75,110 @@ fun ExtendedScreen(
         )
     }
 
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = { Text("Apps", style = MaterialTheme.typography.headlineMedium) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back to Home"
-                        )
+    Row(modifier = Modifier.fillMaxSize()) {
+        NavigationRail(
+            header = {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.onFocusChanged {
+                        if (it.isFocused) viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
                     }
-                },
-                actions = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        FilterChip(
-                            selected = currentFilter == ExtendedViewModel.Filter.ALL,
-                            onClick = { viewModel.setFilter(ExtendedViewModel.Filter.ALL) },
-                            label = { Text("All") },
-                            modifier = Modifier.onFocusChanged {
-                                if (it.isFocused) viewModel.onFocusChanged(FocusedElement.FILTER)
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = Color.Transparent,
-                                labelColor = MaterialTheme.colorScheme.onSurface,
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = currentFilter == ExtendedViewModel.Filter.ALL,
-                                borderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        FilterChip(
-                            selected = currentFilter == ExtendedViewModel.Filter.HOMESCREEN,
-                            onClick = { viewModel.setFilter(ExtendedViewModel.Filter.HOMESCREEN) },
-                            label = { Text("Homescreen") },
-                            modifier = Modifier.onFocusChanged {
-                                if (it.isFocused) viewModel.onFocusChanged(FocusedElement.FILTER)
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = Color.Transparent,
-                                labelColor = MaterialTheme.colorScheme.onSurface,
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = currentFilter == ExtendedViewModel.Filter.HOMESCREEN,
-                                borderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        IconButton(
-                            onClick = {
-                                context.startActivity(Intent(context, SettingsActivity::class.java))
-                            },
-                            modifier = Modifier.onFocusChanged {
-                                if (it.isFocused) viewModel.onFocusChanged(FocusedElement.SETTINGS_BUTTON)
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Settings"
-                            )
-                        }
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
-            )
-        },
-        contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.displayCutout),
-        containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                // Grid Content
-                Box(modifier = Modifier.weight(1f)) {
-                    AllAppsTab(
-                        installedApps = filteredApps,
-                        selectedTiles = selectedTiles,
-                        isLoading = isLoadingApps,
-                        appManager = appManager,
-                        onTilesChanged = { viewModel.loadTiles() },
-                        onRequestRemove = { viewModel.requestRemoveTile(it) },
-                        focusedItemId = focusedItemId,
-                        onFocusItemIdChanged = {
-                            viewModel.setFocusedItemId(it)
-                            if (it != null) viewModel.onFocusChanged(FocusedElement.APP_TILE)
-                        }
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back to Home"
                     )
                 }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            NavigationRailItem(
+                selected = currentFilter == ExtendedViewModel.Filter.ALL,
+                onClick = { viewModel.setFilter(ExtendedViewModel.Filter.ALL) },
+                icon = { Icon(Icons.Default.Apps, contentDescription = "All Apps") },
+                label = { Text("All") },
+                modifier = Modifier.onFocusChanged {
+                    if (it.isFocused) viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                }
+            )
+            NavigationRailItem(
+                selected = currentFilter == ExtendedViewModel.Filter.HOMESCREEN,
+                onClick = { viewModel.setFilter(ExtendedViewModel.Filter.HOMESCREEN) },
+                icon = { Icon(Icons.Default.Home, contentDescription = "Homescreen") },
+                label = { Text("Homescreen") },
+                modifier = Modifier.onFocusChanged {
+                    if (it.isFocused) viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                }
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            NavigationRailItem(
+                selected = false,
+                onClick = {
+                    context.startActivity(Intent(context, SettingsActivity::class.java))
+                },
+                icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                label = { Text("Settings") },
+                modifier = Modifier.onFocusChanged {
+                    if (it.isFocused) viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                }
+            )
+        }
 
-                // Input Prompts
-                Box(
+        Scaffold(
+            modifier = Modifier.weight(1f),
+            contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.displayCutout),
+            containerColor = MaterialTheme.colorScheme.background
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 32.dp, end = 32.dp, bottom = 12.dp, top = 0.dp)
-                        .height(32.dp),
-                    contentAlignment = Alignment.BottomEnd
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+                    // Grid Content
+                    Box(modifier = Modifier.weight(1f)) {
+                        AllAppsTab(
+                            installedApps = filteredApps,
+                            selectedTiles = selectedTiles,
+                            isLoading = isLoadingApps,
+                            appManager = appManager,
+                            onTilesChanged = { viewModel.loadTiles() },
+                            onRequestRemove = { viewModel.requestRemoveTile(it) },
+                            focusedItemId = focusedItemId,
+                            onFocusItemIdChanged = {
+                                viewModel.setFocusedItemId(it)
+                                if (it != null) viewModel.onFocusChanged(FocusedElement.APP_TILE)
+                            }
+                        )
+                    }
+
+                    // Input Prompts
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 32.dp, end = 32.dp, bottom = 12.dp, top = 0.dp)
+                            .height(32.dp),
+                        contentAlignment = Alignment.BottomEnd
                     ) {
-                        when (focusedElement) {
-                            FocusedElement.FILTER -> {
-                                ButtonPrompt(button = "A", label = "Filter")
-                            }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            when (focusedElement) {
+                                FocusedElement.NAVIGATION_ITEM -> {
+                                    ButtonPrompt(button = "A", label = "Select")
+                                }
 
-                            FocusedElement.SETTINGS_BUTTON -> {
-                                ButtonPrompt(button = "A", label = "Launch")
-                            }
+                                FocusedElement.APP_TILE -> {
+                                    ButtonPrompt(button = "A", label = "Launch")
+                                    ButtonPrompt(button = "X", label = "Options")
+                                }
 
-                            FocusedElement.APP_TILE -> {
-                                ButtonPrompt(button = "A", label = "Launch")
-                                ButtonPrompt(button = "X", label = "Options")
+                                else -> {}
                             }
-
-                            else -> {}
                         }
                     }
                 }
