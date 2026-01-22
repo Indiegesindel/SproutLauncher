@@ -54,12 +54,6 @@
             android:screenOrientation="landscape"
             tools:ignore="DiscouragedApi"
             android:theme="@style/Theme.SproutLauncher" />
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false"
-            android:screenOrientation="landscape"
-            tools:ignore="DiscouragedApi"
-            android:theme="@style/Theme.SproutLauncher" />
     </application>
 
 </manifest>
