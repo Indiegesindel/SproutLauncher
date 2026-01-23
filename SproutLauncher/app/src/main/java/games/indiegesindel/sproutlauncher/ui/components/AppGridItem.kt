@@ -90,7 +90,6 @@ fun AppGridItem(
     ) {
         Column(
             modifier = Modifier
-                .padding(4.dp)
                 .focusRequester(focusRequester)
                 .onFocusChanged {
                     isFocused = it.isFocused

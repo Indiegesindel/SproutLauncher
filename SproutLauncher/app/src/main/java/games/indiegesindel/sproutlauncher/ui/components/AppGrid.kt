@@ -306,8 +306,7 @@ fun AppTileItem(
                     }
                 )
             }
-            .fillMaxHeight()
-            .padding(8.dp),
+            .fillMaxHeight(),
         contentAlignment = Alignment.Center
     ) {
         if (isFocused && !isDragging && !isYPressed) {
