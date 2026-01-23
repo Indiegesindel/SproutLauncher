@@ -17,8 +17,8 @@ class SettingsManager(context: Context) {
 
     private val isPhone = context.resources.configuration.smallestScreenWidthDp < 600
     private val defaultRows = if (isPhone) 1 else 2
-    private val defaultSpacing = 8
-    private val defaultRoundness = 16
+    private val defaultSpacing = 24
+    private val defaultRoundness = 12
 
     private val _baseTheme = MutableStateFlow(loadBaseTheme())
     val baseTheme: StateFlow<BaseTheme> = _baseTheme.asStateFlow()
