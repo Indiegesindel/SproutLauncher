@@ -230,12 +230,13 @@ fun MainScreen(
                         ) {
                             when (focusedElement) {
                                 FocusedElement.APP_TILE -> {
-                                    ButtonPrompt(button = "+", label = "Settings")
-                                    ButtonPrompt(button = "X", label = "Move (Hold)")
+                                    ButtonPrompt(button = "Y", label = "Move (Hold)")
+                                    ButtonPrompt(button = "X", label = "Options (Double Tap)")
                                     ButtonPrompt(button = "A", label = "Launch")
                                 }
 
                                 FocusedElement.QUICK_ACTION -> {
+                                    ButtonPrompt(button = "X", label = "Options")
                                     ButtonPrompt(button = "A", label = "Launch")
                                 }
 

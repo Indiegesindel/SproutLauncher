@@ -107,7 +107,7 @@ fun AppListTab(
 
                             FocusedElement.APP_TILE -> {
                                 ButtonPrompt(button = "A", label = "Launch")
-                                ButtonPrompt(button = "X", label = "Options")
+                                ButtonPrompt(button = "X", label = "Options (Double Tap)")
                             }
 
                             else -> {}

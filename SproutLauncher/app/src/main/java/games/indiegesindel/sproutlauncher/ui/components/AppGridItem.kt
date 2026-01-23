@@ -98,7 +98,11 @@ fun AppGridItem(
                 }
                 .onKeyEvent { event ->
                     val isDown = event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN
-                    if (isDown && event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_X) {
+                    if (isDown && (
+                        event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_X ||
+                        event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_START ||
+                        event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_MENU
+                    )) {
                         showMenu = true
                         true
                     } else if (isDown && (
@@ -129,6 +133,7 @@ fun AppGridItem(
                             context.startActivity(intent)
                         }
                     },
+                    onDoubleClick = { showMenu = true },
                     onLongClick = { showMenu = true }
                 )
                 .padding(8.dp),

@@ -237,7 +237,7 @@ fun AppTileItem(
     val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
-    var isXPressed by remember { mutableStateOf(false) }
+    var isYPressed by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(isTargetFocused) {
@@ -260,12 +260,12 @@ fun AppTileItem(
             .onKeyEvent { event ->
                 val isDown = event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN
                 
-                if (event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_X) {
-                    isXPressed = isDown
+                if (event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_Y) {
+                    isYPressed = isDown
                     return@onKeyEvent true
                 }
                 
-                if (isXPressed && isDown) {
+                if (isYPressed && isDown) {
                     when (event.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_W -> { onMove("UP"); true }
                         KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_S -> { onMove("DOWN"); true }
@@ -281,6 +281,7 @@ fun AppTileItem(
                             onClick()
                             true
                         }
+                        KeyEvent.KEYCODE_BUTTON_X,
                         KeyEvent.KEYCODE_BUTTON_START,
                         KeyEvent.KEYCODE_MENU -> {
                             showMenu = true
@@ -309,7 +310,7 @@ fun AppTileItem(
         contentAlignment = Alignment.Center
     ) {
         // Tooltip
-        if (isFocused && !isDragging && !isXPressed) {
+        if (isFocused && !isDragging && !isYPressed) {
             val density = LocalDensity.current
             val yOffset = with(density) { (-30).dp.roundToPx() }
             Popup(
@@ -348,7 +349,7 @@ fun AppTileItem(
                 .aspectRatio(1f)
                 .offset { dragOffset }
                 .graphicsLayer {
-                    if (isDragging || isXPressed) {
+                    if (isDragging || isYPressed) {
                         alpha = 0.8f
                         scaleX = 1.15f
                         scaleY = 1.15f
@@ -363,7 +364,7 @@ fun AppTileItem(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .combinedClickable(
                     onClick = onClick,
-                    onLongClick = { showMenu = true }
+                    onDoubleClick = { showMenu = true }
                 ),
             contentAlignment = Alignment.Center
         ) {
