@@ -308,8 +308,7 @@ fun AppTileItem(
                     }
                 )
             }
-            .fillMaxHeight()
-            .padding(8.dp),
+            .fillMaxHeight(),
         contentAlignment = Alignment.Center
     ) {
         // Tooltip
