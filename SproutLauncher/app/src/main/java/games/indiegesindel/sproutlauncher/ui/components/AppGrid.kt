@@ -150,7 +150,8 @@ fun AppGrid(
     onFocusChanged: (Boolean) -> Unit = {},
     focusedItemId: String? = null,
     onFocusItemIdChanged: (String?) -> Unit = {},
-    onDragEnd: () -> Unit = {}
+    onDragEnd: () -> Unit = {},
+    roundness: Int = 16
 ) {
     val configuration = LocalConfiguration.current
     val isPhone = configuration.smallestScreenWidthDp < 600
@@ -212,7 +213,8 @@ fun AppGrid(
                     onMove = { direction -> moveItem(index, direction) },
                     reorderableState = reorderableState,
                     isTargetFocused = focusedItemId == tileId,
-                    onFocused = { onFocusItemIdChanged(tileId) }
+                    onFocused = { onFocusItemIdChanged(tileId) },
+                    roundness = roundness
                 )
             }
         }
@@ -230,7 +232,8 @@ fun AppTileItem(
     onMove: (String) -> Unit,
     reorderableState: ReorderableLazyGridState,
     isTargetFocused: Boolean,
-    onFocused: () -> Unit
+    onFocused: () -> Unit,
+    roundness: Int = 16
 ) {
     val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
@@ -353,11 +356,11 @@ fun AppTileItem(
                     }
                 }
                 .then(
-                    if (isFocused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(22.dp))
+                    if (isFocused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 6).dp))
                     else Modifier
                 )
                 .padding(if (isFocused) 6.dp else 0.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(roundness.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .combinedClickable(
                     onClick = onClick,

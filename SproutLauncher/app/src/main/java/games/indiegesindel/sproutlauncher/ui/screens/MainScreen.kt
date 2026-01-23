@@ -52,6 +52,7 @@ fun MainScreen(
     val homeScreenRows by viewModel.homeScreenRows.collectAsState()
     val horizontalSpacing by viewModel.horizontalSpacing.collectAsState()
     val verticalSpacing by viewModel.verticalSpacing.collectAsState()
+    val appTileRoundness by viewModel.appTileRoundness.collectAsState()
     val installedQuickActions by viewModel.installedQuickActions.collectAsState()
     val wallpaperUri by viewModel.wallpaperUri.collectAsState()
     val wallpaperDim by viewModel.wallpaperDim.collectAsState()
@@ -159,6 +160,7 @@ fun MainScreen(
                             },
                             focusedItemId = focusedItemId,
                             onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) },
+                            roundness = appTileRoundness,
                             modifier = Modifier.padding(bottom = 0.dp)
                         )
 
