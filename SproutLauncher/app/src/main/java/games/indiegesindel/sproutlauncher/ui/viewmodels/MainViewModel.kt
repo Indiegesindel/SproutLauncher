@@ -49,6 +49,13 @@ class MainViewModel(
             _appTiles.value = appManager.getAppTiles()
             checkInstalledQuickActions()
             _isLoading.value = false
+
+            val firstTile = _appTiles.value.firstOrNull()
+            if (firstTile != null) {
+                onFocusedItemIdChanged("tile:${firstTile.id}")
+            } else {
+                onFocusedItemIdChanged("action:all_apps")
+            }
         }
     }
 
