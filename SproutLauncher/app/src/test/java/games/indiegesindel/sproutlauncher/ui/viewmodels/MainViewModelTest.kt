@@ -42,6 +42,29 @@ class MainViewModelTest {
     }
 
     @Test
+    fun loadAppTiles_sets_initial_focus() = runTest(testDispatcher) {
+        val tiles = listOf(
+            AppTile(packageName = "pkg1", activityName = "A", label = "L1")
+        )
+        every { appManager.getAppTiles() } returns tiles
+        
+        vm.loadAppTiles()
+        
+        assert(vm.focusedItemId.value == "tile:${tiles[0].id}")
+        assert(vm.focusedElement.value == FocusedElement.APP_TILE)
+    }
+
+    @Test
+    fun loadAppTiles_sets_quick_action_focus_when_no_tiles() = runTest(testDispatcher) {
+        every { appManager.getAppTiles() } returns emptyList()
+        
+        vm.loadAppTiles()
+        
+        assert(vm.focusedItemId.value == "action:all_apps")
+        assert(vm.focusedElement.value == FocusedElement.QUICK_ACTION)
+    }
+
+    @Test
     fun loadAppTiles_populates_list_and_stops_loading_and_checks_quick_actions() = runTest(testDispatcher) {
         val tiles = listOf(
             AppTile(packageName = "pkg1", activityName = "A", label = "L1"),

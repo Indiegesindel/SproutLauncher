@@ -207,10 +207,18 @@ fun MainScreen(
                                     { launchApp("com.google.android.apps.photos") }
                                 } else null,
                                 onSettingsClick = {
-                                    val intent = Intent(context, ExtendedActivity::class.java).apply {
-                                        putExtra("FILTER", "SETTINGS")
+                                    try {
+                                        val intent = Intent(Settings.ACTION_SETTINGS).apply {
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(
+                                            context,
+                                            "Could not open settings",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
-                                    context.startActivity(intent)
                                 },
                                 onFocusChanged = { viewModel.onQuickActionsFocusChanged(it) },
                                 focusedItemId = focusedItemId,

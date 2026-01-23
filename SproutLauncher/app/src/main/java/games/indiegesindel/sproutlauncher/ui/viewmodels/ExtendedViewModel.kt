@@ -50,6 +50,14 @@ class ExtendedViewModel(
     fun loadTiles() {
         viewModelScope.launch {
             _selectedTiles.value = appManager.getAppTiles()
+            
+            // Focus first item if on HOMESCREEN tab and nothing focused
+            if (_currentTab.value == Tab.HOMESCREEN && _focusedItemId.value == null) {
+                _selectedTiles.value.firstOrNull()?.let { tile ->
+                    setFocusedItemId("${tile.packageName}_${tile.activityName}")
+                    onFocusChanged(FocusedElement.APP_TILE)
+                }
+            }
         }
     }
 
@@ -69,12 +77,38 @@ class ExtendedViewModel(
                 _installedApps.value = appsWithLabels.map { it.first }
                 _isLoadingApps.value = false
             }
+            
+            // Focus first item if on ALL tab and nothing focused
+            if (_currentTab.value == Tab.ALL && _focusedItemId.value == null) {
+                _installedApps.value.firstOrNull()?.let { app ->
+                    setFocusedItemId("${app.activityInfo.packageName}_${app.activityInfo.name}")
+                    onFocusChanged(FocusedElement.APP_TILE)
+                }
+            }
         }
     }
 
     fun setTab(tab: Tab) {
         _currentTab.value = tab
         _focusedItemId.value = null
+        
+        when (tab) {
+            Tab.ALL -> {
+                _installedApps.value.firstOrNull()?.let { app ->
+                    setFocusedItemId("${app.activityInfo.packageName}_${app.activityInfo.name}")
+                    onFocusChanged(FocusedElement.APP_TILE)
+                }
+            }
+            Tab.HOMESCREEN -> {
+                _selectedTiles.value.firstOrNull()?.let { tile ->
+                    setFocusedItemId("${tile.packageName}_${tile.activityName}")
+                    onFocusChanged(FocusedElement.APP_TILE)
+                }
+            }
+            Tab.SETTINGS -> {
+                onFocusChanged(FocusedElement.NONE)
+            }
+        }
     }
 
     fun setFocusedItemId(id: String?) {
