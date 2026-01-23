@@ -18,6 +18,7 @@ class SettingsManager(context: Context) {
     private val isPhone = context.resources.configuration.smallestScreenWidthDp < 600
     private val defaultRows = if (isPhone) 1 else 2
     private val defaultSpacing = 8
+    private val defaultRoundness = 16
 
     private val _baseTheme = MutableStateFlow(loadBaseTheme())
     val baseTheme: StateFlow<BaseTheme> = _baseTheme.asStateFlow()
@@ -33,6 +34,9 @@ class SettingsManager(context: Context) {
 
     private val _verticalSpacing = MutableStateFlow(loadVerticalSpacing())
     val verticalSpacing: StateFlow<Int> = _verticalSpacing.asStateFlow()
+
+    private val _appTileRoundness = MutableStateFlow(loadAppTileRoundness())
+    val appTileRoundness: StateFlow<Int> = _appTileRoundness.asStateFlow()
 
     private val _wallpaperUri = MutableStateFlow(loadWallpaperUri())
     val wallpaperUri: StateFlow<String?> = _wallpaperUri.asStateFlow()
@@ -56,6 +60,7 @@ class SettingsManager(context: Context) {
             KEY_HOME_SCREEN_ROWS -> _homeScreenRows.value = loadHomeScreenRows()
             KEY_HORIZONTAL_SPACING -> _horizontalSpacing.value = loadHorizontalSpacing()
             KEY_VERTICAL_SPACING -> _verticalSpacing.value = loadVerticalSpacing()
+            KEY_APP_TILE_ROUNDNESS -> _appTileRoundness.value = loadAppTileRoundness()
             KEY_WALLPAPER_URI -> _wallpaperUri.value = loadWallpaperUri()
             KEY_WALLPAPER_DIM -> _wallpaperDim.value = loadWallpaperDim()
             KEY_SHOW_YOUTUBE -> _showYouTube.value = loadShowYouTube()
@@ -74,6 +79,7 @@ class SettingsManager(context: Context) {
         private const val KEY_HOME_SCREEN_ROWS = "home_screen_rows"
         private const val KEY_HORIZONTAL_SPACING = "horizontal_spacing"
         private const val KEY_VERTICAL_SPACING = "vertical_spacing"
+        private const val KEY_APP_TILE_ROUNDNESS = "app_tile_roundness"
         private const val KEY_WALLPAPER_URI = "wallpaper_uri"
         private const val KEY_WALLPAPER_DIM = "wallpaper_dim"
         private const val KEY_SHOW_YOUTUBE = "show_youtube"
@@ -129,6 +135,15 @@ class SettingsManager(context: Context) {
     fun setVerticalSpacing(spacing: Int) {
         sharedPreferences.edit { putInt(KEY_VERTICAL_SPACING, spacing) }
         _verticalSpacing.value = spacing
+    }
+    
+    private fun loadAppTileRoundness(): Int {
+        return sharedPreferences.getInt(KEY_APP_TILE_ROUNDNESS, defaultRoundness)
+    }
+
+    fun setAppTileRoundness(roundness: Int) {
+        sharedPreferences.edit { putInt(KEY_APP_TILE_ROUNDNESS, roundness) }
+        _appTileRoundness.value = roundness
     }
 
     private fun loadWallpaperUri(): String? {

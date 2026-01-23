@@ -25,6 +25,7 @@ class MainViewModel(
     val homeScreenRows: StateFlow<Int> = settingsManager.homeScreenRows
     val horizontalSpacing: StateFlow<Int> = settingsManager.horizontalSpacing
     val verticalSpacing: StateFlow<Int> = settingsManager.verticalSpacing
+    val appTileRoundness: StateFlow<Int> = settingsManager.appTileRoundness
     val wallpaperUri: StateFlow<String?> = settingsManager.wallpaperUri
     val wallpaperDim: StateFlow<Float> = settingsManager.wallpaperDim
     val showYouTube: StateFlow<Boolean> = settingsManager.showYouTube

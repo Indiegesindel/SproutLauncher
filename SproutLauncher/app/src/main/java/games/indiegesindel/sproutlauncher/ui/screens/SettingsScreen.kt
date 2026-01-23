@@ -60,12 +60,14 @@ fun SettingsTab(
     val currentRows by settingsManager.homeScreenRows.collectAsState()
     val horizontalSpacing by settingsManager.horizontalSpacing.collectAsState()
     val verticalSpacing by settingsManager.verticalSpacing.collectAsState()
+    val appTileRoundness by settingsManager.appTileRoundness.collectAsState()
     val wallpaperDim by settingsManager.wallpaperDim.collectAsState()
 
     var showWallpaperDimDialog by remember { mutableStateOf(false) }
     var showRowsDialog by remember { mutableStateOf(false) }
     var showHorizontalSpacingDialog by remember { mutableStateOf(false) }
     var showVerticalSpacingDialog by remember { mutableStateOf(false) }
+    var showRoundnessDialog by remember { mutableStateOf(false) }
     
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val versionName = packageInfo.versionName ?: "Unknown"
@@ -226,6 +228,12 @@ fun SettingsTab(
                     value = "${verticalSpacing}dp",
                     onClick = { showVerticalSpacingDialog = true }
                 )
+
+                SettingsDialogItem(
+                    label = "App Tile Roundness",
+                    value = "${appTileRoundness}dp",
+                    onClick = { showRoundnessDialog = true }
+                )
             }
 
             SettingsSectionHeader(title = "Quick Actions")
@@ -354,6 +362,28 @@ fun SettingsTab(
                     valueRange = 0f..64f,
                     steps = 63,
                     onValueChange = { settingsManager.setVerticalSpacing(it) },
+                    valueDisplay = { "${it}dp" }
+                )
+            }
+        )
+    }
+
+    if (showRoundnessDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showRoundnessDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showRoundnessDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("App Tile Roundness") },
+            text = {
+                SliderSetting(
+                    label = "Roundness",
+                    value = appTileRoundness,
+                    valueRange = 0f..100f,
+                    steps = 100,
+                    onValueChange = { settingsManager.setAppTileRoundness(it) },
                     valueDisplay = { "${it}dp" }
                 )
             }
