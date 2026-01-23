@@ -4,6 +4,11 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
+import android.os.Build
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.BlendModeColorFilterCompat
+import androidx.core.graphics.BlendModeCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.toDrawable
 
@@ -12,6 +17,31 @@ object IconUtils {
         return try {
             val pm = context.packageManager
             val drawable = pm.getApplicationIcon(packageName)
+            getUnmaskedDrawable(context, drawable, size)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun getThemedIcon(context: Context, packageName: String, tintColor: Color, size: Int = 512): Drawable? {
+        return try {
+            val pm = context.packageManager
+            val drawable = pm.getApplicationIcon(packageName)
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && drawable is AdaptiveIconDrawable) {
+                val monochrome = drawable.monochrome
+                if (monochrome != null) {
+                    val bitmap = createBitmap(size, size)
+                    val canvas = Canvas(bitmap)
+                    monochrome.setBounds(0, 0, size, size)
+                    monochrome.colorFilter = BlendModeColorFilterCompat.createBlendModeColorFilterCompat(
+                        tintColor.toArgb(),
+                        BlendModeCompat.SRC_IN
+                    )
+                    monochrome.draw(canvas)
+                    return bitmap.toDrawable(context.resources)
+                }
+            }
             getUnmaskedDrawable(context, drawable, size)
         } catch (e: Exception) {
             null
