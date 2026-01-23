@@ -1,6 +1,7 @@
 package games.indiegesindel.sproutlauncher.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,8 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +53,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import games.indiegesindel.sproutlauncher.utils.IconUtils
 
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -84,11 +91,11 @@ fun QuickActionsBar(
         Spacer(modifier = Modifier.width(16.dp))
         QuickActionButton(
             id = "action:all_apps",
-            icon = Icons.Filled.Apps,
             label = "All Apps",
             onClick = onAllAppsClick,
             isTargetFocused = focusedItemId == "action:all_apps",
-            onFocused = { onFocusItemIdChanged(it) }
+            onFocused = { onFocusItemIdChanged(it) },
+            icon = Icons.Filled.Apps
         )
         
         Spacer(modifier = Modifier.width(16.dp))
@@ -103,22 +110,24 @@ fun QuickActionsBar(
         
         QuickActionButton(
             id = "action:browser",
-            icon = Icons.Filled.Language,
             label = "Browser",
             onClick = onBrowserClick,
             isTargetFocused = focusedItemId == "action:browser",
-            onFocused = { onFocusItemIdChanged(it) }
+            onFocused = { onFocusItemIdChanged(it) },
+            packageName = "com.android.chrome", // Defaulting to Chrome for themed icon if available
+            icon = Icons.Filled.Language
         )
         
         if (onYouTubeClick != null) {
             Spacer(modifier = Modifier.width(16.dp))
             QuickActionButton(
                 id = "action:youtube",
-                icon = Icons.Filled.PlayArrow,
                 label = "YouTube",
                 onClick = onYouTubeClick,
                 isTargetFocused = focusedItemId == "action:youtube",
-                onFocused = { onFocusItemIdChanged(it) }
+                onFocused = { onFocusItemIdChanged(it) },
+                packageName = "com.google.android.youtube",
+                icon = Icons.Filled.PlayArrow
             )
         }
 
@@ -126,11 +135,12 @@ fun QuickActionsBar(
             Spacer(modifier = Modifier.width(16.dp))
             QuickActionButton(
                 id = "action:play_store",
-                icon = Icons.Filled.Shop,
                 label = "Play Store",
                 onClick = onPlayStoreClick,
                 isTargetFocused = focusedItemId == "action:play_store",
-                onFocused = { onFocusItemIdChanged(it) }
+                onFocused = { onFocusItemIdChanged(it) },
+                packageName = "com.android.vending",
+                icon = Icons.Filled.Shop
             )
         }
 
@@ -138,11 +148,12 @@ fun QuickActionsBar(
             Spacer(modifier = Modifier.width(16.dp))
             QuickActionButton(
                 id = "action:discord",
-                icon = Icons.AutoMirrored.Filled.Chat,
                 label = "Discord",
                 onClick = onDiscordClick,
                 isTargetFocused = focusedItemId == "action:discord",
-                onFocused = { onFocusItemIdChanged(it) }
+                onFocused = { onFocusItemIdChanged(it) },
+                packageName = "com.discord",
+                icon = Icons.AutoMirrored.Filled.Chat
             )
         }
 
@@ -150,11 +161,12 @@ fun QuickActionsBar(
             Spacer(modifier = Modifier.width(16.dp))
             QuickActionButton(
                 id = "action:spotify",
-                icon = Icons.Filled.MusicNote,
                 label = "Spotify",
                 onClick = onSpotifyClick,
                 isTargetFocused = focusedItemId == "action:spotify",
-                onFocused = { onFocusItemIdChanged(it) }
+                onFocused = { onFocusItemIdChanged(it) },
+                packageName = "com.spotify.music",
+                icon = Icons.Filled.MusicNote
             )
         }
 
@@ -162,22 +174,23 @@ fun QuickActionsBar(
             Spacer(modifier = Modifier.width(16.dp))
             QuickActionButton(
                 id = "action:photos",
-                icon = Icons.Filled.Image,
                 label = "Photos",
                 onClick = onPhotosClick,
                 isTargetFocused = focusedItemId == "action:photos",
-                onFocused = { onFocusItemIdChanged(it) }
+                onFocused = { onFocusItemIdChanged(it) },
+                packageName = "com.google.android.apps.photos",
+                icon = Icons.Filled.Image
             )
         }
 
         Spacer(modifier = Modifier.width(16.dp))
         QuickActionButton(
             id = "action:settings",
-            icon = Icons.Filled.Settings,
             label = "Settings",
             onClick = onSettingsClick,
             isTargetFocused = focusedItemId == "action:settings",
-            onFocused = { onFocusItemIdChanged(it) }
+            onFocused = { onFocusItemIdChanged(it) },
+            icon = Icons.Filled.Settings
         )
     }
 }
@@ -186,12 +199,14 @@ fun QuickActionsBar(
 @Composable
 fun QuickActionButton(
     id: String,
-    icon: ImageVector,
     label: String,
     onClick: () -> Unit,
     isTargetFocused: Boolean,
-    onFocused: (String) -> Unit
+    onFocused: (String) -> Unit,
+    icon: ImageVector? = null,
+    packageName: String? = null
 ) {
+    val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
@@ -200,6 +215,18 @@ fun QuickActionButton(
             focusRequester.requestFocus()
         }
     }
+
+    val tint = MaterialTheme.colorScheme.onSecondary
+    val iconPainter = if (packageName != null) {
+        rememberAsyncImagePainter(
+            model = remember(packageName, tint) {
+                ImageRequest.Builder(context)
+                    .data(IconUtils.getThemedIcon(context, packageName, tint))
+                    .crossfade(true)
+                    .build()
+            }
+        )
+    } else null
 
     Box(
         modifier = Modifier.size(56.dp),
@@ -251,19 +278,29 @@ fun QuickActionButton(
                     if (isFocused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     else Modifier
                 )
-                .padding(if (isFocused) 4.dp else 0.dp)
                 .clip(CircleShape)
                 .clickable(onClick = onClick),
             color = MaterialTheme.colorScheme.secondary,
             shape = CircleShape
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon, 
-                    contentDescription = label, 
-                    modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.onSecondary
-                )
+                if (iconPainter != null) {
+                    Image(
+                        painter = iconPainter,
+                        contentDescription = label,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(scaleX = 1.15f, scaleY = 1.15f)
+                    )
+                } else if (icon != null) {
+                    Icon(
+                        imageVector = icon, 
+                        contentDescription = label, 
+                        modifier = Modifier.fillMaxSize()
+                            .padding(12.dp),
+                        tint = tint
+                    )
+                }
             }
         }
     }
