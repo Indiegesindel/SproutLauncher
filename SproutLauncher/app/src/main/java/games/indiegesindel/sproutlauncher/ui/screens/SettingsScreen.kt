@@ -374,6 +374,7 @@ fun ThemePreviewButton(
         BaseTheme.DEEP_BLUE -> deepBluePrimaryLight
         BaseTheme.FIRE_RED -> fireRedPrimaryLight
         BaseTheme.REFRESHING_ORANGE -> orangePrimaryLight
+        BaseTheme.MONOCHROME -> monochromePrimaryLight
     }
 
     val label = when (theme) {
@@ -383,6 +384,7 @@ fun ThemePreviewButton(
         BaseTheme.DEEP_BLUE -> "Blue"
         BaseTheme.FIRE_RED -> "Red"
         BaseTheme.REFRESHING_ORANGE -> "Orange"
+        BaseTheme.MONOCHROME -> "Gray"
     }
 
     Column(

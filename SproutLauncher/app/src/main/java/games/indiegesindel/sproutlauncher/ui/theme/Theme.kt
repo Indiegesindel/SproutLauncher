@@ -304,6 +304,54 @@ private val OrangeDarkScheme = darkColorScheme(
     surfaceContainerHighest = orangeSurfaceContainerHighestDark,
 )
 
+private val MonochromeLightScheme = lightColorScheme(
+    primary = monochromePrimaryLight,
+    onPrimary = monochromeOnPrimaryLight,
+    primaryContainer = monochromePrimaryContainerLight,
+    onPrimaryContainer = monochromeOnPrimaryContainerLight,
+    secondary = monochromeSecondaryLight,
+    onSecondary = monochromeOnSecondaryLight,
+    secondaryContainer = monochromeSecondaryContainerLight,
+    onSecondaryContainer = monochromeOnSecondaryContainerLight,
+    background = monochromeBackgroundLight,
+    onBackground = monochromeOnBackgroundLight,
+    surface = monochromeSurfaceLight,
+    onSurface = monochromeOnSurfaceLight,
+    surfaceVariant = monochromeSurfaceVariantLight,
+    onSurfaceVariant = monochromeOnSurfaceVariantLight,
+    outline = monochromeOutlineLight,
+    outlineVariant = monochromeOutlineVariantLight,
+    surfaceContainerLowest = monochromeSurfaceContainerLowestLight,
+    surfaceContainerLow = monochromeSurfaceContainerLowLight,
+    surfaceContainer = monochromeSurfaceContainerLight,
+    surfaceContainerHigh = monochromeSurfaceContainerHighLight,
+    surfaceContainerHighest = monochromeSurfaceContainerHighestLight,
+)
+
+private val MonochromeDarkScheme = darkColorScheme(
+    primary = monochromePrimaryDark,
+    onPrimary = monochromeOnPrimaryDark,
+    primaryContainer = monochromePrimaryContainerDark,
+    onPrimaryContainer = monochromeOnPrimaryContainerDark,
+    secondary = monochromeSecondaryDark,
+    onSecondary = monochromeOnSecondaryDark,
+    secondaryContainer = monochromeSecondaryContainerDark,
+    onSecondaryContainer = monochromeOnSecondaryContainerDark,
+    background = monochromeBackgroundDark,
+    onBackground = monochromeOnBackgroundDark,
+    surface = monochromeSurfaceDark,
+    onSurface = monochromeOnSurfaceDark,
+    surfaceVariant = monochromeSurfaceVariantDark,
+    onSurfaceVariant = monochromeOnSurfaceVariantDark,
+    outline = monochromeOutlineDark,
+    outlineVariant = monochromeOutlineVariantDark,
+    surfaceContainerLowest = monochromeSurfaceContainerLowestDark,
+    surfaceContainerLow = monochromeSurfaceContainerLowDark,
+    surfaceContainer = monochromeSurfaceContainerDark,
+    surfaceContainerHigh = monochromeSurfaceContainerHighDark,
+    surfaceContainerHighest = monochromeSurfaceContainerHighestDark,
+)
+
 @Composable
 fun SproutLauncherTheme(
     baseTheme: BaseTheme = BaseTheme.SYSTEM,
@@ -340,6 +388,7 @@ fun SproutLauncherTheme(
         baseTheme == BaseTheme.DEEP_BLUE -> if (darkTheme) DeepBlueDarkScheme else DeepBlueLightScheme
         baseTheme == BaseTheme.FIRE_RED -> if (darkTheme) FireRedDarkScheme else FireRedLightScheme
         baseTheme == BaseTheme.REFRESHING_ORANGE -> if (darkTheme) OrangeDarkScheme else OrangeLightScheme
+        baseTheme == BaseTheme.MONOCHROME -> if (darkTheme) MonochromeDarkScheme else MonochromeLightScheme
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
