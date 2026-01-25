@@ -54,6 +54,9 @@ class MainViewModel(
     private val _openedGroup = MutableStateFlow<AppTile?>(null)
     val openedGroup: StateFlow<AppTile?> = _openedGroup.asStateFlow()
 
+    private val _tileToMoveToGroup = MutableStateFlow<AppTile?>(null)
+    val tileToMoveToGroup: StateFlow<AppTile?> = _tileToMoveToGroup.asStateFlow()
+
     private val _installedQuickActions = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val installedQuickActions: StateFlow<Map<String, Boolean>> = _installedQuickActions.asStateFlow()
 
@@ -259,6 +262,36 @@ class MainViewModel(
         _openedGroup.value = groupTile
         groupTile.groupTiles.firstOrNull()?.let {
             onFocusedItemIdChanged("tile:${it.id}")
+        }
+    }
+
+    fun requestMoveToGroup(tile: AppTile) {
+        _tileToMoveToGroup.value = tile
+    }
+
+    fun dismissMoveToGroup() {
+        _tileToMoveToGroup.value = null
+    }
+
+    fun moveTileToGroup(tileId: String, groupId: String) {
+        val currentTiles = _appTiles.value.toMutableList()
+        val tileIndex = currentTiles.indexOfFirst { it.id == tileId }
+        val groupIndex = currentTiles.indexOfFirst { it.id == groupId }
+
+        if (tileIndex != -1 && groupIndex != -1) {
+            val tileToMove = currentTiles.removeAt(tileIndex)
+            // Re-find group index as it might have changed after removal
+            val newGroupIndex = currentTiles.indexOfFirst { it.id == groupId }
+            val group = currentTiles[newGroupIndex]
+
+            if (group.isGroup) {
+                val newGroupTiles = group.groupTiles + tileToMove
+                currentTiles[newGroupIndex] = group.copy(groupTiles = newGroupTiles)
+                _appTiles.value = currentTiles
+                saveAppTiles()
+                _tileToMoveToGroup.value = null
+                onFocusedItemIdChanged("tile:${groupId}")
+            }
         }
     }
 

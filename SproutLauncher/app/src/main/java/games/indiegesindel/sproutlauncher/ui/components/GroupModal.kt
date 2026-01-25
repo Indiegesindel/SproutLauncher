@@ -7,6 +7,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,8 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,9 +35,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.ExperimentalComposeUiApi
 import games.indiegesindel.sproutlauncher.model.AppTile
 
@@ -57,23 +59,27 @@ fun GroupModal(
     rows: Int = 2,
     horizontalSpacing: Int = 0,
     verticalSpacing: Int = 0,
-    roundness: Int = 16
+    roundness: Int = 16,
+    enabled: Boolean = true
 ) {
     val layoutDirection = LocalLayoutDirection.current
     Box(
         modifier = Modifier
             .fillMaxSize()
             .clickable(
+                enabled = enabled,
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onDismiss
             )
+            .focusable(false)
     ) {
         // Full screen dimmed background
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.7f))
+                .focusable(false)
         )
 
         // Content area avoiding system bars and footer
@@ -85,7 +91,8 @@ fun GroupModal(
                     top = innerPadding.calculateTopPadding(),
                     end = innerPadding.calculateEndPadding(layoutDirection),
                     bottom = innerPadding.calculateBottomPadding() + 56.dp
-                ),
+                )
+                .focusable(false),
             contentAlignment = Alignment.Center
         ) {
             AnimatedVisibility(
@@ -100,6 +107,7 @@ fun GroupModal(
                         .clip(RoundedCornerShape(roundness.dp))
                         .background(MaterialTheme.colorScheme.surface)
                         .clickable(enabled = false) { } // Consume clicks
+                        .focusable(false)
                         .focusProperties { exit = { FocusRequester.Cancel } }
                         .padding(16.dp)
                 ) {
@@ -118,11 +126,23 @@ fun GroupModal(
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            IconButton(onClick = onDismiss) {
+                            var isCloseFocused by remember { mutableStateOf(false) }
+                            IconButton(
+                                onClick = onDismiss,
+                                enabled = enabled,
+                                modifier = Modifier
+                                    .onFocusChanged { isCloseFocused = it.isFocused }
+                                    .then(
+                                        if (isCloseFocused) Modifier.background(
+                                            MaterialTheme.colorScheme.primaryContainer,
+                                            CircleShape
+                                        ) else Modifier
+                                    )
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Close",
-                                    tint = MaterialTheme.colorScheme.onSurface
+                                    tint = if (isCloseFocused) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -144,7 +164,9 @@ fun GroupModal(
                             focusedItemId = focusedItemId,
                             onFocusItemIdChanged = onFocusItemIdChanged,
                             onRemoveFromGroup = onRemoveFromGroup,
-                            onDismiss = onDismiss
+                            onDismiss = onDismiss,
+                            hasGroups = true,
+                            enabled = enabled
                         )
                     }
                 }

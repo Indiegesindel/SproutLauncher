@@ -46,6 +46,7 @@ import games.indiegesindel.sproutlauncher.ui.components.AppGrid
 import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
 import games.indiegesindel.sproutlauncher.ui.components.PromptsFooter
 import games.indiegesindel.sproutlauncher.ui.components.GroupModal
+import games.indiegesindel.sproutlauncher.ui.components.AddToGroupModal
 import games.indiegesindel.sproutlauncher.ui.components.QuickActionsBar
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.viewmodels.MainViewModel
@@ -78,6 +79,7 @@ fun MainScreen(
     val isInMultiSelectMode by viewModel.isInMultiSelectMode.collectAsState()
     val selectedTileIds by viewModel.selectedTileIds.collectAsState()
     val openedGroup by viewModel.openedGroup.collectAsState()
+    val tileToMoveToGroup by viewModel.tileToMoveToGroup.collectAsState()
 
     fun launchApp(packageName: String) {
         LauncherUtils.launchApp(context, packageName)
@@ -93,6 +95,12 @@ fun MainScreen(
     if (openedGroup != null) {
         BackHandler {
             viewModel.closeGroup()
+        }
+    }
+
+    if (tileToMoveToGroup != null) {
+        BackHandler {
+            viewModel.dismissMoveToGroup()
         }
     }
 
@@ -129,7 +137,7 @@ fun MainScreen(
                         .fillMaxSize()
                         .padding(bottom = 56.dp) // Space for footer
                         .focusProperties {
-                            if (openedGroup != null) canFocus = false
+                            if (openedGroup != null || tileToMoveToGroup != null) canFocus = false
                         },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -172,8 +180,11 @@ fun MainScreen(
                         onGroupSelected = { viewModel.groupSelectedTiles() },
                         onClearSelection = { viewModel.clearSelection() },
                         onOpenGroup = { viewModel.openGroup(it) },
+                        onAddToGroup = { viewModel.requestMoveToGroup(it) },
                         onUngroup = { viewModel.ungroup(it) },
-                        onDismiss = { viewModel.closeGroup() }
+                        onDismiss = { viewModel.closeGroup() },
+                        hasGroups = appTiles.any { it.isGroup },
+                        enabled = openedGroup == null && tileToMoveToGroup == null
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -234,7 +245,8 @@ fun MainScreen(
                             },
                             onFocusChanged = { viewModel.onQuickActionsFocusChanged(it) },
                             focusedItemId = focusedItemId,
-                            onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) }
+                            onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) },
+                            enabled = openedGroup == null && tileToMoveToGroup == null
                         )
                     }
                 }
@@ -276,7 +288,26 @@ fun MainScreen(
                         rows = groupRows,
                         horizontalSpacing = groupHorizontalSpacing,
                         verticalSpacing = groupVerticalSpacing,
-                        roundness = groupAppTileRoundness
+                        roundness = groupAppTileRoundness,
+                        enabled = tileToMoveToGroup == null
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = tileToMoveToGroup != null,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                tileToMoveToGroup?.let { tile ->
+                    AddToGroupModal(
+                        groups = appTiles.filter { it.isGroup },
+                        onGroupSelected = { groupId ->
+                            viewModel.moveTileToGroup(tile.id, groupId)
+                        },
+                        onDismiss = { viewModel.dismissMoveToGroup() },
+                        innerPadding = innerPadding,
+                        roundness = appTileRoundness
                     )
                 }
             }
@@ -286,28 +317,35 @@ fun MainScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .zIndex(2f)
+                    .focusProperties {
+                        if (openedGroup != null || tileToMoveToGroup != null) canFocus = false
+                    }
             ) {
-                when (focusedElement) {
-                    FocusedElement.APP_TILE -> {
-                        val focusedTile = appTiles.find { "tile:${it.id}" == focusedItemId }
-                            ?: openedGroup?.groupTiles?.find { "tile:${it.id}" == focusedItemId }
+                if (tileToMoveToGroup != null) {
+                    ButtonPrompt(button = "A", label = "Select")
+                    ButtonPrompt(button = "B", label = "Close")
+                } else {
+                    when (focusedElement) {
+                        FocusedElement.APP_TILE -> {
+                            val focusedTile = appTiles.find { "tile:${it.id}" == focusedItemId }
+                                ?: openedGroup?.groupTiles?.find { "tile:${it.id}" == focusedItemId }
 
-                        ButtonPrompt(button = "Y", label = "Move (Hold)")
-                        ButtonPrompt(button = "X", label = "Options")
-                        val label = if (focusedTile?.isGroup == true) "Open" else "Launch"
-                        ButtonPrompt(button = "A", label = label)
-                        if (openedGroup != null) {
-                            ButtonPrompt(button = "B", label = "Close")
+                            ButtonPrompt(button = "Y", label = "Move (Hold)")
+                            ButtonPrompt(button = "X", label = "Options")
+                            val label = if (focusedTile?.isGroup == true) "Open" else "Launch"
+                            ButtonPrompt(button = "A", label = label)
+                            if (openedGroup != null) {
+                                ButtonPrompt(button = "B", label = "Close")
+                            }
                         }
-                    }
 
-                    FocusedElement.QUICK_ACTION -> {
-                        ButtonPrompt(button = "X", label = "Options")
-                        ButtonPrompt(button = "A", label = "Launch")
-                    }
+                        FocusedElement.QUICK_ACTION -> {
+                            ButtonPrompt(button = "A", label = "Launch")
+                        }
 
-                    else -> {
-                        // Show nothing or default
+                        else -> {
+                            // Show nothing or default
+                        }
                     }
                 }
             }

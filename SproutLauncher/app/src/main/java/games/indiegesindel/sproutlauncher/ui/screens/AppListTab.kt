@@ -120,7 +120,9 @@ fun AppListTab(
                     onFocusItemIdChanged = {
                         viewModel.setFocusedItemId(it)
                         if (it != null) viewModel.onFocusChanged(FocusedElement.APP_TILE)
-                    }
+                    },
+                    hasGroups = selectedTiles.any { it.isGroup },
+                    enabled = tileToRemove == null
                 )
             }
 

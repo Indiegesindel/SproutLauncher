@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -66,6 +67,7 @@ import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderDelete
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.GroupWork
@@ -185,10 +187,13 @@ fun AppGrid(
     onGroupSelected: () -> Unit = {},
     onClearSelection: () -> Unit = {},
     onOpenGroup: (AppTile) -> Unit = {},
+    onAddToGroup: (AppTile) -> Unit = {},
     onUngroup: (String) -> Unit = {},
     onRemoveFromGroup: ((String) -> Unit)? = null,
     onDismiss: () -> Unit = {},
-    showGroupOptions: Boolean = true
+    showGroupOptions: Boolean = true,
+    hasGroups: Boolean = false,
+    enabled: Boolean = true
 ) {
     val configuration = LocalConfiguration.current
     val isPhone = configuration.smallestScreenWidthDp < 600
@@ -196,6 +201,7 @@ fun AppGrid(
     val reorderableState = rememberReorderableLazyGridState(gridState, onReorder, onDragEnd)
 
     fun moveItem(currentIndex: Int, direction: String) {
+        if (!enabled) return
         val targetIndex = when (direction) {
             "UP" -> if (currentIndex % rows > 0) currentIndex - 1 else -1
             "DOWN" -> if (currentIndex % rows < rows - 1 && currentIndex + 1 < appTiles.size) currentIndex + 1 else -1
@@ -259,10 +265,13 @@ fun AppGrid(
                     onGroupSelected = onGroupSelected,
                     onClearSelection = onClearSelection,
                     onOpenGroup = { onOpenGroup(tile) },
+                    onAddToGroup = { onAddToGroup(tile) },
                     onUngroup = { onUngroup(tile.id) },
                     onRemoveFromGroup = onRemoveFromGroup?.let { { it(tile.id) } },
                     onDismiss = onDismiss,
-                    showGroupOptions = showGroupOptions
+                    showGroupOptions = showGroupOptions,
+                    hasGroups = hasGroups,
+                    enabled = enabled
                 )
             }
         }
@@ -289,10 +298,13 @@ fun AppTileItem(
     onGroupSelected: () -> Unit = {},
     onClearSelection: () -> Unit = {},
     onOpenGroup: () -> Unit = {},
+    onAddToGroup: () -> Unit = {},
     onUngroup: () -> Unit = {},
     onRemoveFromGroup: (() -> Unit)? = null,
     onDismiss: () -> Unit = {},
-    showGroupOptions: Boolean = true
+    showGroupOptions: Boolean = true,
+    hasGroups: Boolean = false,
+    enabled: Boolean = true
 ) {
     val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
@@ -384,8 +396,9 @@ fun AppTileItem(
                     false
                 }
             }
-            .focusable()
+            .focusable(enabled = enabled)
             .pointerInput(index, tile.id) {
+                if (!enabled) return@pointerInput
                 detectDragGesturesAfterLongPress(
                     onDragStart = { reorderableState.onDragStart(index) },
                     onDragEnd = { reorderableState.onDragEnd() },
@@ -409,12 +422,22 @@ fun AppTileItem(
                 properties = PopupProperties(focusable = false)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
+                    Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(MaterialTheme.colorScheme.inverseSurface)
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        if (tile.isGroup) {
+                            Icon(
+                                imageVector = Icons.Default.Folder,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.inverseOnSurface,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                         Text(
                             text = tile.label,
                             color = MaterialTheme.colorScheme.inverseOnSurface,
@@ -454,6 +477,7 @@ fun AppTileItem(
                 .clip(RoundedCornerShape(roundness.dp))
                 .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                 .combinedClickable(
+                    enabled = enabled,
                     onClick = {
                         if (isInMultiSelectMode) {
                             onToggleSelection()
@@ -585,6 +609,16 @@ fun AppTileItem(
                         },
                         leadingIcon = { Icon(Icons.Default.CreateNewFolder, contentDescription = null) }
                     )
+                    if (hasGroups) {
+                        DropdownMenuItem(
+                            text = { Text("Add to Group") },
+                            onClick = {
+                                showMenu = false
+                                onAddToGroup()
+                            },
+                            leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) }
+                        )
+                    }
                 }
                 if (tile.shortcutId == null) {
                     DropdownMenuItem(
