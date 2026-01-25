@@ -370,22 +370,7 @@ fun AppTileItem(
             contentAlignment = Alignment.Center
         ) {
             val shortcutIcon = remember(tile.packageName, tile.shortcutId) {
-                if (tile.shortcutId != null && !tile.shortcutId.startsWith("legacy:")) {
-                    val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
-                    val query = LauncherApps.ShortcutQuery().apply {
-                        setPackage(tile.packageName)
-                        setShortcutIds(listOf(tile.shortcutId))
-                        setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
-                    }
-                    try {
-                        val shortcuts = launcherApps.getShortcuts(query, android.os.Process.myUserHandle())
-                        shortcuts?.firstOrNull()?.let {
-                            launcherApps.getShortcutIconDrawable(it, context.resources.displayMetrics.densityDpi)
-                        }
-                    } catch (e: Exception) {
-                        null
-                    }
-                } else null
+                tile.shortcutId?.let { IconUtils.getShortcutIcon(context, tile.packageName, it) }
             }
 
             val appIcon = remember(tile.packageName) {
@@ -424,16 +409,18 @@ fun AppTileItem(
                     onSettings()
                 }
             )
-            DropdownMenuItem(
-                text = { Text("Details") },
-                onClick = {
-                    showMenu = false
-                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.parse("package:${tile.packageName}")
+            if (tile.shortcutId == null) {
+                DropdownMenuItem(
+                    text = { Text("Details") },
+                    onClick = {
+                        showMenu = false
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.parse("package:${tile.packageName}")
+                        }
+                        context.startActivity(intent)
                     }
-                    context.startActivity(intent)
-                }
-            )
+                )
+            }
             DropdownMenuItem(
                 text = { Text("Remove from Homescreen") },
                 onClick = {
@@ -441,19 +428,21 @@ fun AppTileItem(
                     onRemove()
                 }
             )
-            DropdownMenuItem(
-                text = { Text("Uninstall") },
-                onClick = {
-                    showMenu = false
-                    val intent = Intent(Intent.ACTION_DELETE).apply {
-                        data = Uri.parse("package:${tile.packageName}")
+            if (tile.shortcutId == null) {
+                DropdownMenuItem(
+                    text = { Text("Uninstall") },
+                    onClick = {
+                        showMenu = false
+                        val intent = Intent(Intent.ACTION_DELETE).apply {
+                            data = Uri.parse("package:${tile.packageName}")
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                        }
                     }
-                    try {
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                    }
-                }
-            )
+                )
+            }
         }
     }
 }
