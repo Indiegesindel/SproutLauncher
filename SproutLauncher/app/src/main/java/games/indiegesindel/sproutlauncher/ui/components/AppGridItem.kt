@@ -92,6 +92,7 @@ fun AppGridItem(
     onToggleSelection: () -> Unit = {},
     onCreateGroup: () -> Unit = {},
     onGroupSelected: () -> Unit = {},
+    onRemoveSelected: () -> Unit = {},
     onClearSelection: () -> Unit = {},
     onOpenGroup: () -> Unit = {},
     onAddToGroup: () -> Unit = {},
@@ -177,7 +178,7 @@ fun AppGridItem(
                         event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_A
                     )) {
                         if (isInMultiSelectMode) {
-                            onToggleSelection()
+                            if (tile?.isGroup != true) onToggleSelection()
                         } else if (tile?.isGroup == true) {
                             onOpenGroup()
                         } else if (tile != null) {
@@ -187,9 +188,7 @@ fun AppGridItem(
                         }
                         true
                     } else if (isDown && event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_B) {
-                        if (onRemoveFromGroup != null) {
-                            onDismiss()
-                        }
+                        onDismiss()
                         true
                     } else {
                         false
@@ -218,7 +217,7 @@ fun AppGridItem(
                     enabled = enabled,
                     onClick = {
                         if (isInMultiSelectMode) {
-                            onToggleSelection()
+                            if (tile?.isGroup != true) onToggleSelection()
                         } else if (tile?.isGroup == true) {
                             onOpenGroup()
                         } else if (tile != null) {
@@ -293,6 +292,14 @@ fun AppGridItem(
                         onGroupSelected()
                     },
                     leadingIcon = { Icon(Icons.Default.GroupWork, contentDescription = null) }
+                )
+                DropdownMenuItem(
+                    text = { Text("Remove selected") },
+                    onClick = {
+                        showMenu = false
+                        onRemoveSelected()
+                    },
+                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) }
                 )
                 DropdownMenuItem(
                     text = { Text("Clear selection") },

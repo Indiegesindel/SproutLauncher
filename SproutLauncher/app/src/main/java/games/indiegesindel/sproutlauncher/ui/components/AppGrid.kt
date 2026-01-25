@@ -183,6 +183,7 @@ fun AppGrid(
     onToggleSelection: (String) -> Unit = {},
     onCreateGroup: (String) -> Unit = {},
     onGroupSelected: () -> Unit = {},
+    onRemoveSelected: () -> Unit = {},
     onClearSelection: () -> Unit = {},
     onOpenGroup: (AppTile) -> Unit = {},
     onAddToGroup: (AppTile) -> Unit = {},
@@ -258,9 +259,10 @@ fun AppGrid(
                     roundness = roundness,
                     isInMultiSelectMode = isInMultiSelectMode,
                     isSelected = selectedTileIds.contains(tile.id),
-                    onToggleSelection = { onToggleSelection(tile.id) },
+                    onToggleSelection = { if (!tile.isGroup) onToggleSelection(tile.id) },
                     onCreateGroup = { onCreateGroup(tile.id) },
                     onGroupSelected = onGroupSelected,
+                    onRemoveSelected = onRemoveSelected,
                     onClearSelection = onClearSelection,
                     onOpenGroup = { onOpenGroup(tile) },
                     onAddToGroup = { onAddToGroup(tile) },
@@ -294,6 +296,7 @@ fun AppTileItem(
     onToggleSelection: () -> Unit = {},
     onCreateGroup: () -> Unit = {},
     onGroupSelected: () -> Unit = {},
+    onRemoveSelected: () -> Unit = {},
     onClearSelection: () -> Unit = {},
     onOpenGroup: () -> Unit = {},
     onAddToGroup: () -> Unit = {},
@@ -368,7 +371,7 @@ fun AppTileItem(
                         KeyEvent.KEYCODE_DPAD_CENTER,
                         KeyEvent.KEYCODE_BUTTON_A -> {
                             if (isInMultiSelectMode) {
-                                onToggleSelection()
+                                if (!tile.isGroup) onToggleSelection()
                             } else if (tile.isGroup) {
                                 onOpenGroup()
                             } else {
@@ -383,9 +386,7 @@ fun AppTileItem(
                             true
                         }
                         KeyEvent.KEYCODE_BUTTON_B -> {
-                            if (onRemoveFromGroup != null) {
-                                onDismiss()
-                            }
+                            onDismiss()
                             true
                         }
                         else -> false
@@ -477,7 +478,7 @@ fun AppTileItem(
                     enabled = enabled,
                     onClick = {
                         if (isInMultiSelectMode) {
-                            onToggleSelection()
+                            if (!tile.isGroup) onToggleSelection()
                         } else if (tile.isGroup) {
                             onOpenGroup()
                         } else {
@@ -544,6 +545,14 @@ fun AppTileItem(
                         onGroupSelected()
                     },
                     leadingIcon = { Icon(Icons.Default.GroupWork, contentDescription = null) }
+                )
+                DropdownMenuItem(
+                    text = { Text("Remove selected") },
+                    onClick = {
+                        showMenu = false
+                        onRemoveSelected()
+                    },
+                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) }
                 )
                 DropdownMenuItem(
                     text = { Text("Clear selection") },
