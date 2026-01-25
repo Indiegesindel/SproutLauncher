@@ -34,6 +34,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import games.indiegesindel.sproutlauncher.AppTileSettingsActivity
 import games.indiegesindel.sproutlauncher.ExtendedActivity
 import games.indiegesindel.sproutlauncher.FocusedElement
@@ -236,33 +241,44 @@ fun MainScreen(
             }
 
             // Overlay (outside innerPadding to fill screen)
-            if (openedGroup != null) {
-                GroupModal(
-                    group = openedGroup!!,
-                    onDismiss = { viewModel.closeGroup() },
-                    onAppClick = { tile -> LauncherUtils.launchTile(context, tile) },
-                    onRemoveFromGroup = { tileId -> viewModel.removeTileFromGroup(openedGroup!!.id, tileId) },
-                    onSettings = { tile ->
-                        val intent =
-                            Intent(context, AppTileSettingsActivity::class.java).apply {
-                                putExtra("TILE_ID", tile.id)
-                            }
-                        context.startActivity(intent)
-                    },
-                    onReorder = { from, to ->
-                        viewModel.reorderGroupTiles(openedGroup!!.id, from, to)
-                    },
-                    onDragEnd = {
-                        viewModel.saveAppTiles()
-                    },
-                    focusedItemId = focusedItemId,
-                    onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) },
-                    innerPadding = innerPadding,
-                    rows = groupRows,
-                    horizontalSpacing = groupHorizontalSpacing,
-                    verticalSpacing = groupVerticalSpacing,
-                    roundness = groupAppTileRoundness
-                )
+            AnimatedVisibility(
+                visible = openedGroup != null,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                openedGroup?.let { group ->
+                    GroupModal(
+                        group = group,
+                        onDismiss = { viewModel.closeGroup() },
+                        onAppClick = { tile -> LauncherUtils.launchTile(context, tile) },
+                        onRemoveFromGroup = { tileId ->
+                            viewModel.removeTileFromGroup(
+                                group.id,
+                                tileId
+                            )
+                        },
+                        onSettings = { tile ->
+                            val intent =
+                                Intent(context, AppTileSettingsActivity::class.java).apply {
+                                    putExtra("TILE_ID", tile.id)
+                                }
+                            context.startActivity(intent)
+                        },
+                        onReorder = { from, to ->
+                            viewModel.reorderGroupTiles(group.id, from, to)
+                        },
+                        onDragEnd = {
+                            viewModel.saveAppTiles()
+                        },
+                        focusedItemId = focusedItemId,
+                        onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) },
+                        innerPadding = innerPadding,
+                        rows = groupRows,
+                        horizontalSpacing = groupHorizontalSpacing,
+                        verticalSpacing = groupVerticalSpacing,
+                        roundness = groupAppTileRoundness
+                    )
+                }
             }
 
             // Permanent black bar footer (on top of everything)

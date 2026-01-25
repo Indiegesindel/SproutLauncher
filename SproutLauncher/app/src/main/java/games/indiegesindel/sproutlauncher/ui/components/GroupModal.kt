@@ -1,5 +1,10 @@
 package games.indiegesindel.sproutlauncher.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -83,61 +88,67 @@ fun GroupModal(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .fillMaxSize(0.9f) // Slightly more space if padded
-                    .clip(RoundedCornerShape(roundness.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .clickable(enabled = false) { } // Consume clicks
-                    .focusProperties { exit = { FocusRequester.Cancel } }
-                    .padding(16.dp)
+            AnimatedVisibility(
+                visible = true, // We are already inside an AnimatedVisibility in the caller, but this allows us to use scaleIn/Out
+                enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                exit = fadeOut() + scaleOut(targetScale = 0.8f)
             ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .fillMaxSize(0.9f) // Slightly more space if padded
+                        .clip(RoundedCornerShape(roundness.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable(enabled = false) { } // Consume clicks
+                        .focusProperties { exit = { FocusRequester.Cancel } }
+                        .padding(16.dp)
                 ) {
-                    Spacer(modifier = Modifier.size(48.dp))
-                    Text(
-                        text = group.label,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.onSurface
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Spacer(modifier = Modifier.size(48.dp))
+                            Text(
+                                text = group.label,
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            IconButton(onClick = onDismiss) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        AppGrid(
+                            appTiles = group.groupTiles,
+                            onAppClick = onAppClick,
+                            onRemove = { /* Not used here */ },
+                            onSettings = onSettings,
+                            onReorder = onReorder,
+                            onDragEnd = onDragEnd,
+                            modifier = Modifier.weight(1f),
+                            rows = rows,
+                            horizontalSpacing = horizontalSpacing,
+                            verticalSpacing = verticalSpacing,
+                            roundness = roundness,
+                            focusedItemId = focusedItemId,
+                            onFocusItemIdChanged = onFocusItemIdChanged,
+                            onRemoveFromGroup = onRemoveFromGroup,
+                            onDismiss = onDismiss
                         )
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                AppGrid(
-                    appTiles = group.groupTiles,
-                    onAppClick = onAppClick,
-                    onRemove = { /* Not used here */ },
-                    onSettings = onSettings,
-                    onReorder = onReorder,
-                    onDragEnd = onDragEnd,
-                    modifier = Modifier.weight(1f),
-                    rows = rows,
-                    horizontalSpacing = horizontalSpacing,
-                    verticalSpacing = verticalSpacing,
-                    roundness = roundness,
-                    focusedItemId = focusedItemId,
-                    onFocusItemIdChanged = onFocusItemIdChanged,
-                    onRemoveFromGroup = onRemoveFromGroup,
-                    onDismiss = onDismiss
-                )
             }
         }
     }
-}
 }
