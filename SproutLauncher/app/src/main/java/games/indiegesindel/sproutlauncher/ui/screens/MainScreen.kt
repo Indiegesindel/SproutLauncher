@@ -249,6 +249,12 @@ fun MainScreen(
                             }
                         context.startActivity(intent)
                     },
+                    onReorder = { from, to ->
+                        viewModel.reorderGroupTiles(openedGroup!!.id, from, to)
+                    },
+                    onDragEnd = {
+                        viewModel.saveAppTiles()
+                    },
                     focusedItemId = focusedItemId,
                     onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) },
                     innerPadding = innerPadding,
@@ -267,9 +273,13 @@ fun MainScreen(
             ) {
                 when (focusedElement) {
                     FocusedElement.APP_TILE -> {
+                        val focusedTile = appTiles.find { "tile:${it.id}" == focusedItemId }
+                            ?: openedGroup?.groupTiles?.find { "tile:${it.id}" == focusedItemId }
+
                         ButtonPrompt(button = "Y", label = "Move (Hold)")
                         ButtonPrompt(button = "X", label = "Options")
-                        ButtonPrompt(button = "A", label = "Launch")
+                        val label = if (focusedTile?.isGroup == true) "Open" else "Launch"
+                        ButtonPrompt(button = "A", label = label)
                         if (openedGroup != null) {
                             ButtonPrompt(button = "B", label = "Close")
                         }

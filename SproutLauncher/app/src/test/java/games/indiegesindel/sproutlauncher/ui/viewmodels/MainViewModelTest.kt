@@ -102,8 +102,6 @@ class MainViewModelTest {
             AppTile(packageName = "pkg3", activityName = "C", label = "3")
         )
         // Seed current state
-        vm.apply { (this as MainViewModel).let {  } }
-        // Directly mutate internal state for test visibility
         val field = MainViewModel::class.java.getDeclaredField("_appTiles")
         field.isAccessible = true
         val state = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<List<AppTile>>
@@ -113,6 +111,27 @@ class MainViewModelTest {
 
         val expected = listOf(tiles[1], tiles[2], tiles[0])
         assert(vm.appTiles.value == expected)
+    }
+
+    @Test
+    fun reorderGroupTiles_moves_items_within_group() {
+        val groupTiles = listOf(
+            AppTile(packageName = "p1", activityName = "A1", label = "L1"),
+            AppTile(packageName = "p2", activityName = "A2", label = "L2")
+        )
+        val group = AppTile(id = "group1", packageName = "", activityName = "", label = "G", isGroup = true, groupTiles = groupTiles)
+        val tiles = listOf(group)
+
+        val field = MainViewModel::class.java.getDeclaredField("_appTiles")
+        field.isAccessible = true
+        val state = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<List<AppTile>>
+        state.value = tiles
+
+        vm.reorderGroupTiles("group1", 0, 1)
+
+        val updatedGroup = vm.appTiles.value[0]
+        assert(updatedGroup.groupTiles[0].packageName == "p2")
+        assert(updatedGroup.groupTiles[1].packageName == "p1")
     }
 
     @Test
@@ -127,6 +146,34 @@ class MainViewModelTest {
         vm.saveAppTiles()
 
         verify { appManager.saveAppTiles(tiles) }
+    }
+
+    @Test
+    fun loadAppTiles_maintains_openedGroup_if_exists() = runTest(testDispatcher) {
+        val group = AppTile(id = "g1", packageName = "", activityName = "", label = "Old Label", isGroup = true)
+        val updatedGroup = group.copy(label = "New Label")
+        
+        val field = MainViewModel::class.java.getDeclaredField("_openedGroup")
+        field.isAccessible = true
+        val openedGroupState = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<AppTile?>
+        openedGroupState.value = group
+        
+        every { appManager.getAppTiles() } returns listOf(updatedGroup)
+        
+        vm.loadAppTiles()
+        
+        assert(vm.openedGroup.value?.label == "New Label")
+    }
+
+    @Test
+    fun loadAppTiles_does_not_reset_focus_if_already_set() = runTest(testDispatcher) {
+        val tiles = listOf(AppTile(id = "t1", packageName = "p", activityName = "a", label = "l"))
+        every { appManager.getAppTiles() } returns tiles
+        
+        vm.onFocusedItemIdChanged("something_else")
+        vm.loadAppTiles()
+        
+        assert(vm.focusedItemId.value == "something_else")
     }
 
     @Test

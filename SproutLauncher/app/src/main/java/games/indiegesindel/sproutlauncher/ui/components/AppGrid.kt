@@ -86,7 +86,7 @@ fun rememberReorderableLazyGridState(
     onReorder: (Int, Int) -> Unit,
     onDragEnd: () -> Unit
 ): ReorderableLazyGridState {
-    return remember(gridState) {
+    return remember(gridState, onReorder, onDragEnd) {
         ReorderableLazyGridState(gridState, onReorder, onDragEnd)
     }
 }
@@ -370,7 +370,7 @@ fun AppTileItem(
                 }
             }
             .focusable()
-            .pointerInput(Unit) {
+            .pointerInput(index, tile.id) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { reorderableState.onDragStart(index) },
                     onDragEnd = { reorderableState.onDragEnd() },

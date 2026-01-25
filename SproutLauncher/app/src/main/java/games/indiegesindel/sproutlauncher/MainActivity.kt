@@ -48,7 +48,6 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                         viewModel.loadAppTiles()
-                        viewModel.resetState()
                     }
                 }
 
