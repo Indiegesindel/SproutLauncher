@@ -118,13 +118,12 @@ fun AppGridItem(
                     if (it.isFocused) {
                         if (id != null) onFocused(id)
                         coroutineScope.launch {
-                            val horizontalPadding = with(density) { 24.dp.toPx() }
                             val verticalPadding = with(density) { 16.dp.toPx() }
                             bringIntoViewRequester.bringIntoView(
                                 Rect(
-                                    left = -horizontalPadding,
+                                    left = 0f,
                                     top = -verticalPadding,
-                                    right = size.width.toFloat() + horizontalPadding,
+                                    right = size.width.toFloat(),
                                     bottom = size.height.toFloat() + verticalPadding
                                 )
                             )

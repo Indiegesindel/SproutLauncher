@@ -277,13 +277,12 @@ fun AppTileItem(
                     onFocused()
                     coroutineScope.launch {
                         val horizontalPadding = with(density) { 24.dp.toPx() }
-                        val verticalPadding = with(density) { 8.dp.toPx() }
                         bringIntoViewRequester.bringIntoView(
                             Rect(
                                 left = -horizontalPadding,
-                                top = -verticalPadding,
+                                top = 0f,
                                 right = size.width.toFloat() + horizontalPadding,
-                                bottom = size.height.toFloat() + verticalPadding
+                                bottom = size.height.toFloat()
                             )
                         )
                     }
