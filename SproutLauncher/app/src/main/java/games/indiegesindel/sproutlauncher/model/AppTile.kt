@@ -7,5 +7,6 @@ data class AppTile(
     val packageName: String,
     val activityName: String,
     val label: String,
-    val iconUri: String? = null
+    val iconUri: String? = null,
+    val shortcutId: String? = null
 )

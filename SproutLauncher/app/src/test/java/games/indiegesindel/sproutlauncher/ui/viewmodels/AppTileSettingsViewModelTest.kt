@@ -47,4 +47,17 @@ class AppTileSettingsViewModelTest {
 
         verify { appManager.removeAppTile(tile.id) }
     }
+
+    @Test
+    fun saveChanges_updates_tile_via_manager_preserving_shortcutId() {
+        val tile = AppTile(packageName = "pkg", activityName = "Act", label = "Label", shortcutId = "shorty")
+        val appManager = mockk<AppManager>(relaxed = true)
+        every { appManager.getAppTiles() } returns listOf(tile)
+
+        val vm = AppTileSettingsViewModel(appManager, tile.id)
+        vm.onLabelChanged("New")
+        vm.saveChanges()
+
+        verify { appManager.updateAppTile(tile.copy(label = "New")) }
+    }
 }
