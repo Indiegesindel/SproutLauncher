@@ -176,18 +176,20 @@ fun AppTileSettingsScreen(
                 )
             }
 
-            SettingsSectionHeader(title = "App Details")
-            SettingsCard {
-                ListItem(
-                    headlineContent = { Text("Package") },
-                    supportingContent = { Text(tile?.packageName ?: "") },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-                ListItem(
-                    headlineContent = { Text("Activity") },
-                    supportingContent = { Text(tile?.activityName ?: "") },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
+            if (tile?.isGroup != true) {
+                SettingsSectionHeader(title = "App Details")
+                SettingsCard {
+                    ListItem(
+                        headlineContent = { Text("Package") },
+                        supportingContent = { Text(tile?.packageName ?: "") },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                    ListItem(
+                        headlineContent = { Text("Activity") },
+                        supportingContent = { Text(tile?.activityName ?: "") },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                }
             }
 
             SettingsSectionHeader(title = "Actions")

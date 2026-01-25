@@ -13,7 +13,7 @@ class AppTileSettingsViewModelTest {
     fun init_loads_tile_and_exposes_fields() {
         val tile = AppTile(packageName = "pkg", activityName = "Act", label = "Label", iconUri = "uri")
         val appManager = mockk<AppManager>()
-        every { appManager.getAppTiles() } returns listOf(tile)
+        every { appManager.getAppTileById(tile.id) } returns tile
 
         val vm = AppTileSettingsViewModel(appManager, tile.id)
 
@@ -26,7 +26,7 @@ class AppTileSettingsViewModelTest {
     fun saveChanges_updates_tile_via_manager() {
         val tile = AppTile(packageName = "pkg", activityName = "Act", label = "Label", iconUri = null)
         val appManager = mockk<AppManager>(relaxed = true)
-        every { appManager.getAppTiles() } returns listOf(tile)
+        every { appManager.getAppTileById(tile.id) } returns tile
 
         val vm = AppTileSettingsViewModel(appManager, tile.id)
         vm.onLabelChanged("New")
@@ -40,7 +40,7 @@ class AppTileSettingsViewModelTest {
     fun removeTile_calls_manager() {
         val tile = AppTile(packageName = "pkg", activityName = "Act", label = "Label")
         val appManager = mockk<AppManager>(relaxed = true)
-        every { appManager.getAppTiles() } returns listOf(tile)
+        every { appManager.getAppTileById(tile.id) } returns tile
 
         val vm = AppTileSettingsViewModel(appManager, tile.id)
         vm.removeTile()
@@ -52,7 +52,7 @@ class AppTileSettingsViewModelTest {
     fun saveChanges_updates_tile_via_manager_preserving_shortcutId() {
         val tile = AppTile(packageName = "pkg", activityName = "Act", label = "Label", shortcutId = "shorty")
         val appManager = mockk<AppManager>(relaxed = true)
-        every { appManager.getAppTiles() } returns listOf(tile)
+        every { appManager.getAppTileById(tile.id) } returns tile
 
         val vm = AppTileSettingsViewModel(appManager, tile.id)
         vm.onLabelChanged("New")

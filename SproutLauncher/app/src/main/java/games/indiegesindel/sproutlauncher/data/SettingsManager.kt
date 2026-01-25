@@ -38,6 +38,18 @@ class SettingsManager(context: Context) {
     private val _appTileRoundness = MutableStateFlow(loadAppTileRoundness())
     val appTileRoundness: StateFlow<Int> = _appTileRoundness.asStateFlow()
 
+    private val _groupRows = MutableStateFlow(loadGroupRows())
+    val groupRows: StateFlow<Int> = _groupRows.asStateFlow()
+
+    private val _groupHorizontalSpacing = MutableStateFlow(loadGroupHorizontalSpacing())
+    val groupHorizontalSpacing: StateFlow<Int> = _groupHorizontalSpacing.asStateFlow()
+
+    private val _groupVerticalSpacing = MutableStateFlow(loadGroupVerticalSpacing())
+    val groupVerticalSpacing: StateFlow<Int> = _groupVerticalSpacing.asStateFlow()
+
+    private val _groupAppTileRoundness = MutableStateFlow(loadGroupAppTileRoundness())
+    val groupAppTileRoundness: StateFlow<Int> = _groupAppTileRoundness.asStateFlow()
+
     private val _wallpaperUri = MutableStateFlow(loadWallpaperUri())
     val wallpaperUri: StateFlow<String?> = _wallpaperUri.asStateFlow()
 
@@ -61,6 +73,10 @@ class SettingsManager(context: Context) {
             KEY_HORIZONTAL_SPACING -> _horizontalSpacing.value = loadHorizontalSpacing()
             KEY_VERTICAL_SPACING -> _verticalSpacing.value = loadVerticalSpacing()
             KEY_APP_TILE_ROUNDNESS -> _appTileRoundness.value = loadAppTileRoundness()
+            KEY_GROUP_ROWS -> _groupRows.value = loadGroupRows()
+            KEY_GROUP_HORIZONTAL_SPACING -> _groupHorizontalSpacing.value = loadGroupHorizontalSpacing()
+            KEY_GROUP_VERTICAL_SPACING -> _groupVerticalSpacing.value = loadGroupVerticalSpacing()
+            KEY_GROUP_APP_TILE_ROUNDNESS -> _groupAppTileRoundness.value = loadGroupAppTileRoundness()
             KEY_WALLPAPER_URI -> _wallpaperUri.value = loadWallpaperUri()
             KEY_WALLPAPER_DIM -> _wallpaperDim.value = loadWallpaperDim()
             KEY_SHOW_YOUTUBE -> _showYouTube.value = loadShowYouTube()
@@ -80,6 +96,10 @@ class SettingsManager(context: Context) {
         private const val KEY_HORIZONTAL_SPACING = "horizontal_spacing"
         private const val KEY_VERTICAL_SPACING = "vertical_spacing"
         private const val KEY_APP_TILE_ROUNDNESS = "app_tile_roundness"
+        private const val KEY_GROUP_ROWS = "group_rows"
+        private const val KEY_GROUP_HORIZONTAL_SPACING = "group_horizontal_spacing"
+        private const val KEY_GROUP_VERTICAL_SPACING = "group_vertical_spacing"
+        private const val KEY_GROUP_APP_TILE_ROUNDNESS = "group_app_tile_roundness"
         private const val KEY_WALLPAPER_URI = "wallpaper_uri"
         private const val KEY_WALLPAPER_DIM = "wallpaper_dim"
         private const val KEY_SHOW_YOUTUBE = "show_youtube"
@@ -144,6 +164,42 @@ class SettingsManager(context: Context) {
     fun setAppTileRoundness(roundness: Int) {
         sharedPreferences.edit { putInt(KEY_APP_TILE_ROUNDNESS, roundness) }
         _appTileRoundness.value = roundness
+    }
+
+    private fun loadGroupRows(): Int {
+        return sharedPreferences.getInt(KEY_GROUP_ROWS, 2)
+    }
+
+    fun setGroupRows(rows: Int) {
+        sharedPreferences.edit { putInt(KEY_GROUP_ROWS, rows) }
+        _groupRows.value = rows
+    }
+
+    private fun loadGroupHorizontalSpacing(): Int {
+        return sharedPreferences.getInt(KEY_GROUP_HORIZONTAL_SPACING, defaultSpacing)
+    }
+
+    fun setGroupHorizontalSpacing(spacing: Int) {
+        sharedPreferences.edit { putInt(KEY_GROUP_HORIZONTAL_SPACING, spacing) }
+        _groupHorizontalSpacing.value = spacing
+    }
+
+    private fun loadGroupVerticalSpacing(): Int {
+        return sharedPreferences.getInt(KEY_GROUP_VERTICAL_SPACING, defaultSpacing)
+    }
+
+    fun setGroupVerticalSpacing(spacing: Int) {
+        sharedPreferences.edit { putInt(KEY_GROUP_VERTICAL_SPACING, spacing) }
+        _groupVerticalSpacing.value = spacing
+    }
+
+    private fun loadGroupAppTileRoundness(): Int {
+        return sharedPreferences.getInt(KEY_GROUP_APP_TILE_ROUNDNESS, defaultRoundness)
+    }
+
+    fun setGroupAppTileRoundness(roundness: Int) {
+        sharedPreferences.edit { putInt(KEY_GROUP_APP_TILE_ROUNDNESS, roundness) }
+        _groupAppTileRoundness.value = roundness
     }
 
     private fun loadWallpaperUri(): String? {
