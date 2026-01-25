@@ -36,6 +36,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,6 +46,13 @@ import coil.imageLoader
 import coil.size.Size
 import games.indiegesindel.sproutlauncher.model.AppTile
 import android.content.pm.ResolveInfo
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntSize
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.LaunchedEffect
@@ -71,6 +79,10 @@ fun AppGridItem(
     var isFocused by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
+    val coroutineScope = rememberCoroutineScope()
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    val density = LocalDensity.current
 
     LaunchedEffect(isTargetFocused) {
         if (isTargetFocused) {
@@ -99,9 +111,25 @@ fun AppGridItem(
         Column(
             modifier = Modifier
                 .focusRequester(focusRequester)
+                .bringIntoViewRequester(bringIntoViewRequester)
+                .onGloballyPositioned { size = it.size }
                 .onFocusChanged {
                     isFocused = it.isFocused
-                    if (it.isFocused && id != null) onFocused(id)
+                    if (it.isFocused) {
+                        if (id != null) onFocused(id)
+                        coroutineScope.launch {
+                            val horizontalPadding = with(density) { 24.dp.toPx() }
+                            val verticalPadding = with(density) { 16.dp.toPx() }
+                            bringIntoViewRequester.bringIntoView(
+                                Rect(
+                                    left = -horizontalPadding,
+                                    top = -verticalPadding,
+                                    right = size.width.toFloat() + horizontalPadding,
+                                    bottom = size.height.toFloat() + verticalPadding
+                                )
+                            )
+                        }
+                    }
                 }
                 .onKeyEvent { event ->
                     val isDown = event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN

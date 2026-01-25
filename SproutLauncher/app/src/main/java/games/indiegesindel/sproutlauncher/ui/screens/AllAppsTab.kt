@@ -1,5 +1,6 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import android.content.pm.ResolveInfo
 import androidx.compose.foundation.layout.fillMaxSize
@@ -70,7 +71,9 @@ fun AllAppsTab(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .padding(vertical = 8.dp)
+                            .focusable()
                     )
                 }
             }
@@ -124,7 +127,9 @@ fun AllAppsTab(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                        modifier = Modifier
+                            .padding(top = 16.dp, bottom = 8.dp)
+                            .focusable()
                     )
                 }
 
@@ -134,7 +139,9 @@ fun AllAppsTab(
                             text = "You can add shortcuts to the homescreen from supported apps by using their 'Add to home screen' feature.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .focusable()
                         )
                     }
                 } else {
