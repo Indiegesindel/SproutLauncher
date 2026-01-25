@@ -102,7 +102,7 @@ fun ExtendedScreen(
         Box(modifier = Modifier.weight(1f)) {
             when (currentTab) {
                 ExtendedViewModel.Tab.ALL, ExtendedViewModel.Tab.HOMESCREEN -> {
-                    AppListTab(viewModel = viewModel)
+                    AppListTab(viewModel = viewModel, onBack = onBack)
                 }
 
                 ExtendedViewModel.Tab.SETTINGS -> {

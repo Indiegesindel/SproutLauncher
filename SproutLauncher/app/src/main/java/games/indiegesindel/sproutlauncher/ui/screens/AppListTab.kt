@@ -32,7 +32,8 @@ import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
 
 @Composable
 fun AppListTab(
-    viewModel: ExtendedViewModel
+    viewModel: ExtendedViewModel,
+    onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val currentTab by viewModel.currentTab.collectAsState()
@@ -122,6 +123,7 @@ fun AppListTab(
                         if (it != null) viewModel.onFocusChanged(FocusedElement.APP_TILE)
                     },
                     hasGroups = selectedTiles.any { it.isGroup },
+                    onDismiss = onBack,
                     enabled = tileToRemove == null
                 )
             }

@@ -41,6 +41,7 @@ fun AllAppsTab(
     focusedItemId: String? = null,
     onFocusItemIdChanged: (String?) -> Unit = {},
     hasGroups: Boolean = false,
+    onDismiss: () -> Unit = {},
     enabled: Boolean = true
 ) {
     val context = LocalContext.current
@@ -132,6 +133,7 @@ fun AllAppsTab(
                     onFocused = { onFocusItemIdChanged(it) },
                     isInMultiSelectMode = false,
                     isSelected = false,
+                    onDismiss = onDismiss,
                     showGroupOptions = false,
                     hasGroups = hasGroups,
                     enabled = enabled
@@ -183,6 +185,7 @@ fun AllAppsTab(
                             onFocused = { onFocusItemIdChanged(it) },
                             isInMultiSelectMode = false,
                             isSelected = false,
+                            onDismiss = onDismiss,
                             showGroupOptions = false,
                             hasGroups = hasGroups,
                             enabled = enabled

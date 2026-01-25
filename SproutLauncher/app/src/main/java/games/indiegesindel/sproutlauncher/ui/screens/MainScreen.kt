@@ -178,6 +178,7 @@ fun MainScreen(
                         onToggleSelection = { viewModel.toggleTileSelection(it) },
                         onCreateGroup = { viewModel.enterMultiSelectMode(it) },
                         onGroupSelected = { viewModel.groupSelectedTiles() },
+                        onRemoveSelected = { viewModel.removeSelectedTiles() },
                         onClearSelection = { viewModel.clearSelection() },
                         onOpenGroup = { viewModel.openGroup(it) },
                         onAddToGroup = { viewModel.requestMoveToGroup(it) },

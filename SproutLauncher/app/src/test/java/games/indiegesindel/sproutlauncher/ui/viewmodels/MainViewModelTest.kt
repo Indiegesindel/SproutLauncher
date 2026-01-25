@@ -177,22 +177,50 @@ class MainViewModelTest {
     }
 
     @Test
-    fun focus_logic_updates_correctly() {
-        vm.onFocusChanged(true)
-        assert(vm.focusedElement.value == FocusedElement.APP_TILE)
-        vm.onFocusChanged(false)
-        assert(vm.focusedElement.value == FocusedElement.NONE)
+    fun removeSelectedTiles_removes_tiles_and_clears_selection() = runTest(testDispatcher) {
+        val tile1 = AppTile(id = "1", packageName = "p1", activityName = "a1", label = "l1")
+        val tile2 = AppTile(id = "2", packageName = "p2", activityName = "a2", label = "l2")
+        val tile3 = AppTile(id = "3", packageName = "p3", activityName = "a3", label = "l3")
+        val tiles = listOf(tile1, tile2, tile3)
 
-        vm.onQuickActionsFocusChanged(true)
-        assert(vm.focusedElement.value == FocusedElement.QUICK_ACTION)
-        vm.onQuickActionsFocusChanged(false)
-        assert(vm.focusedElement.value == FocusedElement.NONE)
+        val field = MainViewModel::class.java.getDeclaredField("_appTiles")
+        field.isAccessible = true
+        val state = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<List<AppTile>>
+        state.value = tiles
 
-        vm.onFocusedItemIdChanged(null)
-        assert(vm.focusedElement.value == FocusedElement.NONE)
-        vm.onFocusedItemIdChanged("action:xyz")
-        assert(vm.focusedElement.value == FocusedElement.QUICK_ACTION)
-        vm.onFocusedItemIdChanged("tile:abc")
-        assert(vm.focusedElement.value == FocusedElement.APP_TILE)
+        vm.enterMultiSelectMode("1")
+        vm.toggleTileSelection("2")
+
+        vm.removeSelectedTiles()
+
+        assert(vm.appTiles.value == listOf(tile3))
+        assert(vm.selectedTileIds.value.isEmpty())
+        assert(vm.isInMultiSelectMode.value == false)
+        verify { appManager.saveAppTiles(listOf(tile3)) }
+    }
+
+    @Test
+    fun multiSelectMode_prevents_selecting_groups() = runTest(testDispatcher) {
+        val tile1 = AppTile(id = "1", packageName = "p1", activityName = "a1", label = "l1")
+        val group = AppTile(id = "g1", packageName = "", activityName = "", label = "G", isGroup = true)
+        val tiles = listOf(tile1, group)
+
+        val field = MainViewModel::class.java.getDeclaredField("_appTiles")
+        field.isAccessible = true
+        val state = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<List<AppTile>>
+        state.value = tiles
+
+        // Try entering with group
+        vm.enterMultiSelectMode("g1")
+        assert(vm.isInMultiSelectMode.value == false)
+
+        // Enter with regular tile
+        vm.enterMultiSelectMode("1")
+        assert(vm.isInMultiSelectMode.value == true)
+        assert(vm.selectedTileIds.value == setOf("1"))
+
+        // Try toggling group
+        vm.toggleTileSelection("g1")
+        assert(vm.selectedTileIds.value == setOf("1"))
     }
 }

@@ -164,11 +164,17 @@ class MainViewModel(
     }
 
     fun enterMultiSelectMode(initialTileId: String) {
+        val tile = findTileById(_appTiles.value, initialTileId)
+        if (tile?.isGroup == true) return
+
         _isInMultiSelectMode.value = true
         _selectedTileIds.value = setOf(initialTileId)
     }
 
     fun toggleTileSelection(tileId: String) {
+        val tile = findTileById(_appTiles.value, tileId)
+        if (tile?.isGroup == true) return
+
         val currentSelection = _selectedTileIds.value
         if (currentSelection.contains(tileId)) {
             _selectedTileIds.value = currentSelection - tileId
@@ -205,6 +211,18 @@ class MainViewModel(
         saveAppTiles()
         clearSelection()
         onFocusedItemIdChanged("tile:${newGroup.id}")
+    }
+
+    fun removeSelectedTiles() {
+        val selectedIds = _selectedTileIds.value
+        if (selectedIds.isEmpty()) return
+
+        val currentTiles = _appTiles.value
+        val remainingTiles = currentTiles.filter { !selectedIds.contains(it.id) }
+
+        _appTiles.value = remainingTiles
+        saveAppTiles()
+        clearSelection()
     }
 
     fun ungroup(groupTileId: String) {
