@@ -61,7 +61,9 @@ fun AllAppsTab(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (shortcuts.isNotEmpty() && installedApps.isNotEmpty()) {
+            val showAppsHeader = isHomeScreen && installedApps.isNotEmpty() && (shortcuts.isNotEmpty() || isHomeScreen)
+            
+            if (showAppsHeader) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
                         text = "Apps",
@@ -115,7 +117,7 @@ fun AllAppsTab(
                 )
             }
 
-            if (shortcuts.isNotEmpty()) {
+            if (isHomeScreen || shortcuts.isNotEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
                         text = "Shortcuts",
@@ -126,25 +128,36 @@ fun AllAppsTab(
                     )
                 }
 
-                items(shortcuts, key = { tile -> "shortcut_${tile.id}" }) { tile ->
-                    val itemId = "shortcut_${tile.id}"
-                    AppGridItem(
-                        app = null,
-                        isOnHomeScreen = true,
-                        tile = tile,
-                        onToggleHomeScreen = {
-                            onRequestRemove(tile)
-                        },
-                        onEdit = {
-                            val intent = Intent(context, AppTileSettingsActivity::class.java).apply {
-                                putExtra("TILE_ID", tile.id)
-                            }
-                            context.startActivity(intent)
-                        },
-                        id = itemId,
-                        isTargetFocused = focusedItemId == itemId,
-                        onFocused = { onFocusItemIdChanged(it) }
-                    )
+                if (isHomeScreen && shortcuts.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Text(
+                            text = "You can add shortcuts to the homescreen from supported apps by using their 'Add to home screen' feature.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                } else {
+                    items(shortcuts, key = { tile -> "shortcut_${tile.id}" }) { tile ->
+                        val itemId = "shortcut_${tile.id}"
+                        AppGridItem(
+                            app = null,
+                            isOnHomeScreen = true,
+                            tile = tile,
+                            onToggleHomeScreen = {
+                                onRequestRemove(tile)
+                            },
+                            onEdit = {
+                                val intent = Intent(context, AppTileSettingsActivity::class.java).apply {
+                                    putExtra("TILE_ID", tile.id)
+                                }
+                                context.startActivity(intent)
+                            },
+                            id = itemId,
+                            isTargetFocused = focusedItemId == itemId,
+                            onFocused = { onFocusItemIdChanged(it) }
+                        )
+                    }
                 }
             }
         }

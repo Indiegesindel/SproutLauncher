@@ -91,6 +91,7 @@ fun AppListTab(
                         selectedTiles = selectedTiles,
                         shortcuts = shortcuts,
                         isLoading = isLoadingApps,
+                        isHomeScreen = currentTab == ExtendedViewModel.Tab.HOMESCREEN,
                         appManager = appManager,
                         onTilesChanged = { viewModel.loadTiles() },
                         onRequestRemove = { viewModel.requestRemoveTile(it) },
