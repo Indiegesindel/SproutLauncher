@@ -59,6 +59,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntSize
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -244,6 +251,10 @@ fun AppTileItem(
     val focusRequester = remember { FocusRequester() }
     var isYPressed by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    val density = LocalDensity.current
 
     LaunchedEffect(isTargetFocused) {
         if (isTargetFocused) {
@@ -258,9 +269,25 @@ fun AppTileItem(
         modifier = Modifier
             .zIndex(if (isDragging) 1f else 0f)
             .focusRequester(focusRequester)
+            .bringIntoViewRequester(bringIntoViewRequester)
+            .onGloballyPositioned { size = it.size }
             .onFocusChanged { 
                 isFocused = it.isFocused
-                if (it.isFocused) onFocused()
+                if (it.isFocused) {
+                    onFocused()
+                    coroutineScope.launch {
+                        val horizontalPadding = with(density) { 24.dp.toPx() }
+                        val verticalPadding = with(density) { 8.dp.toPx() }
+                        bringIntoViewRequester.bringIntoView(
+                            Rect(
+                                left = -horizontalPadding,
+                                top = -verticalPadding,
+                                right = size.width.toFloat() + horizontalPadding,
+                                bottom = size.height.toFloat() + verticalPadding
+                            )
+                        )
+                    }
+                }
             }
             .onKeyEvent { event ->
                 val isDown = event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN
