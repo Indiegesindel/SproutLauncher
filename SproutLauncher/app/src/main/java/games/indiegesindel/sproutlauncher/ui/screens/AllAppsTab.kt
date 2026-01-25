@@ -129,7 +129,8 @@ fun AllAppsTab(
                     isTargetFocused = focusedItemId == itemId,
                     onFocused = { onFocusItemIdChanged(it) },
                     isInMultiSelectMode = false,
-                    isSelected = false
+                    isSelected = false,
+                    showGroupOptions = false
                 )
             }
 
@@ -177,7 +178,8 @@ fun AllAppsTab(
                             isTargetFocused = focusedItemId == itemId,
                             onFocused = { onFocusItemIdChanged(it) },
                             isInMultiSelectMode = false,
-                            isSelected = false
+                            isSelected = false,
+                            showGroupOptions = false
                         )
                     }
                 }
