@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -37,6 +39,8 @@ import games.indiegesindel.sproutlauncher.ExtendedActivity
 import games.indiegesindel.sproutlauncher.FocusedElement
 import games.indiegesindel.sproutlauncher.ui.components.AppGrid
 import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
+import games.indiegesindel.sproutlauncher.ui.components.PromptsFooter
+import games.indiegesindel.sproutlauncher.ui.components.GroupModal
 import games.indiegesindel.sproutlauncher.ui.components.QuickActionsBar
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.viewmodels.MainViewModel
@@ -55,6 +59,10 @@ fun MainScreen(
     val horizontalSpacing by viewModel.horizontalSpacing.collectAsState()
     val verticalSpacing by viewModel.verticalSpacing.collectAsState()
     val appTileRoundness by viewModel.appTileRoundness.collectAsState()
+    val groupRows by viewModel.groupRows.collectAsState()
+    val groupHorizontalSpacing by viewModel.groupHorizontalSpacing.collectAsState()
+    val groupVerticalSpacing by viewModel.groupVerticalSpacing.collectAsState()
+    val groupAppTileRoundness by viewModel.groupAppTileRoundness.collectAsState()
     val installedQuickActions by viewModel.installedQuickActions.collectAsState()
     val wallpaperUri by viewModel.wallpaperUri.collectAsState()
     val wallpaperDim by viewModel.wallpaperDim.collectAsState()
@@ -62,6 +70,9 @@ fun MainScreen(
     val showDiscord by viewModel.showDiscord.collectAsState()
     val showSpotify by viewModel.showSpotify.collectAsState()
     val tileToRemove by viewModel.tileToRemove.collectAsState()
+    val isInMultiSelectMode by viewModel.isInMultiSelectMode.collectAsState()
+    val selectedTileIds by viewModel.selectedTileIds.collectAsState()
+    val openedGroup by viewModel.openedGroup.collectAsState()
 
     fun launchApp(packageName: String) {
         LauncherUtils.launchApp(context, packageName)
@@ -74,14 +85,19 @@ fun MainScreen(
         )
     }
 
+    if (openedGroup != null) {
+        BackHandler {
+            viewModel.closeGroup()
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.displayCutout),
         containerColor = if (wallpaperUri != null) Color.Transparent else MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             if (wallpaperUri != null) {
                 Image(
@@ -96,146 +112,173 @@ fun MainScreen(
                         .background(Color.Black.copy(alpha = wallpaperDim))
                 )
             }
+            // Content and Overlays
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
+                // Main content
                 Column(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 56.dp) // Space for footer
+                        .focusProperties { canFocus = openedGroup == null },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        AppGrid(
-                            appTiles = appTiles,
-                            isLoading = isLoading,
-                            rows = homeScreenRows,
-                            horizontalSpacing = horizontalSpacing,
-                            verticalSpacing = verticalSpacing,
-                            onAppClick = { tile ->
-                                LauncherUtils.launchTile(context, tile)
-                            },
-                            onRemove = { tile ->
-                                viewModel.requestRemoveTile(tile)
-                            },
-                            onSettings = { tile ->
-                                val intent =
-                                    Intent(context, AppTileSettingsActivity::class.java).apply {
-                                        putExtra("TILE_ID", tile.id)
-                                    }
-                                context.startActivity(intent)
-                            },
-                            onReorder = { from, to ->
-                                viewModel.reorderAppTiles(from, to)
-                            },
-                            onDragEnd = {
-                                viewModel.saveAppTiles()
-                            },
-                            onFocusChanged = { focused ->
-                                viewModel.onFocusChanged(focused)
-                            },
-                            focusedItemId = focusedItemId,
-                            onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) },
-                            roundness = appTileRoundness,
-                            modifier = Modifier.padding(bottom = 0.dp)
-                        )
+                    AppGrid(
+                        appTiles = appTiles,
+                        isLoading = isLoading,
+                        rows = homeScreenRows,
+                        horizontalSpacing = horizontalSpacing,
+                        verticalSpacing = verticalSpacing,
+                        onAppClick = { tile ->
+                            LauncherUtils.launchTile(context, tile)
+                        },
+                        onRemove = { tile ->
+                            viewModel.requestRemoveTile(tile)
+                        },
+                        onSettings = { tile ->
+                            val intent =
+                                Intent(context, AppTileSettingsActivity::class.java).apply {
+                                    putExtra("TILE_ID", tile.id)
+                                }
+                            context.startActivity(intent)
+                        },
+                        onReorder = { from, to ->
+                            viewModel.reorderAppTiles(from, to)
+                        },
+                        onDragEnd = {
+                            viewModel.saveAppTiles()
+                        },
+                        onFocusChanged = { focused ->
+                            viewModel.onFocusChanged(focused)
+                        },
+                        focusedItemId = focusedItemId,
+                        onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) },
+                        roundness = appTileRoundness,
+                        isInMultiSelectMode = isInMultiSelectMode,
+                        selectedTileIds = selectedTileIds,
+                        onToggleSelection = { viewModel.toggleTileSelection(it) },
+                        onCreateGroup = { viewModel.enterMultiSelectMode(it) },
+                        onGroupSelected = { viewModel.groupSelectedTiles() },
+                        onClearSelection = { viewModel.clearSelection() },
+                        onOpenGroup = { viewModel.openGroup(it) },
+                        onUngroup = { viewModel.ungroup(it) }
+                    )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                        Box(modifier = Modifier.zIndex(1f)) {
-                            QuickActionsBar(
-                                onAllAppsClick = {
-                                    context.startActivity(
-                                        Intent(
-                                            context,
-                                            ExtendedActivity::class.java
-                                        )
+                    Box(modifier = Modifier.zIndex(1f)) {
+                        QuickActionsBar(
+                            onAllAppsClick = {
+                                context.startActivity(
+                                    Intent(
+                                        context,
+                                        ExtendedActivity::class.java
                                     )
-                                },
-                                onBrowserClick = {
-                                    try {
-                                        val intent = Intent.makeMainSelectorActivity(
-                                            Intent.ACTION_MAIN,
-                                            Intent.CATEGORY_APP_BROWSER
-                                        )
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        Toast.makeText(
-                                            context,
-                                            "Could not open browser",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                )
+                            },
+                            onBrowserClick = {
+                                try {
+                                    val intent = Intent.makeMainSelectorActivity(
+                                        Intent.ACTION_MAIN,
+                                        Intent.CATEGORY_APP_BROWSER
+                                    )
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        "Could not open browser",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                            onYouTubeClick = if (showYouTube && installedQuickActions["com.google.android.youtube"] == true) {
+                                { launchApp("com.google.android.youtube") }
+                            } else null,
+                            onPlayStoreClick = if (installedQuickActions["com.android.vending"] == true) {
+                                { launchApp("com.android.vending") }
+                            } else null,
+                            onDiscordClick = if (showDiscord && installedQuickActions["com.discord"] == true) {
+                                { launchApp("com.discord") }
+                            } else null,
+                            onSpotifyClick = if (showSpotify && installedQuickActions["com.spotify.music"] == true) {
+                                { launchApp("com.spotify.music") }
+                            } else null,
+                            onPhotosClick = if (installedQuickActions["com.google.android.apps.photos"] == true) {
+                                { launchApp("com.google.android.apps.photos") }
+                            } else null,
+                            onSettingsClick = {
+                                try {
+                                    val intent = Intent(Settings.ACTION_SETTINGS).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                     }
-                                },
-                                onYouTubeClick = if (showYouTube && installedQuickActions["com.google.android.youtube"] == true) {
-                                    { launchApp("com.google.android.youtube") }
-                                } else null,
-                                onPlayStoreClick = if (installedQuickActions["com.android.vending"] == true) {
-                                    { launchApp("com.android.vending") }
-                                } else null,
-                                onDiscordClick = if (showDiscord && installedQuickActions["com.discord"] == true) {
-                                    { launchApp("com.discord") }
-                                } else null,
-                                onSpotifyClick = if (showSpotify && installedQuickActions["com.spotify.music"] == true) {
-                                    { launchApp("com.spotify.music") }
-                                } else null,
-                                onPhotosClick = if (installedQuickActions["com.google.android.apps.photos"] == true) {
-                                    { launchApp("com.google.android.apps.photos") }
-                                } else null,
-                                onSettingsClick = {
-                                    try {
-                                        val intent = Intent(Settings.ACTION_SETTINGS).apply {
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        Toast.makeText(
-                                            context,
-                                            "Could not open settings",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                },
-                                onFocusChanged = { viewModel.onQuickActionsFocusChanged(it) },
-                                focusedItemId = focusedItemId,
-                                onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) }
-                            )
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        "Could not open settings",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                            onFocusChanged = { viewModel.onQuickActionsFocusChanged(it) },
+                            focusedItemId = focusedItemId,
+                            onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) }
+                        )
+                    }
+                }
+            }
+
+            // Overlay (outside innerPadding to fill screen)
+            if (openedGroup != null) {
+                GroupModal(
+                    group = openedGroup!!,
+                    onDismiss = { viewModel.closeGroup() },
+                    onAppClick = { tile -> LauncherUtils.launchTile(context, tile) },
+                    onRemoveFromGroup = { tileId -> viewModel.removeTileFromGroup(openedGroup!!.id, tileId) },
+                    onSettings = { tile ->
+                        val intent =
+                            Intent(context, AppTileSettingsActivity::class.java).apply {
+                                putExtra("TILE_ID", tile.id)
+                            }
+                        context.startActivity(intent)
+                    },
+                    focusedItemId = focusedItemId,
+                    onFocusItemIdChanged = { viewModel.onFocusedItemIdChanged(it) },
+                    innerPadding = innerPadding,
+                    rows = groupRows,
+                    horizontalSpacing = groupHorizontalSpacing,
+                    verticalSpacing = groupVerticalSpacing,
+                    roundness = groupAppTileRoundness
+                )
+            }
+
+            // Permanent black bar footer (on top of everything)
+            PromptsFooter(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(2f)
+            ) {
+                when (focusedElement) {
+                    FocusedElement.APP_TILE -> {
+                        ButtonPrompt(button = "Y", label = "Move (Hold)")
+                        ButtonPrompt(button = "X", label = "Options")
+                        ButtonPrompt(button = "A", label = "Launch")
+                        if (openedGroup != null) {
+                            ButtonPrompt(button = "B", label = "Close")
                         }
                     }
 
-                    // Controller prompts
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 32.dp, end = 32.dp, bottom = 12.dp, top = 0.dp)
-                            .height(32.dp),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            when (focusedElement) {
-                                FocusedElement.APP_TILE -> {
-                                    ButtonPrompt(button = "Y", label = "Move (Hold)")
-                                    ButtonPrompt(button = "X", label = "Options")
-                                    ButtonPrompt(button = "A", label = "Launch")
-                                }
+                    FocusedElement.QUICK_ACTION -> {
+                        ButtonPrompt(button = "X", label = "Options")
+                        ButtonPrompt(button = "A", label = "Launch")
+                    }
 
-                                FocusedElement.QUICK_ACTION -> {
-                                    ButtonPrompt(button = "X", label = "Options")
-                                    ButtonPrompt(button = "A", label = "Launch")
-                                }
-
-                                else -> {
-                                    // Show nothing or default
-                                }
-                            }
-                        }
+                    else -> {
+                        // Show nothing or default
                     }
                 }
             }

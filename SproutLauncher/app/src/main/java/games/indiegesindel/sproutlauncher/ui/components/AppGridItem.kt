@@ -23,6 +23,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,6 +61,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.LaunchedEffect
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 import games.indiegesindel.sproutlauncher.utils.LauncherUtils
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -69,7 +73,16 @@ fun AppGridItem(
     onEdit: () -> Unit = {},
     id: String? = null,
     isTargetFocused: Boolean = false,
-    onFocused: (String) -> Unit = {}
+    onFocused: (String) -> Unit = {},
+    isInMultiSelectMode: Boolean = false,
+    isSelected: Boolean = false,
+    onToggleSelection: () -> Unit = {},
+    onCreateGroup: () -> Unit = {},
+    onGroupSelected: () -> Unit = {},
+    onClearSelection: () -> Unit = {},
+    onOpenGroup: () -> Unit = {},
+    onUngroup: () -> Unit = {},
+    onRemoveFromGroup: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
@@ -144,7 +157,11 @@ fun AppGridItem(
                         event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
                         event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_A
                     )) {
-                        if (tile != null) {
+                        if (isInMultiSelectMode) {
+                            onToggleSelection()
+                        } else if (tile?.isGroup == true) {
+                            onOpenGroup()
+                        } else if (tile != null) {
                             LauncherUtils.launchTile(context, tile)
                         } else if (app != null) {
                             LauncherUtils.launchApp(context, app.activityInfo.packageName)
@@ -156,6 +173,7 @@ fun AppGridItem(
                 }
                 .background(
                     color = when {
+                        isSelected -> MaterialTheme.colorScheme.primary
                         isFocused -> MaterialTheme.colorScheme.primaryContainer
                         isOnHomeScreen -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         else -> Color.Transparent
@@ -163,7 +181,7 @@ fun AppGridItem(
                     shape = RoundedCornerShape(16.dp)
                 )
                 .then(
-                    if (isOnHomeScreen && !isFocused) {
+                    if (isOnHomeScreen && !isFocused && !isSelected) {
                         Modifier.border(
                             width = 1.dp,
                             color = MaterialTheme.colorScheme.outlineVariant,
@@ -173,7 +191,11 @@ fun AppGridItem(
                 )
                 .combinedClickable(
                     onClick = {
-                        if (tile != null) {
+                        if (isInMultiSelectMode) {
+                            onToggleSelection()
+                        } else if (tile?.isGroup == true) {
+                            onOpenGroup()
+                        } else if (tile != null) {
                             LauncherUtils.launchTile(context, tile)
                         } else if (app != null) {
                             LauncherUtils.launchApp(context, app.activityInfo.packageName)
@@ -186,13 +208,36 @@ fun AppGridItem(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box {
-                Image(
-                    painter = iconPainter,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                )
+                if (tile?.isGroup == true && tile.iconUri == null) {
+                    GroupIcon(groupTiles = tile.groupTiles)
+                } else {
+                    Image(
+                        painter = iconPainter,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                }
+
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                        contentAlignment = Alignment.TopEnd
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier
+                                .padding(2.dp)
+                                .size(20.dp)
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -203,6 +248,7 @@ fun AppGridItem(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
                 color = when {
+                    isSelected -> MaterialTheme.colorScheme.onPrimary
                     isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
                     else -> MaterialTheme.colorScheme.onSurface
                 }
@@ -213,18 +259,29 @@ fun AppGridItem(
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
         ) {
-            DropdownMenuItem(
-                text = { Text("Launch") },
-                onClick = {
-                    showMenu = false
-                    if (tile != null) {
-                        LauncherUtils.launchTile(context, tile)
-                    } else if (app != null) {
-                        LauncherUtils.launchApp(context, app.activityInfo.packageName)
+            if (isInMultiSelectMode && isSelected) {
+                DropdownMenuItem(
+                    text = { Text("Group selected") },
+                    onClick = {
+                        showMenu = false
+                        onGroupSelected()
                     }
-                }
-            )
-            if (isOnHomeScreen) {
+                )
+                DropdownMenuItem(
+                    text = { Text("Clear selection") },
+                    onClick = {
+                        showMenu = false
+                        onClearSelection()
+                    }
+                )
+            } else if (tile?.isGroup == true) {
+                DropdownMenuItem(
+                    text = { Text("Open") },
+                    onClick = {
+                        showMenu = false
+                        onOpenGroup()
+                    }
+                )
                 DropdownMenuItem(
                     text = { Text("Edit") },
                     onClick = {
@@ -232,41 +289,87 @@ fun AppGridItem(
                         onEdit()
                     }
                 )
-            }
-            if (tile?.shortcutId == null && app != null) {
                 DropdownMenuItem(
-                    text = { Text("Details") },
+                    text = { Text("Ungroup") },
                     onClick = {
                         showMenu = false
-                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = Uri.parse("package:${app.activityInfo.packageName}")
-                        }
-                        context.startActivity(intent)
+                        onUngroup()
                     }
                 )
-            }
-            DropdownMenuItem(
-                text = { Text(if (isOnHomeScreen) "Remove from Homescreen" else "Add to Homescreen") },
-                onClick = {
-                    showMenu = false
-                    onToggleHomeScreen()
+            } else {
+                DropdownMenuItem(
+                    text = { Text("Launch") },
+                    onClick = {
+                        showMenu = false
+                        if (tile != null) {
+                            LauncherUtils.launchTile(context, tile)
+                        } else if (app != null) {
+                            LauncherUtils.launchApp(context, app.activityInfo.packageName)
+                        }
+                    }
+                )
+                if (isOnHomeScreen) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = {
+                            showMenu = false
+                            onEdit()
+                        }
+                    )
+                    if (onRemoveFromGroup == null) {
+                        DropdownMenuItem(
+                            text = { Text("Create group") },
+                            onClick = {
+                                showMenu = false
+                                onCreateGroup()
+                            }
+                        )
+                    }
                 }
-            )
-            if (tile?.shortcutId == null && app != null) {
+                if (tile?.shortcutId == null && app != null) {
+                    DropdownMenuItem(
+                        text = { Text("Details") },
+                        onClick = {
+                            showMenu = false
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = "package:${app.activityInfo.packageName}".toUri()
+                            }
+                            context.startActivity(intent)
+                        }
+                    )
+                }
+                if (onRemoveFromGroup != null) {
+                    DropdownMenuItem(
+                        text = { Text("Remove from group") },
+                        onClick = {
+                            showMenu = false
+                            onRemoveFromGroup()
+                        }
+                    )
+                }
                 DropdownMenuItem(
-                    text = { Text("Uninstall") },
+                    text = { Text(if (isOnHomeScreen) "Remove from Homescreen" else "Add to Homescreen") },
                     onClick = {
                         showMenu = false
-                        val intent = Intent(Intent.ACTION_DELETE).apply {
-                            data = Uri.parse("package:${app.activityInfo.packageName}")
-                        }
-                        try {
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            // Log or handle error
-                        }
+                        onToggleHomeScreen()
                     }
                 )
+                if (tile?.shortcutId == null && app != null) {
+                    DropdownMenuItem(
+                        text = { Text("Uninstall") },
+                        onClick = {
+                            showMenu = false
+                            val intent = Intent(Intent.ACTION_DELETE).apply {
+                                data = "package:${app.activityInfo.packageName}".toUri()
+                            }
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                // Log or handle error
+                            }
+                        }
+                    )
+                }
             }
         }
     }

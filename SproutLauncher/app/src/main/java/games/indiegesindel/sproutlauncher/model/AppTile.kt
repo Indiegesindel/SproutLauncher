@@ -11,5 +11,7 @@ data class AppTile(
     val activityName: String,
     val label: String,
     val iconUri: String? = null, // URI or path to a custom icon/image
-    val shortcutId: String? = null
+    val shortcutId: String? = null,
+    val isGroup: Boolean = false,
+    val groupTiles: List<AppTile> = emptyList()
 )

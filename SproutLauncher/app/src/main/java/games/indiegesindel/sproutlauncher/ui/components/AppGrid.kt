@@ -57,6 +57,9 @@ import games.indiegesindel.sproutlauncher.model.AppTile
 import android.view.KeyEvent
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -162,7 +165,16 @@ fun AppGrid(
     focusedItemId: String? = null,
     onFocusItemIdChanged: (String?) -> Unit = {},
     onDragEnd: () -> Unit = {},
-    roundness: Int = 16
+    roundness: Int = 16,
+    isInMultiSelectMode: Boolean = false,
+    selectedTileIds: Set<String> = emptySet(),
+    onToggleSelection: (String) -> Unit = {},
+    onCreateGroup: (String) -> Unit = {},
+    onGroupSelected: () -> Unit = {},
+    onClearSelection: () -> Unit = {},
+    onOpenGroup: (AppTile) -> Unit = {},
+    onUngroup: (String) -> Unit = {},
+    onRemoveFromGroup: ((String) -> Unit)? = null
 ) {
     val configuration = LocalConfiguration.current
     val isPhone = configuration.smallestScreenWidthDp < 600
@@ -225,7 +237,16 @@ fun AppGrid(
                     reorderableState = reorderableState,
                     isTargetFocused = focusedItemId == tileId,
                     onFocused = { onFocusItemIdChanged(tileId) },
-                    roundness = roundness
+                    roundness = roundness,
+                    isInMultiSelectMode = isInMultiSelectMode,
+                    isSelected = selectedTileIds.contains(tile.id),
+                    onToggleSelection = { onToggleSelection(tile.id) },
+                    onCreateGroup = { onCreateGroup(tile.id) },
+                    onGroupSelected = onGroupSelected,
+                    onClearSelection = onClearSelection,
+                    onOpenGroup = { onOpenGroup(tile) },
+                    onUngroup = { onUngroup(tile.id) },
+                    onRemoveFromGroup = onRemoveFromGroup?.let { { it(tile.id) } }
                 )
             }
         }
@@ -244,7 +265,16 @@ fun AppTileItem(
     reorderableState: ReorderableLazyGridState,
     isTargetFocused: Boolean,
     onFocused: () -> Unit,
-    roundness: Int = 16
+    roundness: Int = 16,
+    isInMultiSelectMode: Boolean = false,
+    isSelected: Boolean = false,
+    onToggleSelection: () -> Unit = {},
+    onCreateGroup: () -> Unit = {},
+    onGroupSelected: () -> Unit = {},
+    onClearSelection: () -> Unit = {},
+    onOpenGroup: () -> Unit = {},
+    onUngroup: () -> Unit = {},
+    onRemoveFromGroup: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
@@ -309,7 +339,13 @@ fun AppTileItem(
                         KeyEvent.KEYCODE_ENTER,
                         KeyEvent.KEYCODE_DPAD_CENTER,
                         KeyEvent.KEYCODE_BUTTON_A -> {
-                            onClick()
+                            if (isInMultiSelectMode) {
+                                onToggleSelection()
+                            } else if (tile.isGroup) {
+                                onOpenGroup()
+                            } else {
+                                onClick()
+                            }
                             true
                         }
                         KeyEvent.KEYCODE_BUTTON_X,
@@ -386,92 +422,180 @@ fun AppTileItem(
                     }
                 }
                 .then(
-                    if (isFocused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 6).dp))
+                    if (isSelected) Modifier.border(4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(roundness.dp))
+                    else if (isFocused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 6).dp))
                     else Modifier
                 )
                 .padding(if (isFocused) 6.dp else 0.dp)
                 .clip(RoundedCornerShape(roundness.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                 .combinedClickable(
-                    onClick = onClick,
+                    onClick = {
+                        if (isInMultiSelectMode) {
+                            onToggleSelection()
+                        } else if (tile.isGroup) {
+                            onOpenGroup()
+                        } else {
+                            onClick()
+                        }
+                    },
                     onDoubleClick = { showMenu = true }
                 ),
             contentAlignment = Alignment.Center
         ) {
-            val shortcutIcon = remember(tile.packageName, tile.shortcutId) {
-                tile.shortcutId?.let { IconUtils.getShortcutIcon(context, tile.packageName, it) }
+            if (tile.isGroup && tile.iconUri == null) {
+                GroupIcon(groupTiles = tile.groupTiles, modifier = Modifier.fillMaxSize())
+            } else {
+                val shortcutIcon = remember(tile.packageName, tile.shortcutId) {
+                    tile.shortcutId?.let { IconUtils.getShortcutIcon(context, tile.packageName, it) }
+                }
+
+                val appIcon = remember(tile.packageName) {
+                    IconUtils.getFullSquareIcon(context, tile.packageName, 512)
+                }
+                
+                AsyncImage(
+                    model = remember(tile.iconUri, appIcon, shortcutIcon) {
+                        ImageRequest.Builder(context)
+                            .data(tile.iconUri ?: shortcutIcon ?: appIcon)
+                            .size(Size(512, 512))
+                            .crossfade(true)
+                            .build()
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.FillBounds
+                )
             }
 
-            val appIcon = remember(tile.packageName) {
-                IconUtils.getFullSquareIcon(context, tile.packageName, 512)
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                    contentAlignment = Alignment.TopEnd
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .size(24.dp)
+                    )
+                }
             }
-            
-            AsyncImage(
-                model = remember(tile.iconUri, appIcon, shortcutIcon) {
-                    ImageRequest.Builder(context)
-                        .data(tile.iconUri ?: shortcutIcon ?: appIcon)
-                        .size(Size(512, 512))
-                        .crossfade(true)
-                        .build()
-                },
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
-            )
         }
 
         DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
         ) {
-            DropdownMenuItem(
-                text = { Text("Launch") },
-                onClick = {
-                    showMenu = false
-                    onClick()
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Edit") },
-                onClick = {
-                    showMenu = false
-                    onSettings()
-                }
-            )
-            if (tile.shortcutId == null) {
+            if (isInMultiSelectMode && isSelected) {
                 DropdownMenuItem(
-                    text = { Text("Details") },
+                    text = { Text("Group selected") },
                     onClick = {
                         showMenu = false
-                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = Uri.parse("package:${tile.packageName}")
-                        }
-                        context.startActivity(intent)
+                        onGroupSelected()
                     }
                 )
-            }
-            DropdownMenuItem(
-                text = { Text("Remove from Homescreen") },
-                onClick = {
-                    showMenu = false
-                    onRemove()
-                }
-            )
-            if (tile.shortcutId == null) {
                 DropdownMenuItem(
-                    text = { Text("Uninstall") },
+                    text = { Text("Clear selection") },
                     onClick = {
                         showMenu = false
-                        val intent = Intent(Intent.ACTION_DELETE).apply {
-                            data = Uri.parse("package:${tile.packageName}")
+                        onClearSelection()
+                    }
+                )
+            } else if (tile.isGroup) {
+                DropdownMenuItem(
+                    text = { Text("Open") },
+                    onClick = {
+                        showMenu = false
+                        onOpenGroup()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    onClick = {
+                        showMenu = false
+                        onSettings()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Ungroup") },
+                    onClick = {
+                        showMenu = false
+                        onUngroup()
+                    }
+                )
+            } else {
+                DropdownMenuItem(
+                    text = { Text("Launch") },
+                    onClick = {
+                        showMenu = false
+                        onClick()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    onClick = {
+                        showMenu = false
+                        onSettings()
+                    }
+                )
+                if (onRemoveFromGroup == null) {
+                    DropdownMenuItem(
+                        text = { Text("Create group") },
+                        onClick = {
+                            showMenu = false
+                            onCreateGroup()
                         }
-                        try {
+                    )
+                }
+                if (tile.shortcutId == null) {
+                    DropdownMenuItem(
+                        text = { Text("Details") },
+                        onClick = {
+                            showMenu = false
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.parse("package:${tile.packageName}")
+                            }
                             context.startActivity(intent)
-                        } catch (e: Exception) {
-                            // Log or handle error
                         }
+                    )
+                }
+                if (onRemoveFromGroup != null) {
+                    DropdownMenuItem(
+                        text = { Text("Remove from group") },
+                        onClick = {
+                            showMenu = false
+                            onRemoveFromGroup()
+                        }
+                    )
+                }
+                DropdownMenuItem(
+                    text = { Text("Remove from Homescreen") },
+                    onClick = {
+                        showMenu = false
+                        onRemove()
                     }
                 )
+                if (tile.shortcutId == null) {
+                    DropdownMenuItem(
+                        text = { Text("Uninstall") },
+                        onClick = {
+                            showMenu = false
+                            val intent = Intent(Intent.ACTION_DELETE).apply {
+                                data = Uri.parse("package:${tile.packageName}")
+                            }
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                // Log or handle error
+                            }
+                        }
+                    )
+                }
             }
         }
     }

@@ -61,6 +61,12 @@ fun SettingsTab(
     val horizontalSpacing by settingsManager.horizontalSpacing.collectAsState()
     val verticalSpacing by settingsManager.verticalSpacing.collectAsState()
     val appTileRoundness by settingsManager.appTileRoundness.collectAsState()
+
+    val groupRows by settingsManager.groupRows.collectAsState()
+    val groupHorizontalSpacing by settingsManager.groupHorizontalSpacing.collectAsState()
+    val groupVerticalSpacing by settingsManager.groupVerticalSpacing.collectAsState()
+    val groupAppTileRoundness by settingsManager.groupAppTileRoundness.collectAsState()
+
     val wallpaperDim by settingsManager.wallpaperDim.collectAsState()
 
     var showWallpaperDimDialog by remember { mutableStateOf(false) }
@@ -68,6 +74,11 @@ fun SettingsTab(
     var showHorizontalSpacingDialog by remember { mutableStateOf(false) }
     var showVerticalSpacingDialog by remember { mutableStateOf(false) }
     var showRoundnessDialog by remember { mutableStateOf(false) }
+
+    var showGroupRowsDialog by remember { mutableStateOf(false) }
+    var showGroupHorizontalSpacingDialog by remember { mutableStateOf(false) }
+    var showGroupVerticalSpacingDialog by remember { mutableStateOf(false) }
+    var showGroupRoundnessDialog by remember { mutableStateOf(false) }
     
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val versionName = packageInfo.versionName ?: "Unknown"
@@ -208,7 +219,7 @@ fun SettingsTab(
                 }
             }
 
-            SettingsSectionHeader(title = "Grid Spacing")
+            SettingsSectionHeader(title = "Homescreen")
 
             SettingsCard {
                 SettingsDialogItem(
@@ -233,6 +244,34 @@ fun SettingsTab(
                     label = "App Tile Roundness",
                     value = "${appTileRoundness}dp",
                     onClick = { showRoundnessDialog = true }
+                )
+            }
+
+            SettingsSectionHeader(title = "Groups")
+
+            SettingsCard {
+                SettingsDialogItem(
+                    label = "Number of Rows",
+                    value = if (groupRows == 1) "1 Row" else "$groupRows Rows",
+                    onClick = { showGroupRowsDialog = true }
+                )
+
+                SettingsDialogItem(
+                    label = "Horizontal Spacing",
+                    value = "${groupHorizontalSpacing}dp",
+                    onClick = { showGroupHorizontalSpacingDialog = true }
+                )
+
+                SettingsDialogItem(
+                    label = "Vertical Spacing",
+                    value = "${groupVerticalSpacing}dp",
+                    onClick = { showGroupVerticalSpacingDialog = true }
+                )
+
+                SettingsDialogItem(
+                    label = "App Tile Roundness",
+                    value = "${groupAppTileRoundness}dp",
+                    onClick = { showGroupRoundnessDialog = true }
                 )
             }
 
@@ -384,6 +423,94 @@ fun SettingsTab(
                     valueRange = 0f..100f,
                     steps = 100,
                     onValueChange = { settingsManager.setAppTileRoundness(it) },
+                    valueDisplay = { "${it}dp" }
+                )
+            }
+        )
+    }
+
+    if (showGroupRowsDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showGroupRowsDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showGroupRowsDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("Group: Number of Rows") },
+            text = {
+                SliderSetting(
+                    label = "Rows",
+                    value = groupRows,
+                    valueRange = 1f..5f,
+                    steps = 3,
+                    onValueChange = { settingsManager.setGroupRows(it) },
+                    valueDisplay = { if (it == 1) "1 Row" else "$it Rows" }
+                )
+            }
+        )
+    }
+
+    if (showGroupHorizontalSpacingDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showGroupHorizontalSpacingDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showGroupHorizontalSpacingDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("Group: Horizontal Spacing") },
+            text = {
+                SliderSetting(
+                    label = "Spacing",
+                    value = groupHorizontalSpacing,
+                    valueRange = 0f..64f,
+                    steps = 63,
+                    onValueChange = { settingsManager.setGroupHorizontalSpacing(it) },
+                    valueDisplay = { "${it}dp" }
+                )
+            }
+        )
+    }
+
+    if (showGroupVerticalSpacingDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showGroupVerticalSpacingDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showGroupVerticalSpacingDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("Group: Vertical Spacing") },
+            text = {
+                SliderSetting(
+                    label = "Spacing",
+                    value = groupVerticalSpacing,
+                    valueRange = 0f..64f,
+                    steps = 63,
+                    onValueChange = { settingsManager.setGroupVerticalSpacing(it) },
+                    valueDisplay = { "${it}dp" }
+                )
+            }
+        )
+    }
+
+    if (showGroupRoundnessDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showGroupRoundnessDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showGroupRoundnessDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("Group: App Tile Roundness") },
+            text = {
+                SliderSetting(
+                    label = "Roundness",
+                    value = groupAppTileRoundness,
+                    valueRange = 0f..100f,
+                    steps = 100,
+                    onValueChange = { settingsManager.setGroupAppTileRoundness(it) },
                     valueDisplay = { "${it}dp" }
                 )
             }

@@ -25,7 +25,7 @@ class AppTileSettingsViewModel(
     val showDeleteConfirm: StateFlow<Boolean> = _showDeleteConfirm.asStateFlow()
 
     init {
-        val initialTile = appManager.getAppTiles().find { it.id == tileId }
+        val initialTile = appManager.getAppTileById(tileId)
         _tile.value = initialTile
         initialTile?.let {
             _label.value = it.label

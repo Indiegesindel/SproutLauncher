@@ -26,6 +26,10 @@ class MainViewModel(
     val horizontalSpacing: StateFlow<Int> = settingsManager.horizontalSpacing
     val verticalSpacing: StateFlow<Int> = settingsManager.verticalSpacing
     val appTileRoundness: StateFlow<Int> = settingsManager.appTileRoundness
+    val groupRows: StateFlow<Int> = settingsManager.groupRows
+    val groupHorizontalSpacing: StateFlow<Int> = settingsManager.groupHorizontalSpacing
+    val groupVerticalSpacing: StateFlow<Int> = settingsManager.groupVerticalSpacing
+    val groupAppTileRoundness: StateFlow<Int> = settingsManager.groupAppTileRoundness
     val wallpaperUri: StateFlow<String?> = settingsManager.wallpaperUri
     val wallpaperDim: StateFlow<Float> = settingsManager.wallpaperDim
     val showYouTube: StateFlow<Boolean> = settingsManager.showYouTube
@@ -40,6 +44,15 @@ class MainViewModel(
 
     private val _tileToRemove = MutableStateFlow<AppTile?>(null)
     val tileToRemove: StateFlow<AppTile?> = _tileToRemove.asStateFlow()
+
+    private val _isInMultiSelectMode = MutableStateFlow(false)
+    val isInMultiSelectMode: StateFlow<Boolean> = _isInMultiSelectMode.asStateFlow()
+
+    private val _selectedTileIds = MutableStateFlow<Set<String>>(emptySet())
+    val selectedTileIds: StateFlow<Set<String>> = _selectedTileIds.asStateFlow()
+
+    private val _openedGroup = MutableStateFlow<AppTile?>(null)
+    val openedGroup: StateFlow<AppTile?> = _openedGroup.asStateFlow()
 
     private val _installedQuickActions = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val installedQuickActions: StateFlow<Map<String, Boolean>> = _installedQuickActions.asStateFlow()
@@ -104,6 +117,116 @@ class MainViewModel(
 
     fun saveAppTiles() {
         appManager.saveAppTiles(_appTiles.value)
+    }
+
+    fun enterMultiSelectMode(initialTileId: String) {
+        _isInMultiSelectMode.value = true
+        _selectedTileIds.value = setOf(initialTileId)
+    }
+
+    fun toggleTileSelection(tileId: String) {
+        val currentSelection = _selectedTileIds.value
+        if (currentSelection.contains(tileId)) {
+            _selectedTileIds.value = currentSelection - tileId
+        } else {
+            _selectedTileIds.value = currentSelection + tileId
+        }
+        if (_selectedTileIds.value.isEmpty()) {
+            _isInMultiSelectMode.value = false
+        }
+    }
+
+    fun clearSelection() {
+        _selectedTileIds.value = emptySet()
+        _isInMultiSelectMode.value = false
+    }
+
+    fun groupSelectedTiles() {
+        val selectedIds = _selectedTileIds.value
+        if (selectedIds.isEmpty()) return
+
+        val currentTiles = _appTiles.value
+        val tilesToGroup = currentTiles.filter { selectedIds.contains(it.id) }
+        val remainingTiles = currentTiles.filter { !selectedIds.contains(it.id) }
+
+        val newGroup = AppTile(
+            label = "New Group",
+            packageName = "",
+            activityName = "",
+            isGroup = true,
+            groupTiles = tilesToGroup
+        )
+
+        _appTiles.value = remainingTiles + newGroup
+        saveAppTiles()
+        clearSelection()
+        onFocusedItemIdChanged("tile:${newGroup.id}")
+    }
+
+    fun ungroup(groupTileId: String) {
+        val currentTiles = _appTiles.value.toMutableList()
+        val index = currentTiles.indexOfFirst { it.id == groupTileId }
+        if (index != -1) {
+            val group = currentTiles.removeAt(index)
+            if (group.isGroup) {
+                val firstUngroupedId = group.groupTiles.firstOrNull()?.id
+                currentTiles.addAll(group.groupTiles)
+                _appTiles.value = currentTiles
+                saveAppTiles()
+                firstUngroupedId?.let { onFocusedItemIdChanged("tile:$it") }
+            }
+        }
+    }
+
+    fun removeTileFromGroup(groupTileId: String, tileId: String) {
+        val currentTiles = _appTiles.value.toMutableList()
+        val groupIndex = currentTiles.indexOfFirst { it.id == groupTileId }
+        if (groupIndex != -1) {
+            val group = currentTiles[groupIndex]
+            if (group.isGroup) {
+                val tileToRemove = group.groupTiles.find { it.id == tileId }
+                if (tileToRemove != null) {
+                    val newGroupTiles = group.groupTiles.filter { it.id != tileId }
+                    if (newGroupTiles.size <= 1) {
+                        currentTiles.removeAt(groupIndex)
+                        currentTiles.addAll(newGroupTiles)
+                    } else {
+                        currentTiles[groupIndex] = group.copy(groupTiles = newGroupTiles)
+                    }
+                    currentTiles.add(tileToRemove)
+                    _appTiles.value = currentTiles
+                    saveAppTiles()
+                    
+                    // Update opened group if it was the one modified
+                    if (_openedGroup.value?.id == groupTileId) {
+                        if (newGroupTiles.size <= 1) {
+                            _openedGroup.value = null
+                            onFocusedItemIdChanged("tile:${tileToRemove.id}")
+                        } else {
+                            _openedGroup.value = currentTiles[groupIndex]
+                            newGroupTiles.firstOrNull()?.let {
+                                onFocusedItemIdChanged("tile:${it.id}")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun openGroup(groupTile: AppTile) {
+        _openedGroup.value = groupTile
+        groupTile.groupTiles.firstOrNull()?.let {
+            onFocusedItemIdChanged("tile:${it.id}")
+        }
+    }
+
+    fun closeGroup() {
+        val currentGroup = _openedGroup.value
+        _openedGroup.value = null
+        currentGroup?.let {
+            onFocusedItemIdChanged("tile:${it.id}")
+        }
     }
 
     fun onFocusChanged(focused: Boolean) {

@@ -19,11 +19,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import games.indiegesindel.sproutlauncher.FocusedElement
 import games.indiegesindel.sproutlauncher.data.AppManager
 import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
+import games.indiegesindel.sproutlauncher.ui.components.PromptsFooter
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
 
@@ -79,54 +81,47 @@ fun AppListTab(
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            Column(
+            // Content
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
+                    .padding(bottom = 56.dp) // Space for footer
             ) {
-                // Grid Content
-                Box(modifier = Modifier.weight(1f)) {
-                    AllAppsTab(
-                        installedApps = filteredApps,
-                        selectedTiles = selectedTiles,
-                        shortcuts = shortcuts,
-                        isLoading = isLoadingApps,
-                        isHomeScreen = currentTab == ExtendedViewModel.Tab.HOMESCREEN,
-                        appManager = appManager,
-                        onTilesChanged = { viewModel.loadTiles() },
-                        onRequestRemove = { viewModel.requestRemoveTile(it) },
-                        focusedItemId = focusedItemId,
-                        onFocusItemIdChanged = {
-                            viewModel.setFocusedItemId(it)
-                            if (it != null) viewModel.onFocusChanged(FocusedElement.APP_TILE)
-                        }
-                    )
-                }
-
-                // Input Prompts
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 32.dp, end = 32.dp, bottom = 12.dp, top = 0.dp)
-                        .height(32.dp),
-                    contentAlignment = Alignment.BottomEnd
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        when (focusedElement) {
-                            FocusedElement.NAVIGATION_ITEM -> {
-                                ButtonPrompt(button = "A", label = "Select")
-                            }
-
-                            FocusedElement.APP_TILE -> {
-                                ButtonPrompt(button = "A", label = "Launch")
-                                ButtonPrompt(button = "X", label = "Options")
-                            }
-
-                            else -> {}
-                        }
+                AllAppsTab(
+                    installedApps = filteredApps,
+                    selectedTiles = selectedTiles,
+                    shortcuts = shortcuts,
+                    isLoading = isLoadingApps,
+                    isHomeScreen = currentTab == ExtendedViewModel.Tab.HOMESCREEN,
+                    appManager = appManager,
+                    onTilesChanged = { viewModel.loadTiles() },
+                    onRequestRemove = { viewModel.requestRemoveTile(it) },
+                    focusedItemId = focusedItemId,
+                    onFocusItemIdChanged = {
+                        viewModel.setFocusedItemId(it)
+                        if (it != null) viewModel.onFocusChanged(FocusedElement.APP_TILE)
                     }
+                )
+            }
+
+            // Permanent black bar footer
+            PromptsFooter(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(2f)
+            ) {
+                when (focusedElement) {
+                    FocusedElement.NAVIGATION_ITEM -> {
+                        ButtonPrompt(button = "A", label = "Select")
+                    }
+
+                    FocusedElement.APP_TILE -> {
+                        ButtonPrompt(button = "A", label = "Launch")
+                        ButtonPrompt(button = "X", label = "Options")
+                    }
+
+                    else -> {}
                 }
             }
         }
