@@ -60,6 +60,18 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FolderDelete
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.GroupWork
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LayersClear
+import androidx.compose.material.icons.filled.PlayArrow
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -175,7 +187,8 @@ fun AppGrid(
     onOpenGroup: (AppTile) -> Unit = {},
     onUngroup: (String) -> Unit = {},
     onRemoveFromGroup: ((String) -> Unit)? = null,
-    onDismiss: () -> Unit = {}
+    onDismiss: () -> Unit = {},
+    showGroupOptions: Boolean = true
 ) {
     val configuration = LocalConfiguration.current
     val isPhone = configuration.smallestScreenWidthDp < 600
@@ -248,7 +261,8 @@ fun AppGrid(
                     onOpenGroup = { onOpenGroup(tile) },
                     onUngroup = { onUngroup(tile.id) },
                     onRemoveFromGroup = onRemoveFromGroup?.let { { it(tile.id) } },
-                    onDismiss = onDismiss
+                    onDismiss = onDismiss,
+                    showGroupOptions = showGroupOptions
                 )
             }
         }
@@ -277,7 +291,8 @@ fun AppTileItem(
     onOpenGroup: () -> Unit = {},
     onUngroup: () -> Unit = {},
     onRemoveFromGroup: (() -> Unit)? = null,
-    onDismiss: () -> Unit = {}
+    onDismiss: () -> Unit = {},
+    showGroupOptions: Boolean = true
 ) {
     val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
@@ -500,65 +515,75 @@ fun AppTileItem(
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
         ) {
-            if (isInMultiSelectMode && isSelected) {
+            if (showGroupOptions && isInMultiSelectMode && isSelected) {
                 DropdownMenuItem(
                     text = { Text("Group selected") },
                     onClick = {
                         showMenu = false
                         onGroupSelected()
-                    }
+                    },
+                    leadingIcon = { Icon(Icons.Default.GroupWork, contentDescription = null) }
                 )
                 DropdownMenuItem(
                     text = { Text("Clear selection") },
                     onClick = {
                         showMenu = false
                         onClearSelection()
-                    }
+                    },
+                    leadingIcon = { Icon(Icons.Default.Clear, contentDescription = null) }
                 )
             } else if (tile.isGroup) {
-                DropdownMenuItem(
-                    text = { Text("Open") },
-                    onClick = {
-                        showMenu = false
-                        onOpenGroup()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Edit") },
-                    onClick = {
-                        showMenu = false
-                        onSettings()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Ungroup") },
-                    onClick = {
-                        showMenu = false
-                        onUngroup()
-                    }
-                )
+                if (showGroupOptions) {
+                    DropdownMenuItem(
+                        text = { Text("Open") },
+                        onClick = {
+                            showMenu = false
+                            onOpenGroup()
+                        },
+                        leadingIcon = { Icon(Icons.Default.FolderOpen, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = {
+                            showMenu = false
+                            onSettings()
+                        },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Ungroup") },
+                        onClick = {
+                            showMenu = false
+                            onUngroup()
+                        },
+                        leadingIcon = { Icon(Icons.Default.LayersClear, contentDescription = null) }
+                    )
+                }
             } else {
                 DropdownMenuItem(
                     text = { Text("Launch") },
                     onClick = {
                         showMenu = false
                         onClick()
-                    }
+                    },
+                    leadingIcon = { Icon(Icons.Default.PlayArrow, contentDescription = null) }
                 )
                 DropdownMenuItem(
                     text = { Text("Edit") },
                     onClick = {
                         showMenu = false
                         onSettings()
-                    }
+                    },
+                    leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
                 )
-                if (onRemoveFromGroup == null) {
+                if (showGroupOptions && onRemoveFromGroup == null) {
                     DropdownMenuItem(
                         text = { Text("Create group") },
                         onClick = {
                             showMenu = false
                             onCreateGroup()
-                        }
+                        },
+                        leadingIcon = { Icon(Icons.Default.CreateNewFolder, contentDescription = null) }
                     )
                 }
                 if (tile.shortcutId == null) {
@@ -570,16 +595,18 @@ fun AppTileItem(
                                 data = Uri.parse("package:${tile.packageName}")
                             }
                             context.startActivity(intent)
-                        }
+                        },
+                        leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) }
                     )
                 }
-                if (onRemoveFromGroup != null) {
+                if (showGroupOptions && onRemoveFromGroup != null) {
                     DropdownMenuItem(
                         text = { Text("Remove from group") },
                         onClick = {
                             showMenu = false
                             onRemoveFromGroup()
-                        }
+                        },
+                        leadingIcon = { Icon(Icons.Default.FolderDelete, contentDescription = null) }
                     )
                 }
                 DropdownMenuItem(
@@ -587,7 +614,8 @@ fun AppTileItem(
                     onClick = {
                         showMenu = false
                         onRemove()
-                    }
+                    },
+                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) }
                 )
                 if (tile.shortcutId == null) {
                     DropdownMenuItem(
@@ -602,7 +630,8 @@ fun AppTileItem(
                             } catch (e: Exception) {
                                 // Log or handle error
                             }
-                        }
+                        },
+                        leadingIcon = { Icon(Icons.Default.DeleteForever, contentDescription = null) }
                     )
                 }
             }

@@ -26,6 +26,18 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FolderDelete
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.GroupWork
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LayersClear
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -83,7 +95,8 @@ fun AppGridItem(
     onOpenGroup: () -> Unit = {},
     onUngroup: () -> Unit = {},
     onRemoveFromGroup: (() -> Unit)? = null,
-    onDismiss: () -> Unit = {}
+    onDismiss: () -> Unit = {},
+    showGroupOptions: Boolean = true
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
@@ -265,43 +278,50 @@ fun AppGridItem(
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
         ) {
-            if (isInMultiSelectMode && isSelected) {
+            if (showGroupOptions && isInMultiSelectMode && isSelected) {
                 DropdownMenuItem(
                     text = { Text("Group selected") },
                     onClick = {
                         showMenu = false
                         onGroupSelected()
-                    }
+                    },
+                    leadingIcon = { Icon(Icons.Default.GroupWork, contentDescription = null) }
                 )
                 DropdownMenuItem(
                     text = { Text("Clear selection") },
                     onClick = {
                         showMenu = false
                         onClearSelection()
-                    }
+                    },
+                    leadingIcon = { Icon(Icons.Default.Clear, contentDescription = null) }
                 )
             } else if (tile?.isGroup == true) {
-                DropdownMenuItem(
-                    text = { Text("Open") },
-                    onClick = {
-                        showMenu = false
-                        onOpenGroup()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Edit") },
-                    onClick = {
-                        showMenu = false
-                        onEdit()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Ungroup") },
-                    onClick = {
-                        showMenu = false
-                        onUngroup()
-                    }
-                )
+                if (showGroupOptions) {
+                    DropdownMenuItem(
+                        text = { Text("Open") },
+                        onClick = {
+                            showMenu = false
+                            onOpenGroup()
+                        },
+                        leadingIcon = { Icon(Icons.Default.FolderOpen, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = {
+                            showMenu = false
+                            onEdit()
+                        },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Ungroup") },
+                        onClick = {
+                            showMenu = false
+                            onUngroup()
+                        },
+                        leadingIcon = { Icon(Icons.Default.LayersClear, contentDescription = null) }
+                    )
+                }
             } else {
                 DropdownMenuItem(
                     text = { Text("Launch") },
@@ -312,7 +332,8 @@ fun AppGridItem(
                         } else if (app != null) {
                             LauncherUtils.launchApp(context, app.activityInfo.packageName)
                         }
-                    }
+                    },
+                    leadingIcon = { Icon(Icons.Default.PlayArrow, contentDescription = null) }
                 )
                 if (isOnHomeScreen) {
                     DropdownMenuItem(
@@ -320,15 +341,17 @@ fun AppGridItem(
                         onClick = {
                             showMenu = false
                             onEdit()
-                        }
+                        },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
                     )
-                    if (onRemoveFromGroup == null) {
+                    if (showGroupOptions && onRemoveFromGroup == null) {
                         DropdownMenuItem(
                             text = { Text("Create group") },
                             onClick = {
                                 showMenu = false
                                 onCreateGroup()
-                            }
+                            },
+                            leadingIcon = { Icon(Icons.Default.CreateNewFolder, contentDescription = null) }
                         )
                     }
                 }
@@ -341,16 +364,18 @@ fun AppGridItem(
                                 data = "package:${app.activityInfo.packageName}".toUri()
                             }
                             context.startActivity(intent)
-                        }
+                        },
+                        leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) }
                     )
                 }
-                if (onRemoveFromGroup != null) {
+                if (showGroupOptions && onRemoveFromGroup != null) {
                     DropdownMenuItem(
                         text = { Text("Remove from group") },
                         onClick = {
                             showMenu = false
                             onRemoveFromGroup()
-                        }
+                        },
+                        leadingIcon = { Icon(Icons.Default.FolderDelete, contentDescription = null) }
                     )
                 }
                 DropdownMenuItem(
@@ -358,6 +383,12 @@ fun AppGridItem(
                     onClick = {
                         showMenu = false
                         onToggleHomeScreen()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            if (isOnHomeScreen) Icons.Default.Delete else Icons.Default.Add,
+                            contentDescription = null
+                        )
                     }
                 )
                 if (tile?.shortcutId == null && app != null) {
@@ -373,7 +404,8 @@ fun AppGridItem(
                             } catch (e: Exception) {
                                 // Log or handle error
                             }
-                        }
+                        },
+                        leadingIcon = { Icon(Icons.Default.DeleteForever, contentDescription = null) }
                     )
                 }
             }
