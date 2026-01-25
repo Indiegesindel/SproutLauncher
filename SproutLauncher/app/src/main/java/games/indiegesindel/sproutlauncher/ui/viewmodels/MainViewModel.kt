@@ -59,17 +59,37 @@ class MainViewModel(
 
     fun loadAppTiles() {
         viewModelScope.launch {
-            _appTiles.value = appManager.getAppTiles()
+            val tiles = appManager.getAppTiles()
+            _appTiles.value = tiles
+            
+            _openedGroup.value?.let { currentGroup ->
+                findTileById(tiles, currentGroup.id)?.let { updatedGroup ->
+                    _openedGroup.value = updatedGroup
+                }
+            }
+
             checkInstalledQuickActions()
             _isLoading.value = false
 
-            val firstTile = _appTiles.value.firstOrNull()
-            if (firstTile != null) {
-                onFocusedItemIdChanged("tile:${firstTile.id}")
-            } else {
-                onFocusedItemIdChanged("action:all_apps")
+            if (_focusedItemId.value == null) {
+                val firstTile = _appTiles.value.firstOrNull()
+                if (firstTile != null) {
+                    onFocusedItemIdChanged("tile:${firstTile.id}")
+                } else {
+                    onFocusedItemIdChanged("action:all_apps")
+                }
             }
         }
+    }
+
+    private fun findTileById(tiles: List<AppTile>, id: String): AppTile? {
+        for (tile in tiles) {
+            if (tile.id == id) return tile
+            if (tile.isGroup) {
+                findTileById(tile.groupTiles, id)?.let { return it }
+            }
+        }
+        return null
     }
 
     private fun checkInstalledQuickActions() {
@@ -111,6 +131,25 @@ class MainViewModel(
             val tile = newList.removeAt(from)
             newList.add(to, tile)
             _appTiles.value = newList
+        }
+    }
+
+    fun reorderGroupTiles(groupId: String, from: Int, to: Int) {
+        val currentTiles = _appTiles.value.toMutableList()
+        val groupIndex = currentTiles.indexOfFirst { it.id == groupId }
+        if (groupIndex != -1) {
+            val group = currentTiles[groupIndex]
+            val groupTiles = group.groupTiles.toMutableList()
+            if (from in groupTiles.indices && to in groupTiles.indices) {
+                val item = groupTiles.removeAt(from)
+                groupTiles.add(to, item)
+                val updatedGroup = group.copy(groupTiles = groupTiles)
+                currentTiles[groupIndex] = updatedGroup
+                _appTiles.value = currentTiles
+                if (_openedGroup.value?.id == groupId) {
+                    _openedGroup.value = updatedGroup
+                }
+            }
         }
     }
 

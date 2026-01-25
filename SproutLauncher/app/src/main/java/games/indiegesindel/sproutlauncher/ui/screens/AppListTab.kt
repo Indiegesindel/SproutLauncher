@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import games.indiegesindel.sproutlauncher.FocusedElement
 import games.indiegesindel.sproutlauncher.data.AppManager
+import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
 import games.indiegesindel.sproutlauncher.ui.components.PromptsFooter
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
@@ -47,11 +48,18 @@ fun AppListTab(
     val filteredApps = remember(installedApps, selectedTiles, currentTab) {
         if (currentTab == ExtendedViewModel.Tab.HOMESCREEN) {
             installedApps.filter { app ->
-                selectedTiles.any { 
-                    it.packageName == app.activityInfo.packageName && 
-                    it.activityName == app.activityInfo.name &&
-                    it.shortcutId == null
+                fun isAppOnHomeScreen(tiles: List<AppTile>): Boolean {
+                    return tiles.any { tile ->
+                        if (tile.isGroup) {
+                            isAppOnHomeScreen(tile.groupTiles)
+                        } else {
+                            tile.packageName == app.activityInfo.packageName &&
+                                    tile.activityName == app.activityInfo.name &&
+                                    tile.shortcutId == null
+                        }
+                    }
                 }
+                isAppOnHomeScreen(selectedTiles)
             }
         } else {
             installedApps
@@ -60,7 +68,18 @@ fun AppListTab(
 
     val shortcuts = remember(selectedTiles, currentTab) {
         if (currentTab == ExtendedViewModel.Tab.HOMESCREEN) {
-            selectedTiles.filter { it.shortcutId != null }
+            fun getAllShortcuts(tiles: List<AppTile>): List<AppTile> {
+                val result = mutableListOf<AppTile>()
+                for (tile in tiles) {
+                    if (tile.isGroup) {
+                        result.addAll(getAllShortcuts(tile.groupTiles))
+                    } else if (tile.shortcutId != null) {
+                        result.add(tile)
+                    }
+                }
+                return result
+            }
+            getAllShortcuts(selectedTiles)
         } else {
             emptyList()
         }

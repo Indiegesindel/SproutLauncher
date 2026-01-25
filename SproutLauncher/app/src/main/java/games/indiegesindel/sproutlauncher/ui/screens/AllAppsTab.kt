@@ -83,9 +83,20 @@ fun AllAppsTab(
                 val activityName = app.activityInfo.name
                 val itemId = "${packageName}_${activityName}"
                 val tile = remember(selectedTiles, packageName, activityName) {
-                    selectedTiles.find {
-                        it.packageName == packageName && it.activityName == activityName && it.shortcutId == null
+                    fun findTile(tiles: List<AppTile>): AppTile? {
+                        for (tile in tiles) {
+                            if (tile.isGroup) {
+                                findTile(tile.groupTiles)?.let { return it }
+                            } else if (tile.packageName == packageName &&
+                                tile.activityName == activityName &&
+                                tile.shortcutId == null
+                            ) {
+                                return tile
+                            }
+                        }
+                        return null
                     }
+                    findTile(selectedTiles)
                 }
                 val isSelected = tile != null
 
