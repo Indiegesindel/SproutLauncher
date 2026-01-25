@@ -39,7 +39,9 @@ fun AllAppsTab(
     onTilesChanged: (List<AppTile>) -> Unit,
     onRequestRemove: (AppTile) -> Unit = {},
     focusedItemId: String? = null,
-    onFocusItemIdChanged: (String?) -> Unit = {}
+    onFocusItemIdChanged: (String?) -> Unit = {},
+    hasGroups: Boolean = false,
+    enabled: Boolean = true
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
@@ -73,7 +75,7 @@ fun AllAppsTab(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .padding(vertical = 8.dp)
-                            .focusable()
+                            .focusable(enabled = enabled)
                     )
                 }
             }
@@ -130,7 +132,9 @@ fun AllAppsTab(
                     onFocused = { onFocusItemIdChanged(it) },
                     isInMultiSelectMode = false,
                     isSelected = false,
-                    showGroupOptions = false
+                    showGroupOptions = false,
+                    hasGroups = hasGroups,
+                    enabled = enabled
                 )
             }
 
@@ -143,7 +147,7 @@ fun AllAppsTab(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .padding(top = 16.dp, bottom = 8.dp)
-                            .focusable()
+                            .focusable(enabled = enabled)
                     )
                 }
 
@@ -155,7 +159,7 @@ fun AllAppsTab(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
                                 .padding(vertical = 8.dp)
-                                .focusable()
+                                .focusable(enabled = enabled)
                         )
                     }
                 } else {
@@ -179,7 +183,9 @@ fun AllAppsTab(
                             onFocused = { onFocusItemIdChanged(it) },
                             isInMultiSelectMode = false,
                             isSelected = false,
-                            showGroupOptions = false
+                            showGroupOptions = false,
+                            hasGroups = hasGroups,
+                            enabled = enabled
                         )
                     }
                 }

@@ -73,7 +73,8 @@ fun QuickActionsBar(
     onPhotosClick: (() -> Unit)? = null,
     onFocusChanged: (Boolean) -> Unit = {},
     focusedItemId: String? = null,
-    onFocusItemIdChanged: (String?) -> Unit = {}
+    onFocusItemIdChanged: (String?) -> Unit = {},
+    enabled: Boolean = true
 ) {
     val scrollState = rememberScrollState()
     Row(
@@ -94,7 +95,8 @@ fun QuickActionsBar(
             onClick = onAllAppsClick,
             isTargetFocused = focusedItemId == "action:all_apps",
             onFocused = { onFocusItemIdChanged(it) },
-            icon = Icons.Filled.Apps
+            icon = Icons.Filled.Apps,
+            enabled = enabled
         )
         
         Spacer(modifier = Modifier.width(16.dp))
@@ -113,7 +115,8 @@ fun QuickActionsBar(
             isTargetFocused = focusedItemId == "action:browser",
             onFocused = { onFocusItemIdChanged(it) },
             packageName = "com.android.chrome",
-            icon = Icons.Filled.Language
+            icon = Icons.Filled.Language,
+            enabled = enabled
         )
         
         if (onYouTubeClick != null) {
@@ -125,7 +128,8 @@ fun QuickActionsBar(
                 isTargetFocused = focusedItemId == "action:youtube",
                 onFocused = { onFocusItemIdChanged(it) },
                 packageName = "com.google.android.youtube",
-                icon = Icons.Filled.PlayArrow
+                icon = Icons.Filled.PlayArrow,
+                enabled = enabled
             )
         }
 
@@ -138,7 +142,8 @@ fun QuickActionsBar(
                 isTargetFocused = focusedItemId == "action:play_store",
                 onFocused = { onFocusItemIdChanged(it) },
                 packageName = "com.android.vending",
-                icon = Icons.Filled.Shop
+                icon = Icons.Filled.Shop,
+                enabled = enabled
             )
         }
 
@@ -151,7 +156,8 @@ fun QuickActionsBar(
                 isTargetFocused = focusedItemId == "action:discord",
                 onFocused = { onFocusItemIdChanged(it) },
                 packageName = "com.discord",
-                icon = Icons.AutoMirrored.Filled.Chat
+                icon = Icons.AutoMirrored.Filled.Chat,
+                enabled = enabled
             )
         }
 
@@ -164,7 +170,8 @@ fun QuickActionsBar(
                 isTargetFocused = focusedItemId == "action:spotify",
                 onFocused = { onFocusItemIdChanged(it) },
                 packageName = "com.spotify.music",
-                icon = Icons.Filled.MusicNote
+                icon = Icons.Filled.MusicNote,
+                enabled = enabled
             )
         }
 
@@ -177,7 +184,8 @@ fun QuickActionsBar(
                 isTargetFocused = focusedItemId == "action:photos",
                 onFocused = { onFocusItemIdChanged(it) },
                 packageName = "com.google.android.apps.photos",
-                icon = Icons.Filled.Image
+                icon = Icons.Filled.Image,
+                enabled = enabled
             )
         }
 
@@ -188,7 +196,8 @@ fun QuickActionsBar(
             onClick = onSettingsClick,
             isTargetFocused = focusedItemId == "action:settings",
             onFocused = { onFocusItemIdChanged(it) },
-            icon = Icons.Filled.Settings
+            icon = Icons.Filled.Settings,
+            enabled = enabled
         )
     }
 }
@@ -202,7 +211,8 @@ fun QuickActionButton(
     isTargetFocused: Boolean,
     onFocused: (String) -> Unit,
     icon: ImageVector? = null,
-    packageName: String? = null
+    packageName: String? = null,
+    enabled: Boolean = true
 ) {
     val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
@@ -276,7 +286,7 @@ fun QuickActionButton(
                     else Modifier
                 )
                 .clip(CircleShape)
-                .clickable(onClick = onClick),
+                .clickable(enabled = enabled, onClick = onClick),
             color = MaterialTheme.colorScheme.secondary,
             shape = CircleShape
         ) {

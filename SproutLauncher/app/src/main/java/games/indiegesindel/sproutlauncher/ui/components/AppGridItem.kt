@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -93,10 +94,13 @@ fun AppGridItem(
     onGroupSelected: () -> Unit = {},
     onClearSelection: () -> Unit = {},
     onOpenGroup: () -> Unit = {},
+    onAddToGroup: () -> Unit = {},
     onUngroup: () -> Unit = {},
     onRemoveFromGroup: (() -> Unit)? = null,
     onDismiss: () -> Unit = {},
-    showGroupOptions: Boolean = true
+    showGroupOptions: Boolean = true,
+    hasGroups: Boolean = false,
+    enabled: Boolean = true
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
@@ -111,8 +115,8 @@ fun AppGridItem(
     var size by remember { mutableStateOf(IntSize.Zero) }
     val density = LocalDensity.current
 
-    LaunchedEffect(isTargetFocused) {
-        if (isTargetFocused) {
+    LaunchedEffect(isTargetFocused, enabled) {
+        if (isTargetFocused && enabled) {
             focusRequester.requestFocus()
         }
     }
@@ -158,6 +162,7 @@ fun AppGridItem(
                     }
                 }
                 .onKeyEvent { event ->
+                    if (!enabled) return@onKeyEvent false
                     val isDown = event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN
                     if (isDown && (
                         event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_X ||
@@ -208,7 +213,9 @@ fun AppGridItem(
                         )
                     } else Modifier
                 )
+                .focusable(enabled = enabled)
                 .combinedClickable(
+                    enabled = enabled,
                     onClick = {
                         if (isInMultiSelectMode) {
                             onToggleSelection()
@@ -353,6 +360,16 @@ fun AppGridItem(
                             },
                             leadingIcon = { Icon(Icons.Default.CreateNewFolder, contentDescription = null) }
                         )
+                        if (hasGroups) {
+                            DropdownMenuItem(
+                                text = { Text("Add to Group") },
+                                onClick = {
+                                    showMenu = false
+                                    onAddToGroup()
+                                },
+                                leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) }
+                            )
+                        }
                     }
                 }
                 if (tile?.shortcutId == null && app != null) {
