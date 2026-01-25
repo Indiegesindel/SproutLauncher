@@ -26,7 +26,7 @@ class AppManagerTest {
     @Test
     fun add_and_get_AppTiles_persists() {
         val tile1 = AppTile(packageName = "com.example.a", activityName = "AActivity", label = "A")
-        val tile2 = AppTile(packageName = "com.example.b", activityName = "BActivity", label = "B", iconUri = "file://icon.png")
+        val tile2 = AppTile(packageName = "com.example.b", activityName = "BActivity", label = "B", iconUri = "file://icon.png", shortcutId = "shortcut123")
 
         appManager.addAppTile(tile1)
         appManager.addAppTile(tile2)
@@ -35,6 +35,7 @@ class AppManagerTest {
         assertThat(result).hasSize(2)
         assertThat(result[0].packageName).isEqualTo("com.example.a")
         assertThat(result[1].iconUri).isEqualTo("file://icon.png")
+        assertThat(result[1].shortcutId).isEqualTo("shortcut123")
     }
 
     @Test

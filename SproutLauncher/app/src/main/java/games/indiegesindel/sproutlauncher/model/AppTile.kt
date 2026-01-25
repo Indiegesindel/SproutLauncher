@@ -10,5 +10,6 @@ data class AppTile(
     val packageName: String,
     val activityName: String,
     val label: String,
-    val iconUri: String? = null // URI or path to a custom icon/image
+    val iconUri: String? = null, // URI or path to a custom icon/image
+    val shortcutId: String? = null
 )

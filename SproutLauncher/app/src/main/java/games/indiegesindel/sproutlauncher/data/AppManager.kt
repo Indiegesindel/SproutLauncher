@@ -52,7 +52,8 @@ class AppManager(private val context: Context) {
                     packageName = obj.getString("packageName"),
                     activityName = obj.getString("activityName"),
                     label = obj.getString("label"),
-                    iconUri = if (obj.isNull("iconUri")) null else obj.getString("iconUri")
+                    iconUri = if (obj.isNull("iconUri")) null else obj.getString("iconUri"),
+                    shortcutId = if (obj.isNull("shortcutId")) null else obj.getString("shortcutId")
                 )
             )
         }
@@ -88,6 +89,7 @@ class AppManager(private val context: Context) {
             obj.put("activityName", tile.activityName)
             obj.put("label", tile.label)
             obj.put("iconUri", tile.iconUri)
+            obj.put("shortcutId", tile.shortcutId)
             jsonArray.put(obj)
         }
         sharedPreferences.edit { putString(KEY_APP_TILES, jsonArray.toString()) }

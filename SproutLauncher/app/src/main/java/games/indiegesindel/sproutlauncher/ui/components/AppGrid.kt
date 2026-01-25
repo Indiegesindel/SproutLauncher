@@ -48,7 +48,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
 import androidx.compose.material3.CircularProgressIndicator
+import android.content.Context
 import android.content.Intent
+import android.content.pm.LauncherApps
 import android.net.Uri
 import android.provider.Settings
 import games.indiegesindel.sproutlauncher.model.AppTile
@@ -370,14 +372,33 @@ fun AppTileItem(
                 ),
             contentAlignment = Alignment.Center
         ) {
+            val shortcutIcon = remember(tile.packageName, tile.shortcutId) {
+                if (tile.shortcutId != null && !tile.shortcutId.startsWith("legacy:")) {
+                    val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
+                    val query = LauncherApps.ShortcutQuery().apply {
+                        setPackage(tile.packageName)
+                        setShortcutIds(listOf(tile.shortcutId))
+                        setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+                    }
+                    try {
+                        val shortcuts = launcherApps.getShortcuts(query, android.os.Process.myUserHandle())
+                        shortcuts?.firstOrNull()?.let {
+                            launcherApps.getShortcutIconDrawable(it, context.resources.displayMetrics.densityDpi)
+                        }
+                    } catch (e: Exception) {
+                        null
+                    }
+                } else null
+            }
+
             val appIcon = remember(tile.packageName) {
                 IconUtils.getFullSquareIcon(context, tile.packageName, 512)
             }
             
             AsyncImage(
-                model = remember(tile.iconUri, appIcon) {
+                model = remember(tile.iconUri, appIcon, shortcutIcon) {
                     ImageRequest.Builder(context)
-                        .data(tile.iconUri ?: appIcon)
+                        .data(tile.iconUri ?: shortcutIcon ?: appIcon)
                         .size(Size(512, 512))
                         .crossfade(true)
                         .build()
