@@ -45,10 +45,22 @@ fun AppListTab(
     val filteredApps = remember(installedApps, selectedTiles, currentTab) {
         if (currentTab == ExtendedViewModel.Tab.HOMESCREEN) {
             installedApps.filter { app ->
-                selectedTiles.any { it.packageName == app.activityInfo.packageName && it.activityName == app.activityInfo.name }
+                selectedTiles.any { 
+                    it.packageName == app.activityInfo.packageName && 
+                    it.activityName == app.activityInfo.name &&
+                    it.shortcutId == null
+                }
             }
         } else {
             installedApps
+        }
+    }
+
+    val shortcuts = remember(selectedTiles, currentTab) {
+        if (currentTab == ExtendedViewModel.Tab.HOMESCREEN) {
+            selectedTiles.filter { it.shortcutId != null }
+        } else {
+            emptyList()
         }
     }
 
@@ -77,6 +89,7 @@ fun AppListTab(
                     AllAppsTab(
                         installedApps = filteredApps,
                         selectedTiles = selectedTiles,
+                        shortcuts = shortcuts,
                         isLoading = isLoadingApps,
                         appManager = appManager,
                         onTilesChanged = { viewModel.loadTiles() },

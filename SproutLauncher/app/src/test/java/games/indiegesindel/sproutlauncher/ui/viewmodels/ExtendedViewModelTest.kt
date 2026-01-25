@@ -94,4 +94,22 @@ class ExtendedViewModelTest {
         assert(vm.focusedItemId.value == "pkg.name_ActivityName")
         assert(vm.focusedElement.value == FocusedElement.APP_TILE)
     }
+
+    @Test
+    fun setTab_HOMESCREEN_sets_focus_to_shortcut() = runTest {
+        val shortcutTile = AppTile(
+            id = "tile-123",
+            packageName = "pkg.name",
+            activityName = "",
+            label = "Shortcut Label",
+            shortcutId = "short-id"
+        )
+        every { appManager.getAppTiles() } returns listOf(shortcutTile)
+        
+        vm.loadTiles()
+        vm.setTab(ExtendedViewModel.Tab.HOMESCREEN)
+        
+        assert(vm.focusedItemId.value == "shortcut_tile-123")
+        assert(vm.focusedElement.value == FocusedElement.APP_TILE)
+    }
 }

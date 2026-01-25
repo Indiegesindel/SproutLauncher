@@ -4,9 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import android.content.pm.ResolveInfo
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -27,7 +31,9 @@ import games.indiegesindel.sproutlauncher.ui.components.AppGridItem
 fun AllAppsTab(
     installedApps: List<ResolveInfo>,
     selectedTiles: List<AppTile>,
+    shortcuts: List<AppTile> = emptyList(),
     isLoading: Boolean = false,
+    isHomeScreen: Boolean = false,
     appManager: AppManager,
     onTilesChanged: (List<AppTile>) -> Unit,
     onRequestRemove: (AppTile) -> Unit = {},
@@ -55,13 +61,25 @@ fun AllAppsTab(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (shortcuts.isNotEmpty() && installedApps.isNotEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        text = "Apps",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+            }
+
             items(installedApps, key = { app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }) { app ->
                 val packageName = app.activityInfo.packageName
                 val activityName = app.activityInfo.name
                 val itemId = "${packageName}_${activityName}"
                 val tile = remember(selectedTiles, packageName, activityName) {
                     selectedTiles.find {
-                        it.packageName == packageName && it.activityName == activityName
+                        it.packageName == packageName && it.activityName == activityName && it.shortcutId == null
                     }
                 }
                 val isSelected = tile != null
@@ -80,7 +98,7 @@ fun AllAppsTab(
                             appManager.addAppTile(newTile)
                             onTilesChanged(appManager.getAppTiles())
                         } else {
-                            tile.let { onRequestRemove(it) }
+                            tile?.let { onRequestRemove(it) }
                         }
                     },
                     onEdit = {
@@ -96,6 +114,39 @@ fun AllAppsTab(
                     onFocused = { onFocusItemIdChanged(it) }
                 )
             }
+
+            if (shortcuts.isNotEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        text = "Shortcuts",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                    )
+                }
+
+                items(shortcuts, key = { tile -> "shortcut_${tile.id}" }) { tile ->
+                    val itemId = "shortcut_${tile.id}"
+                    AppGridItem(
+                        app = null,
+                        isOnHomeScreen = true,
+                        tile = tile,
+                        onToggleHomeScreen = {
+                            onRequestRemove(tile)
+                        },
+                        onEdit = {
+                            val intent = Intent(context, AppTileSettingsActivity::class.java).apply {
+                                putExtra("TILE_ID", tile.id)
+                            }
+                            context.startActivity(intent)
+                        },
+                        id = itemId,
+                        isTargetFocused = focusedItemId == itemId,
+                        onFocused = { onFocusItemIdChanged(it) }
+                    )
+                }
+            }
         }
-}
+    }
 }

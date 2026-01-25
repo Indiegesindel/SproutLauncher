@@ -54,7 +54,8 @@ class ExtendedViewModel(
             // Focus first item if on HOMESCREEN tab and nothing focused
             if (_currentTab.value == Tab.HOMESCREEN && _focusedItemId.value == null) {
                 _selectedTiles.value.firstOrNull()?.let { tile ->
-                    setFocusedItemId("${tile.packageName}_${tile.activityName}")
+                    val id = if (tile.shortcutId != null) "shortcut_${tile.id}" else "${tile.packageName}_${tile.activityName}"
+                    setFocusedItemId(id)
                     onFocusChanged(FocusedElement.APP_TILE)
                 }
             }
@@ -101,7 +102,8 @@ class ExtendedViewModel(
             }
             Tab.HOMESCREEN -> {
                 _selectedTiles.value.firstOrNull()?.let { tile ->
-                    setFocusedItemId("${tile.packageName}_${tile.activityName}")
+                    val id = if (tile.shortcutId != null) "shortcut_${tile.id}" else "${tile.packageName}_${tile.activityName}"
+                    setFocusedItemId(id)
                     onFocusChanged(FocusedElement.APP_TILE)
                 }
             }

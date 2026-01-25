@@ -1,10 +1,12 @@
 package games.indiegesindel.sproutlauncher.utils
 
 import android.content.Context
+import android.content.pm.LauncherApps
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
+import android.os.Process
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.BlendModeColorFilterCompat
@@ -80,5 +82,26 @@ object IconUtils {
             return bitmap.toDrawable(context.resources)
         }
         return drawable
+    }
+
+    /**
+     * Gets the icon for a pinned shortcut.
+     */
+    fun getShortcutIcon(context: Context, packageName: String, shortcutId: String): Drawable? {
+        if (shortcutId.startsWith("legacy:")) return null
+        val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps ?: return null
+        val query = LauncherApps.ShortcutQuery().apply {
+            setPackage(packageName)
+            setShortcutIds(listOf(shortcutId))
+            setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+        }
+        return try {
+            val shortcuts = launcherApps.getShortcuts(query, Process.myUserHandle())
+            shortcuts?.firstOrNull()?.let {
+                launcherApps.getShortcutIconDrawable(it, context.resources.displayMetrics.densityDpi)
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 }

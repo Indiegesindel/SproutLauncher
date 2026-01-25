@@ -48,11 +48,13 @@ import android.content.pm.ResolveInfo
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.LaunchedEffect
+import games.indiegesindel.sproutlauncher.utils.IconUtils
+import games.indiegesindel.sproutlauncher.utils.LauncherUtils
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppGridItem(
-    app: ResolveInfo,
+    app: ResolveInfo?,
     isOnHomeScreen: Boolean,
     tile: AppTile?,
     onToggleHomeScreen: () -> Unit,
@@ -63,7 +65,9 @@ fun AppGridItem(
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
-    val label = remember(app.activityInfo.packageName, app.activityInfo.name) { app.loadLabel(pm).toString() }
+    val label = remember(app?.activityInfo?.packageName, app?.activityInfo?.name, tile?.label) {
+        tile?.label ?: app?.loadLabel(pm)?.toString() ?: ""
+    }
     var isFocused by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
@@ -74,10 +78,14 @@ fun AppGridItem(
         }
     }
 
+    val shortcutIcon = remember(tile?.packageName, tile?.shortcutId) {
+        tile?.shortcutId?.let { IconUtils.getShortcutIcon(context, tile.packageName, it) }
+    }
+
     val iconPainter: Painter = rememberAsyncImagePainter(
-        model = remember(app.activityInfo.packageName, app.activityInfo.name, tile?.iconUri) {
+        model = remember(app?.activityInfo?.packageName, app?.activityInfo?.name, tile?.iconUri, shortcutIcon) {
             ImageRequest.Builder(context)
-                .data(tile?.iconUri ?: app)
+                .data(tile?.iconUri ?: shortcutIcon ?: app)
                 .size(Size(512, 512))
                 .crossfade(true)
                 .build()
@@ -109,9 +117,10 @@ fun AppGridItem(
                         event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
                         event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_A
                     )) {
-                        val intent = pm.getLaunchIntentForPackage(app.activityInfo.packageName)
-                        if (intent != null) {
-                            context.startActivity(intent)
+                        if (tile != null) {
+                            LauncherUtils.launchTile(context, tile)
+                        } else if (app != null) {
+                            LauncherUtils.launchApp(context, app.activityInfo.packageName)
                         }
                         true
                     } else {
@@ -137,9 +146,10 @@ fun AppGridItem(
                 )
                 .combinedClickable(
                     onClick = {
-                        val intent = pm.getLaunchIntentForPackage(app.activityInfo.packageName)
-                        if (intent != null) {
-                            context.startActivity(intent)
+                        if (tile != null) {
+                            LauncherUtils.launchTile(context, tile)
+                        } else if (app != null) {
+                            LauncherUtils.launchApp(context, app.activityInfo.packageName)
                         }
                     },
                     onDoubleClick = { showMenu = true },
@@ -180,9 +190,10 @@ fun AppGridItem(
                 text = { Text("Launch") },
                 onClick = {
                     showMenu = false
-                    val intent = pm.getLaunchIntentForPackage(app.activityInfo.packageName)
-                    if (intent != null) {
-                        context.startActivity(intent)
+                    if (tile != null) {
+                        LauncherUtils.launchTile(context, tile)
+                    } else if (app != null) {
+                        LauncherUtils.launchApp(context, app.activityInfo.packageName)
                     }
                 }
             )
@@ -195,16 +206,18 @@ fun AppGridItem(
                     }
                 )
             }
-            DropdownMenuItem(
-                text = { Text("Details") },
-                onClick = {
-                    showMenu = false
-                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.parse("package:${app.activityInfo.packageName}")
+            if (tile?.shortcutId == null && app != null) {
+                DropdownMenuItem(
+                    text = { Text("Details") },
+                    onClick = {
+                        showMenu = false
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.parse("package:${app.activityInfo.packageName}")
+                        }
+                        context.startActivity(intent)
                     }
-                    context.startActivity(intent)
-                }
-            )
+                )
+            }
             DropdownMenuItem(
                 text = { Text(if (isOnHomeScreen) "Remove from Homescreen" else "Add to Homescreen") },
                 onClick = {
@@ -212,20 +225,22 @@ fun AppGridItem(
                     onToggleHomeScreen()
                 }
             )
-            DropdownMenuItem(
-                text = { Text("Uninstall") },
-                onClick = {
-                    showMenu = false
-                    val intent = Intent(Intent.ACTION_DELETE).apply {
-                        data = Uri.parse("package:${app.activityInfo.packageName}")
+            if (tile?.shortcutId == null && app != null) {
+                DropdownMenuItem(
+                    text = { Text("Uninstall") },
+                    onClick = {
+                        showMenu = false
+                        val intent = Intent(Intent.ACTION_DELETE).apply {
+                            data = Uri.parse("package:${app.activityInfo.packageName}")
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // Log or handle error
+                        }
                     }
-                    try {
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        // Log or handle error
-                    }
-                }
-            )
+                )
+            }
         }
     }
 }
