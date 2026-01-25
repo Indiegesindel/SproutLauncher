@@ -31,8 +31,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.ExperimentalComposeUiApi
 import games.indiegesindel.sproutlauncher.model.AppTile
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun GroupModal(
     group: AppTile,
@@ -82,6 +86,7 @@ fun GroupModal(
                     .clip(RoundedCornerShape(roundness.dp))
                     .background(MaterialTheme.colorScheme.surface)
                     .clickable(enabled = false) { }
+                    .focusProperties { exit = { FocusRequester.Cancel } }
                     .padding(16.dp)
             ) {
             Column(
@@ -123,7 +128,8 @@ fun GroupModal(
                     roundness = roundness,
                     focusedItemId = focusedItemId,
                     onFocusItemIdChanged = onFocusItemIdChanged,
-                    onRemoveFromGroup = onRemoveFromGroup
+                    onRemoveFromGroup = onRemoveFromGroup,
+                    onDismiss = onDismiss
                 )
             }
         }

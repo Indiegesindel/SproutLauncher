@@ -82,7 +82,8 @@ fun AppGridItem(
     onClearSelection: () -> Unit = {},
     onOpenGroup: () -> Unit = {},
     onUngroup: () -> Unit = {},
-    onRemoveFromGroup: (() -> Unit)? = null
+    onRemoveFromGroup: (() -> Unit)? = null,
+    onDismiss: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
@@ -165,6 +166,11 @@ fun AppGridItem(
                             LauncherUtils.launchTile(context, tile)
                         } else if (app != null) {
                             LauncherUtils.launchApp(context, app.activityInfo.packageName)
+                        }
+                        true
+                    } else if (isDown && event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_B) {
+                        if (onRemoveFromGroup != null) {
+                            onDismiss()
                         }
                         true
                     } else {

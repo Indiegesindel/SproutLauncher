@@ -227,6 +227,12 @@ class MainViewModel(
         }
     }
 
+    fun resetState() {
+        _openedGroup.value = null
+        _isInMultiSelectMode.value = false
+        _selectedTileIds.value = emptySet()
+    }
+
     fun onFocusChanged(focused: Boolean) {
         if (focused) {
             _focusedElement.value = FocusedElement.APP_TILE
