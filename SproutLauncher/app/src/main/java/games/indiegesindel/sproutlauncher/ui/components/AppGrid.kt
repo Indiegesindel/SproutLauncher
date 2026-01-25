@@ -174,7 +174,8 @@ fun AppGrid(
     onClearSelection: () -> Unit = {},
     onOpenGroup: (AppTile) -> Unit = {},
     onUngroup: (String) -> Unit = {},
-    onRemoveFromGroup: ((String) -> Unit)? = null
+    onRemoveFromGroup: ((String) -> Unit)? = null,
+    onDismiss: () -> Unit = {}
 ) {
     val configuration = LocalConfiguration.current
     val isPhone = configuration.smallestScreenWidthDp < 600
@@ -246,7 +247,8 @@ fun AppGrid(
                     onClearSelection = onClearSelection,
                     onOpenGroup = { onOpenGroup(tile) },
                     onUngroup = { onUngroup(tile.id) },
-                    onRemoveFromGroup = onRemoveFromGroup?.let { { it(tile.id) } }
+                    onRemoveFromGroup = onRemoveFromGroup?.let { { it(tile.id) } },
+                    onDismiss = onDismiss
                 )
             }
         }
@@ -274,7 +276,8 @@ fun AppTileItem(
     onClearSelection: () -> Unit = {},
     onOpenGroup: () -> Unit = {},
     onUngroup: () -> Unit = {},
-    onRemoveFromGroup: (() -> Unit)? = null
+    onRemoveFromGroup: (() -> Unit)? = null,
+    onDismiss: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var isFocused by remember { mutableStateOf(false) }
@@ -352,6 +355,12 @@ fun AppTileItem(
                         KeyEvent.KEYCODE_BUTTON_START,
                         KeyEvent.KEYCODE_MENU -> {
                             showMenu = true
+                            true
+                        }
+                        KeyEvent.KEYCODE_BUTTON_B -> {
+                            if (onRemoveFromGroup != null) {
+                                onDismiss()
+                            }
                             true
                         }
                         else -> false

@@ -173,4 +173,20 @@ class GroupFocusTest {
         assert(vm.appTiles.value.any { it.id == tile2.id })
         assert(vm.focusedItemId.value == "tile:${tile1.id}")
     }
+
+    @Test
+    fun resetState_clears_group_and_multiselect() = runTest(testDispatcher) {
+        val groupTile = AppTile(label = "Group", packageName = "", activityName = "", isGroup = true)
+        vm.openGroup(groupTile)
+        vm.enterMultiSelectMode("tile1")
+        
+        assert(vm.openedGroup.value != null)
+        assert(vm.isInMultiSelectMode.value)
+        
+        vm.resetState()
+        
+        assert(vm.openedGroup.value == null)
+        assert(vm.isInMultiSelectMode.value == false)
+        assert(vm.selectedTileIds.value.isEmpty())
+    }
 }

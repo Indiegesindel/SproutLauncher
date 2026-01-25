@@ -123,7 +123,9 @@ fun MainScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(bottom = 56.dp) // Space for footer
-                        .focusProperties { canFocus = openedGroup == null },
+                        .focusProperties {
+                            if (openedGroup != null) canFocus = false
+                        },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -165,7 +167,8 @@ fun MainScreen(
                         onGroupSelected = { viewModel.groupSelectedTiles() },
                         onClearSelection = { viewModel.clearSelection() },
                         onOpenGroup = { viewModel.openGroup(it) },
-                        onUngroup = { viewModel.ungroup(it) }
+                        onUngroup = { viewModel.ungroup(it) },
+                        onDismiss = { viewModel.closeGroup() }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))

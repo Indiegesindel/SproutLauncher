@@ -12,7 +12,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -26,27 +25,30 @@ import games.indiegesindel.sproutlauncher.ui.viewmodels.MainViewModel
 import games.indiegesindel.sproutlauncher.ui.viewmodels.MainViewModelFactory
 
 class MainActivity : ComponentActivity() {
+    private lateinit var viewModel: MainViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
+
+        val settingsManager = SettingsManager(this)
+        val appManager = AppManager(this)
+        viewModel = ViewModelProvider(
+            this,
+            MainViewModelFactory(appManager, settingsManager)
+        )[MainViewModel::class.java]
+
         setContent {
             val context = LocalContext.current
-            val settingsManager = remember { SettingsManager(context) }
             val baseTheme by settingsManager.baseTheme.collectAsState()
             val isDarkMode by settingsManager.isDarkMode.collectAsState()
 
             SproutLauncherTheme(baseTheme = baseTheme, isDarkMode = isDarkMode) {
-                val appManager = remember { AppManager(context) }
-                val viewModel: MainViewModel = ViewModelProvider(
-                    this, 
-                    MainViewModelFactory(appManager, settingsManager)
-                )[MainViewModel::class.java]
-
                 val lifecycleOwner = LocalLifecycleOwner.current
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                         viewModel.loadAppTiles()
+                        viewModel.resetState()
                     }
                 }
 
@@ -76,6 +78,13 @@ class MainActivity : ComponentActivity() {
 
                 MainScreen(viewModel = viewModel)
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            viewModel.resetState()
         }
     }
 }
