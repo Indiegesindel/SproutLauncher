@@ -264,6 +264,7 @@ fun MainScreen(
                         group = group,
                         onDismiss = { viewModel.closeGroup() },
                         onAppClick = { tile -> LauncherUtils.launchTile(context, tile) },
+                        onRemove = { tile -> viewModel.requestRemoveTile(tile) },
                         onRemoveFromGroup = { tileId ->
                             viewModel.removeTileFromGroup(
                                 group.id,
