@@ -49,6 +49,7 @@ fun GroupModal(
     group: AppTile,
     onDismiss: () -> Unit,
     onAppClick: (AppTile) -> Unit,
+    onRemove: (AppTile) -> Unit,
     onRemoveFromGroup: (String) -> Unit,
     onSettings: (AppTile) -> Unit,
     onReorder: (Int, Int) -> Unit = { _, _ -> },
@@ -150,7 +151,7 @@ fun GroupModal(
                         AppGrid(
                             appTiles = group.groupTiles,
                             onAppClick = onAppClick,
-                            onRemove = { },
+                            onRemove = onRemove,
                             onSettings = onSettings,
                             onReorder = onReorder,
                             onDragEnd = onDragEnd,
