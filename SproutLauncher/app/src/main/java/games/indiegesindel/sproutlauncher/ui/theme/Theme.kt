@@ -352,6 +352,102 @@ private val MonochromeDarkScheme = darkColorScheme(
     surfaceContainerHighest = monochromeSurfaceContainerHighestDark,
 )
 
+private val RosePinkLightScheme = lightColorScheme(
+    primary = rosePinkPrimaryLight,
+    onPrimary = rosePinkOnPrimaryLight,
+    primaryContainer = rosePinkPrimaryContainerLight,
+    onPrimaryContainer = rosePinkOnPrimaryContainerLight,
+    secondary = rosePinkSecondaryLight,
+    onSecondary = rosePinkOnSecondaryLight,
+    secondaryContainer = rosePinkSecondaryContainerLight,
+    onSecondaryContainer = rosePinkOnSecondaryContainerLight,
+    background = rosePinkBackgroundLight,
+    onBackground = rosePinkOnBackgroundLight,
+    surface = rosePinkSurfaceLight,
+    onSurface = rosePinkOnSurfaceLight,
+    surfaceVariant = rosePinkSurfaceVariantLight,
+    onSurfaceVariant = rosePinkOnSurfaceVariantLight,
+    outline = rosePinkOutlineLight,
+    outlineVariant = rosePinkOutlineVariantLight,
+    surfaceContainerLowest = rosePinkSurfaceContainerLowestLight,
+    surfaceContainerLow = rosePinkSurfaceContainerLowLight,
+    surfaceContainer = rosePinkSurfaceContainerLight,
+    surfaceContainerHigh = rosePinkSurfaceContainerHighLight,
+    surfaceContainerHighest = rosePinkSurfaceContainerHighestLight,
+)
+
+private val RosePinkDarkScheme = darkColorScheme(
+    primary = rosePinkPrimaryDark,
+    onPrimary = rosePinkOnPrimaryDark,
+    primaryContainer = rosePinkPrimaryContainerDark,
+    onPrimaryContainer = rosePinkOnPrimaryContainerDark,
+    secondary = rosePinkSecondaryDark,
+    onSecondary = rosePinkOnSecondaryDark,
+    secondaryContainer = rosePinkSecondaryContainerDark,
+    onSecondaryContainer = rosePinkOnSecondaryContainerDark,
+    background = rosePinkBackgroundDark,
+    onBackground = rosePinkOnBackgroundDark,
+    surface = rosePinkSurfaceDark,
+    onSurface = rosePinkOnSurfaceDark,
+    surfaceVariant = rosePinkSurfaceVariantDark,
+    onSurfaceVariant = rosePinkOnSurfaceVariantDark,
+    outline = rosePinkOutlineDark,
+    outlineVariant = rosePinkOutlineVariantDark,
+    surfaceContainerLowest = rosePinkSurfaceContainerLowestDark,
+    surfaceContainerLow = rosePinkSurfaceContainerLowDark,
+    surfaceContainer = rosePinkSurfaceContainerDark,
+    surfaceContainerHigh = rosePinkSurfaceContainerHighDark,
+    surfaceContainerHighest = rosePinkSurfaceContainerHighestDark,
+)
+
+private val TealLightScheme = lightColorScheme(
+    primary = tealPrimaryLight,
+    onPrimary = tealOnPrimaryLight,
+    primaryContainer = tealPrimaryContainerLight,
+    onPrimaryContainer = tealOnPrimaryContainerLight,
+    secondary = tealSecondaryLight,
+    onSecondary = tealOnSecondaryLight,
+    secondaryContainer = tealSecondaryContainerLight,
+    onSecondaryContainer = tealOnSecondaryContainerLight,
+    background = tealBackgroundLight,
+    onBackground = tealOnBackgroundLight,
+    surface = tealSurfaceLight,
+    onSurface = tealOnSurfaceLight,
+    surfaceVariant = tealSurfaceVariantLight,
+    onSurfaceVariant = tealOnSurfaceVariantLight,
+    outline = tealOutlineLight,
+    outlineVariant = tealOutlineVariantLight,
+    surfaceContainerLowest = tealSurfaceContainerLowestLight,
+    surfaceContainerLow = tealSurfaceContainerLowLight,
+    surfaceContainer = tealSurfaceContainerLight,
+    surfaceContainerHigh = tealSurfaceContainerHighLight,
+    surfaceContainerHighest = tealSurfaceContainerHighestLight,
+)
+
+private val TealDarkScheme = darkColorScheme(
+    primary = tealPrimaryDark,
+    onPrimary = tealOnPrimaryDark,
+    primaryContainer = tealPrimaryContainerDark,
+    onPrimaryContainer = tealOnPrimaryContainerDark,
+    secondary = tealSecondaryDark,
+    onSecondary = tealOnSecondaryDark,
+    secondaryContainer = tealSecondaryContainerDark,
+    onSecondaryContainer = tealOnSecondaryContainerDark,
+    background = tealBackgroundDark,
+    onBackground = tealOnBackgroundDark,
+    surface = tealSurfaceDark,
+    onSurface = tealOnSurfaceDark,
+    surfaceVariant = tealSurfaceVariantDark,
+    onSurfaceVariant = tealOnSurfaceVariantDark,
+    outline = tealOutlineDark,
+    outlineVariant = tealOutlineVariantDark,
+    surfaceContainerLowest = tealSurfaceContainerLowestDark,
+    surfaceContainerLow = tealSurfaceContainerLowDark,
+    surfaceContainer = tealSurfaceContainerDark,
+    surfaceContainerHigh = tealSurfaceContainerHighDark,
+    surfaceContainerHighest = tealSurfaceContainerHighestDark,
+)
+
 @Composable
 fun SproutLauncherTheme(
     baseTheme: BaseTheme = BaseTheme.SYSTEM,
@@ -389,6 +485,8 @@ fun SproutLauncherTheme(
         baseTheme == BaseTheme.FIRE_RED -> if (darkTheme) FireRedDarkScheme else FireRedLightScheme
         baseTheme == BaseTheme.REFRESHING_ORANGE -> if (darkTheme) OrangeDarkScheme else OrangeLightScheme
         baseTheme == BaseTheme.MONOCHROME -> if (darkTheme) MonochromeDarkScheme else MonochromeLightScheme
+        baseTheme == BaseTheme.ROSE_PINK -> if (darkTheme) RosePinkDarkScheme else RosePinkLightScheme
+        baseTheme == BaseTheme.TEAL -> if (darkTheme) TealDarkScheme else TealLightScheme
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
