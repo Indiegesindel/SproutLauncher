@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.material3.Text
@@ -20,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
+import android.view.KeyEvent
 import kotlinx.coroutines.launch
 import games.indiegesindel.sproutlauncher.AppTileSettingsActivity
 import games.indiegesindel.sproutlauncher.data.AppManager
@@ -59,6 +60,7 @@ fun AllAppsTab(
         }
     }
     val coroutineScope = rememberCoroutineScope()
+    val showAppsHeader = isHomeScreen && installedApps.isNotEmpty()
 
     if (isLoading) {
         Box(
@@ -74,13 +76,34 @@ fun AllAppsTab(
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 100.dp),
             state = gridState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .onPreviewKeyEvent { event ->
+                    if (event.nativeKeyEvent.action != KeyEvent.ACTION_DOWN) return@onPreviewKeyEvent false
+                    val keyCode = event.nativeKeyEvent.keyCode
+                    if (keyCode != KeyEvent.KEYCODE_DPAD_DOWN && keyCode != KeyEvent.KEYCODE_DPAD_UP) {
+                        return@onPreviewKeyEvent false
+                    }
+                    val currentIndex = installedApps.indexOfFirst { app ->
+                        "${app.activityInfo.packageName}_${app.activityInfo.name}" == focusedItemId
+                    }
+                    if (currentIndex < 0) return@onPreviewKeyEvent false
+                    val cols = numColumns
+                    val delta = if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) cols else -cols
+                    val targetIndex = currentIndex + delta
+                    if (targetIndex !in installedApps.indices) return@onPreviewKeyEvent false
+                    val targetApp = installedApps[targetIndex]
+                    val targetId = "${targetApp.activityInfo.packageName}_${targetApp.activityInfo.name}"
+                    coroutineScope.launch {
+                        gridState.scrollToItem(targetIndex + if (showAppsHeader) 1 else 0)
+                        onFocusItemIdChanged(targetId)
+                    }
+                    true
+                },
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            val showAppsHeader = isHomeScreen && installedApps.isNotEmpty() && (shortcuts.isNotEmpty() || isHomeScreen)
-            
             if (showAppsHeader) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
@@ -95,7 +118,7 @@ fun AllAppsTab(
                 }
             }
 
-            itemsIndexed(installedApps, key = { _, app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }) { index, app ->
+            items(installedApps, key = { app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }) { app ->
                 val packageName = app.activityInfo.packageName
                 val activityName = app.activityInfo.name
                 val itemId = "${packageName}_${activityName}"
@@ -150,22 +173,7 @@ fun AllAppsTab(
                     onDismiss = onDismiss,
                     showGroupOptions = false,
                     hasGroups = hasGroups,
-                    enabled = enabled,
-                    listIndex = index,
-                    totalItems = installedApps.size,
-                    numColumns = numColumns,
-                    onNavigateByRows = { delta ->
-                        val targetIndex = index + delta
-                        if (targetIndex in installedApps.indices) {
-                            val targetApp = installedApps[targetIndex]
-                            val targetId = "${targetApp.activityInfo.packageName}_${targetApp.activityInfo.name}"
-                            val headerOffset = if (showAppsHeader) 1 else 0
-                            coroutineScope.launch {
-                                gridState.scrollToItem(targetIndex + headerOffset)
-                                onFocusItemIdChanged(targetId)
-                            }
-                        }
-                    }
+                    enabled = enabled
                 )
             }
 
