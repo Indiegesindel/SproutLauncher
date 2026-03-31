@@ -9,11 +9,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.material3.Text
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,6 +27,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.launch
 import games.indiegesindel.sproutlauncher.AppTileSettingsActivity
 import games.indiegesindel.sproutlauncher.data.AppManager
 import android.content.Intent
@@ -46,6 +52,13 @@ fun AllAppsTab(
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
+    val gridState = rememberLazyGridState()
+    val numColumns by remember {
+        derivedStateOf {
+            gridState.layoutInfo.visibleItemsInfo.maxOfOrNull { it.column + 1 } ?: 1
+        }
+    }
+    val coroutineScope = rememberCoroutineScope()
 
     if (isLoading) {
         Box(
@@ -60,6 +73,7 @@ fun AllAppsTab(
     } else {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 100.dp),
+            state = gridState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -81,7 +95,7 @@ fun AllAppsTab(
                 }
             }
 
-            items(installedApps, key = { app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }) { app ->
+            itemsIndexed(installedApps, key = { _, app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }) { index, app ->
                 val packageName = app.activityInfo.packageName
                 val activityName = app.activityInfo.name
                 val itemId = "${packageName}_${activityName}"
@@ -136,7 +150,22 @@ fun AllAppsTab(
                     onDismiss = onDismiss,
                     showGroupOptions = false,
                     hasGroups = hasGroups,
-                    enabled = enabled
+                    enabled = enabled,
+                    listIndex = index,
+                    totalItems = installedApps.size,
+                    numColumns = numColumns,
+                    onNavigateByRows = { delta ->
+                        val targetIndex = index + delta
+                        if (targetIndex in installedApps.indices) {
+                            val targetApp = installedApps[targetIndex]
+                            val targetId = "${targetApp.activityInfo.packageName}_${targetApp.activityInfo.name}"
+                            val headerOffset = if (showAppsHeader) 1 else 0
+                            coroutineScope.launch {
+                                gridState.scrollToItem(targetIndex + headerOffset)
+                                onFocusItemIdChanged(targetId)
+                            }
+                        }
+                    }
                 )
             }
 
