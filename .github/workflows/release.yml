@@ -27,10 +27,12 @@ jobs:
           cache: gradle
 
       - name: Grant execute permission for gradlew
-        run: chmod +x SproutLauncher/gradlew
+        working-directory: SproutLauncher
+        run: chmod +x gradlew
 
       - name: Build APK
-        run: ./SproutLauncher/gradlew assembleRelease
+        working-directory: SproutLauncher
+        run: ./gradlew assembleRelease
 
       - name: Determine Release Type
         id: release_type
