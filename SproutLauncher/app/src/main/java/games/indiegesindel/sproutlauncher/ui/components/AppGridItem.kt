@@ -101,7 +101,11 @@ fun AppGridItem(
     onDismiss: () -> Unit = {},
     showGroupOptions: Boolean = true,
     hasGroups: Boolean = false,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    listIndex: Int = -1,
+    totalItems: Int = 0,
+    numColumns: Int = 0,
+    onNavigateByRows: ((Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
@@ -190,6 +194,26 @@ fun AppGridItem(
                     } else if (isDown && event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_B) {
                         onDismiss()
                         true
+                    } else if (isDown && event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+                        && onNavigateByRows != null && numColumns > 0
+                    ) {
+                        val targetIndex = listIndex + numColumns
+                        if (targetIndex < totalItems) {
+                            onNavigateByRows(numColumns)
+                            true
+                        } else {
+                            false
+                        }
+                    } else if (isDown && event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_UP
+                        && onNavigateByRows != null && numColumns > 0
+                    ) {
+                        val targetIndex = listIndex - numColumns
+                        if (targetIndex >= 0) {
+                            onNavigateByRows(-numColumns)
+                            true
+                        } else {
+                            false
+                        }
                     } else {
                         false
                     }
