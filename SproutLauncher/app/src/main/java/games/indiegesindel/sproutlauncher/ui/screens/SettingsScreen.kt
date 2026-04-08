@@ -12,30 +12,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.ui.res.painterResource
 import games.indiegesindel.sproutlauncher.R
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.shape.RoundedCornerShape
 import coil.compose.AsyncImage
 import games.indiegesindel.sproutlauncher.data.BaseTheme
 import games.indiegesindel.sproutlauncher.data.SettingsManager
-import games.indiegesindel.sproutlauncher.ExtendedActivity
 import games.indiegesindel.sproutlauncher.ui.theme.*
 import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
 import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
@@ -68,6 +59,9 @@ fun SettingsTab(
     val groupAppTileRoundness by settingsManager.groupAppTileRoundness.collectAsState()
 
     val wallpaperDim by settingsManager.wallpaperDim.collectAsState()
+
+    val steamGridDBApiKey by settingsManager.steamGridDBApiKey.collectAsState()
+    var showSteamGridDBApiKeyDialog by remember { mutableStateOf(false) }
 
     var showWallpaperDimDialog by remember { mutableStateOf(false) }
     var showRowsDialog by remember { mutableStateOf(false) }
@@ -219,6 +213,15 @@ fun SettingsTab(
                 }
             }
 
+            SettingsSectionHeader(title = "SteamGridDB")
+            SettingsCard {
+                SettingsDialogItem(
+                    label = "API Key",
+                    value = if(steamGridDBApiKey?.isEmpty() ?: false || steamGridDBApiKey.toString() == "") "Not Set" else "Set",
+                    onClick = { showSteamGridDBApiKeyDialog = true }
+                )
+            }
+
             SettingsSectionHeader(title = "Homescreen")
 
             SettingsCard {
@@ -317,6 +320,27 @@ fun SettingsTab(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+
+    if (showSteamGridDBApiKeyDialog) {
+        SproutAlertDialog(
+            onDismissRequest = { showSteamGridDBApiKeyDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showSteamGridDBApiKeyDialog = false }) {
+                    Text("Done")
+                }
+            },
+            title = { Text("Edit SteamGridDB API Key") },
+            text = {
+                OutlinedTextField(
+                    value = steamGridDBApiKey ?: "",
+                    onValueChange = { settingsManager.setSteamGridDBApiKey(it) },
+                    label = { Text("SteamGridDB API Key") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        )
     }
 
     if (showWallpaperDimDialog) {

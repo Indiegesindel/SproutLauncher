@@ -65,6 +65,9 @@ class SettingsManager(context: Context) {
     private val _showSpotify = MutableStateFlow(loadShowSpotify())
     val showSpotify: StateFlow<Boolean> = _showSpotify.asStateFlow()
 
+    private val _steamGridDBApiKey = MutableStateFlow(loadSteamGridDBApiKey())
+    val steamGridDBApiKey: StateFlow<String?> = _steamGridDBApiKey.asStateFlow()
+
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
             KEY_BASE_THEME -> _baseTheme.value = loadBaseTheme()
@@ -82,6 +85,7 @@ class SettingsManager(context: Context) {
             KEY_SHOW_YOUTUBE -> _showYouTube.value = loadShowYouTube()
             KEY_SHOW_DISCORD -> _showDiscord.value = loadShowDiscord()
             KEY_SHOW_SPOTIFY -> _showSpotify.value = loadShowSpotify()
+            KEY_STEAMGRIDDB_APIKEY -> _steamGridDBApiKey.value = loadSteamGridDBApiKey()
         }
     }
 
@@ -105,6 +109,7 @@ class SettingsManager(context: Context) {
         private const val KEY_SHOW_YOUTUBE = "show_youtube"
         private const val KEY_SHOW_DISCORD = "show_discord"
         private const val KEY_SHOW_SPOTIFY = "show_spotify"
+        private const val KEY_STEAMGRIDDB_APIKEY = "steamgriddb_apikey"
     }
 
     private fun loadBaseTheme(): BaseTheme {
@@ -245,5 +250,14 @@ class SettingsManager(context: Context) {
     fun setShowSpotify(show: Boolean) {
         sharedPreferences.edit { putBoolean(KEY_SHOW_SPOTIFY, show) }
         _showSpotify.value = show
+    }
+
+    private fun loadSteamGridDBApiKey(): String? {
+        return sharedPreferences.getString(KEY_STEAMGRIDDB_APIKEY, null)
+    }
+
+    fun setSteamGridDBApiKey(steamGridDBApiKey: String?) {
+        sharedPreferences.edit { putString(KEY_STEAMGRIDDB_APIKEY, steamGridDBApiKey) }
+        _steamGridDBApiKey.value = steamGridDBApiKey
     }
 }
