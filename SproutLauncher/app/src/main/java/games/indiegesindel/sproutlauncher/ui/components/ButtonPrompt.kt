@@ -28,7 +28,7 @@ fun PromptsFooter(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding()
             .padding(horizontal = 32.dp, vertical = 12.dp),
         contentAlignment = Alignment.CenterEnd
