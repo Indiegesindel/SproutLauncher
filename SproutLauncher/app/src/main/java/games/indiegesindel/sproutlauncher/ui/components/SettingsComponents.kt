@@ -36,6 +36,7 @@ fun SproutAlertDialog(
     iconContentColor: Color = AlertDialogDefaults.iconContentColor,
     titleContentColor: Color = AlertDialogDefaults.titleContentColor,
     textContentColor: Color = AlertDialogDefaults.textContentColor,
+    isSmall: Boolean = false,
     tonalElevation: Dp = AlertDialogDefaults.TonalElevation,
     properties: DialogProperties = DialogProperties(usePlatformDefaultWidth = false)
 ) {
@@ -43,7 +44,7 @@ fun SproutAlertDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = confirmButton,
         modifier = modifier
-            .fillMaxWidth(0.92f)
+            .fillMaxWidth(if (isSmall) 0.6f else 0.92f)
             .padding(vertical = 24.dp),
         dismissButton = dismissButton,
         icon = icon,
@@ -100,6 +101,20 @@ fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        content = content
+    )
+}
+
+@Composable
+fun SettingsCardHigher(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
         ),
         content = content
     )

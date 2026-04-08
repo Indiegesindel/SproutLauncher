@@ -1,11 +1,13 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,6 +39,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import games.indiegesindel.sproutlauncher.SteamGridDBActivity
+import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 import games.indiegesindel.sproutlauncher.ui.viewmodels.AppTileSettingsViewModel
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
@@ -61,6 +65,10 @@ fun AppTileSettingsScreen(
     val showDeleteConfirm by viewModel.showDeleteConfirm.collectAsState()
 
     var showLabelDialog by remember { mutableStateOf(false) }
+    var showIconMenu by remember { mutableStateOf(false) }
+
+    val settingsManager = remember { SettingsManager(context) }
+    val apiKey by settingsManager.steamGridDBApiKey.collectAsState()
 
     if (tile == null) {
         onDone()
@@ -83,6 +91,18 @@ fun AppTileSettingsScreen(
             uri?.let {
                 context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 viewModel.onIconUriChanged(it.toString())
+            }
+        }
+    )
+
+    val steamGridDBLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+        onResult = { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri = result.data?.getStringExtra("ICON_URI")
+                if (uri != null) {
+                    viewModel.onIconUriChanged(uri)
+                }
             }
         }
     )
@@ -152,10 +172,33 @@ fun AppTileSettingsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { photoPickerLauncher.launch(arrayOf("image/*")) }
-                    ) {
-                        Text("Change Icon")
+                    Box {
+                        Button(
+                            onClick = { showIconMenu = true }
+                        ) {
+                            Text("Change Icon")
+                        }
+                        DropdownMenu(
+                            expanded = showIconMenu,
+                            onDismissRequest = { showIconMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Local file") },
+                                onClick = {
+                                    showIconMenu = false
+                                    photoPickerLauncher.launch(arrayOf("image/*"))
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("SteamGridDB") },
+                                enabled = !apiKey.isNullOrBlank(),
+                                onClick = {
+                                    showIconMenu = false
+                                    val intent = Intent(context, SteamGridDBActivity::class.java)
+                                    steamGridDBLauncher.launch(intent)
+                                }
+                            )
+                        }
                     }
                     if (iconUri != null) {
                         OutlinedButton(

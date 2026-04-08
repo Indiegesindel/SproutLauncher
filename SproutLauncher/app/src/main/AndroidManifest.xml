@@ -31,7 +31,10 @@
         android:theme="@style/Theme.SproutLauncher">
         <activity
             android:name=".SteamGridDBActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.SproutLauncher"
+            tools:ignore="DiscouragedApi" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
