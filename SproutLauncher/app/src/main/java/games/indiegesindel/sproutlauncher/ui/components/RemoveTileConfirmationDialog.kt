@@ -16,6 +16,7 @@ fun RemoveTileConfirmationDialog(
         onDismissRequest = onDismiss,
         title = { Text("Remove Tile") },
         text = { Text("Are you sure you want to remove this tile from your home screen?") },
+        isSmall = true,
         confirmButton = {
             TextButton(
                 onClick = onConfirm,

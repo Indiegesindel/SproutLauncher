@@ -470,8 +470,8 @@ fun AppTileItem(
                     }
                 }
                 .then(
-                    if (isSelected) Modifier.border(4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(roundness.dp))
-                    else if (isFocused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 6).dp))
+                    if (isSelected) Modifier.border(4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 6).dp))
+                    else if (isFocused) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 4).dp))
                     else Modifier
                 )
                 .padding(if (isFocused) 6.dp else 0.dp)

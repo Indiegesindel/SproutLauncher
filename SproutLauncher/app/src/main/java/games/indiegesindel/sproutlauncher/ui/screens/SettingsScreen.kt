@@ -318,6 +318,8 @@ fun SettingsTab(
                 )
             }
 
+            DemoFeatures()
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
