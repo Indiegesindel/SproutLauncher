@@ -6,7 +6,7 @@ data class SteamGridDBGrid(
     val height: Int = 0,
     val url: String = "",
     val thumb: String = "",
-    val notes: String = "",
+    val notes: String? = null,
     val author: Author = Author(""),
 )
 
