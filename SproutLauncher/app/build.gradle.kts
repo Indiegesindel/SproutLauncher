@@ -53,6 +53,9 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.okhttp)
     implementation(libs.gson)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.activity)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
