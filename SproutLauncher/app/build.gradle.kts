@@ -51,6 +51,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.compose.icons.extended)
     implementation(libs.coil.compose)
+    implementation(libs.okhttp)
+    implementation(libs.gson)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
