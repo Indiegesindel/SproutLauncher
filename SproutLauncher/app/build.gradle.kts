@@ -28,6 +28,16 @@ android {
             )
         }
     }
+    flavorDimensions += "mode"
+    productFlavors {
+        create("production") {
+            dimension = "mode"
+        }
+        create("demo") {
+            dimension = "mode"
+            applicationIdSuffix = ".demo"
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
