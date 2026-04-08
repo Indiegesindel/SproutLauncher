@@ -8,7 +8,7 @@ fun formatTimestamp(timestamp: Long?): String {
     if (timestamp == null) return "Unknown release date"
 
     val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy")
-    return Instant.ofEpochSecond(timestamp) // or ofEpochMilli if needed!
+    return "Released on " + Instant.ofEpochSecond(timestamp)
         .atZone(ZoneId.systemDefault())
         .format(formatter)
 }
