@@ -39,6 +39,7 @@ class SettingsManagerTest {
         assertThat(settings.showYouTube.first()).isTrue()
         assertThat(settings.showDiscord.first()).isTrue()
         assertThat(settings.showSpotify.first()).isTrue()
+        assertThat(settings.steamGridDBApiKey.first()).isNull()
     }
 
     @Test
@@ -53,6 +54,7 @@ class SettingsManagerTest {
         settings.setShowYouTube(false)
         settings.setShowDiscord(false)
         settings.setShowSpotify(false)
+        settings.setSteamGridDBApiKey("test")
 
         assertThat(settings.isDarkMode.first()).isTrue()
         assertThat(settings.homeScreenRows.first()).isEqualTo(3)
@@ -64,6 +66,7 @@ class SettingsManagerTest {
         assertThat(settings.showYouTube.first()).isFalse()
         assertThat(settings.showDiscord.first()).isFalse()
         assertThat(settings.showSpotify.first()).isFalse()
+        assertThat(settings.steamGridDBApiKey.first()).isEqualTo("test")
     }
 
     @Test
