@@ -30,7 +30,7 @@ fun PromptsFooter(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding()
-            .padding(horizontal = 32.dp, vertical = 12.dp),
+            .padding(horizontal = 32.dp, vertical = 6.dp),
         contentAlignment = Alignment.CenterEnd
     ) {
         Row(
@@ -52,7 +52,7 @@ fun ButtonPrompt(
     ) {
         Box(
             modifier = Modifier
-                .size(24.dp)
+                .size(22.dp)
                 .background(MaterialTheme.colorScheme.inverseSurface, shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {

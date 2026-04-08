@@ -133,7 +133,7 @@ fun MainScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = 56.dp)
+                        .padding(bottom = 44.dp)
                         .focusProperties {
                             if (openedGroup != null || tileToMoveToGroup != null) canFocus = false
                         },
