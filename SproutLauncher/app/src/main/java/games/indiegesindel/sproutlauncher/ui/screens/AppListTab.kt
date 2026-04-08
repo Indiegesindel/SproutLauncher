@@ -106,7 +106,7 @@ fun AppListTab(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(bottom = 56.dp) // Space for footer
+                    .padding(bottom = 32.dp) // Space for footer
             ) {
                 AllAppsTab(
                     installedApps = filteredApps,

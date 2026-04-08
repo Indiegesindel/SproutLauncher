@@ -135,7 +135,7 @@ fun MainScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = 56.dp) // Space for footer
+                        .padding(bottom = 44.dp) // Space for footer
                         .focusProperties {
                             if (openedGroup != null || tileToMoveToGroup != null) canFocus = false
                         },
