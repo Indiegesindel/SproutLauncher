@@ -92,11 +92,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.focus.FocusRequester
@@ -487,50 +491,6 @@ fun AppTileItem(
             .fillMaxHeight(),
         contentAlignment = Alignment.Center
     ) {
-        // Tooltip
-        if (isFocused && !isDragging && !isYPressed) {
-            val density = LocalDensity.current
-            val yOffset = with(density) { (-30).dp.roundToPx() }
-            Popup(
-                alignment = Alignment.TopCenter,
-                offset = IntOffset(0, yOffset),
-                properties = PopupProperties(focusable = false)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.inverseSurface)
-                            .padding(horizontal = 12.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (tile.isGroup) {
-                            Icon(
-                                imageVector = Icons.Default.Folder,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.inverseOnSurface,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Text(
-                            text = tile.label,
-                            color = MaterialTheme.colorScheme.inverseOnSurface,
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(14.dp, 7.dp)
-                            .background(MaterialTheme.colorScheme.inverseSurface, shape = TriangleShape)
-                    )
-                }
-            }
-        }
-
         Box(
             modifier = Modifier
                 .fillMaxHeight()
@@ -568,6 +528,58 @@ fun AppTileItem(
                 ),
             contentAlignment = Alignment.Center
         ) {
+            if (isFocused && !isDragging && !isYPressed) {
+                val density = LocalDensity.current
+                val yOffset = with(density) { (-30).dp.roundToPx() }
+                Popup(
+                    alignment = Alignment.TopCenter,
+                    offset = IntOffset(0, yOffset),
+                    properties = PopupProperties(focusable = false)
+                ) {
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn(animationSpec = tween(120)) + scaleIn(
+                            initialScale = 0.85f,
+                            animationSpec = tween(120),
+                            transformOrigin = TransformOrigin(0.5f, 1f)
+                        )
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.inverseSurface)
+                                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                if (tile.isGroup) {
+                                    Icon(
+                                        imageVector = Icons.Default.Folder,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.inverseOnSurface,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                                Text(
+                                    text = tile.label,
+                                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(14.dp, 7.dp)
+                                    .background(MaterialTheme.colorScheme.inverseSurface, shape = TriangleShape)
+                            )
+                        }
+                    }
+                }
+            }
+
             if (tile.isGroup && tile.iconUri == null) {
                 GroupIcon(groupTiles = tile.groupTiles, modifier = Modifier.fillMaxSize())
             } else {

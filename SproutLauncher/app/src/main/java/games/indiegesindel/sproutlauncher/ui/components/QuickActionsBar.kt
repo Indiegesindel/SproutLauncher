@@ -59,11 +59,16 @@ import games.indiegesindel.sproutlauncher.utils.IconUtils
 import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
 import games.indiegesindel.sproutlauncher.utils.UiSound
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.runtime.LaunchedEffect
 
 @Composable
@@ -256,9 +261,7 @@ fun QuickActionButton(
     } else null
 
     Box(
-        modifier = Modifier
-            .size(56.dp)
-            .graphicsLayer { scaleX = focusScale; scaleY = focusScale },
+        modifier = Modifier.size(56.dp),
         contentAlignment = Alignment.Center
     ) {
         // Tooltip
@@ -270,27 +273,36 @@ fun QuickActionButton(
                 offset = IntOffset(0, yOffset),
                 properties = PopupProperties(focusable = false)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.inverseSurface)
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = label,
-                            color = MaterialTheme.colorScheme.inverseOnSurface,
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontWeight = FontWeight.Bold
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(animationSpec = tween(120)) + scaleIn(
+                        initialScale = 0.85f,
+                        animationSpec = tween(120),
+                        transformOrigin = TransformOrigin(0.5f, 1f)
+                    )
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.inverseSurface)
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                color = MaterialTheme.colorScheme.inverseOnSurface,
+                                style = MaterialTheme.typography.labelLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(14.dp, 7.dp)
+                                .background(MaterialTheme.colorScheme.inverseSurface, shape = TriangleShape)
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .size(14.dp, 7.dp)
-                            .background(MaterialTheme.colorScheme.inverseSurface, shape = TriangleShape)
-                    )
                 }
             }
         }
@@ -298,6 +310,7 @@ fun QuickActionButton(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer { scaleX = focusScale; scaleY = focusScale }
                 .focusRequester(focusRequester)
                 .onFocusChanged {
                     isFocused = it.isFocused
