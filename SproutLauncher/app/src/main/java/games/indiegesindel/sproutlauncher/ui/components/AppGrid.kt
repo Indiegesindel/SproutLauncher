@@ -495,37 +495,7 @@ fun AppTileItem(
             modifier = Modifier
                 .fillMaxHeight()
                 .aspectRatio(1f)
-                .offset { dragOffset }
-                .graphicsLayer {
-                    alpha = focusAlpha * animatedEntranceAlpha
-                    scaleX = focusScale * animatedEntranceScale * pressScale
-                    scaleY = focusScale * animatedEntranceScale * pressScale
-                }
-                .then(
-                    if (focusBorderWidth > 0.5f)
-                        Modifier.border(focusBorderWidth.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 4).dp))
-                    else
-                        Modifier
-                )
-                .padding(focusPadding.dp)
-                .clip(RoundedCornerShape(roundness.dp))
-                .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
-                .combinedClickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    enabled = enabled,
-                    onClick = {
-                        soundManager?.play(UiSound.CONFIRM)
-                        if (isInMultiSelectMode) {
-                            if (!tile.isGroup) onToggleSelection()
-                        } else if (tile.isGroup) {
-                            onOpenGroup()
-                        } else {
-                            onClick()
-                        }
-                    },
-                    onDoubleClick = { showMenu = true }
-                ),
+                .offset { dragOffset },
             contentAlignment = Alignment.Center
         ) {
             if (isFocused && !isDragging && !isYPressed) {
@@ -580,6 +550,41 @@ fun AppTileItem(
                 }
             }
 
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = focusAlpha * animatedEntranceAlpha
+                        scaleX = focusScale * animatedEntranceScale * pressScale
+                        scaleY = focusScale * animatedEntranceScale * pressScale
+                    }
+                    .then(
+                        if (focusBorderWidth > 0.5f)
+                            Modifier.border(focusBorderWidth.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 4).dp))
+                        else
+                            Modifier
+                    )
+                    .padding(focusPadding.dp)
+                    .clip(RoundedCornerShape(roundness.dp))
+                    .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                    .combinedClickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        enabled = enabled,
+                        onClick = {
+                            soundManager?.play(UiSound.CONFIRM)
+                            if (isInMultiSelectMode) {
+                                if (!tile.isGroup) onToggleSelection()
+                            } else if (tile.isGroup) {
+                                onOpenGroup()
+                            } else {
+                                onClick()
+                            }
+                        },
+                        onDoubleClick = { showMenu = true }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
             if (tile.isGroup && tile.iconUri == null) {
                 GroupIcon(groupTiles = tile.groupTiles, modifier = Modifier.fillMaxSize())
             } else {
@@ -621,6 +626,7 @@ fun AppTileItem(
                             .size(24.dp)
                     )
                 }
+            }
             }
         }
 
