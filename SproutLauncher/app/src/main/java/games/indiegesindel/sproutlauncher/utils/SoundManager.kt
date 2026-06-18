@@ -13,23 +13,38 @@ class SoundManager(context: Context) {
         .setMaxStreams(3)
         .setAudioAttributes(
             AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_GAME)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build()
         )
         .build()
 
-    private val confirmId = soundPool.load(context, R.raw.cursor_confirm, 1)
-    private val backId = soundPool.load(context, R.raw.cursor_back, 1)
-    private val moveId = soundPool.load(context, R.raw.cursor_move, 1)
+    var isEnabled: Boolean = true
+
+    private val loadedIds = mutableSetOf<Int>()
+    private val confirmId: Int
+    private val backId: Int
+    private val moveId: Int
+
+    init {
+        soundPool.setOnLoadCompleteListener { _, sampleId, status ->
+            if (status == 0) loadedIds.add(sampleId)
+        }
+        confirmId = soundPool.load(context, R.raw.cursor_confirm, 1)
+        backId = soundPool.load(context, R.raw.cursor_back, 1)
+        moveId = soundPool.load(context, R.raw.cursor_move, 1)
+    }
 
     fun play(sound: UiSound) {
+        if (!isEnabled) return
         val id = when (sound) {
             UiSound.CONFIRM -> confirmId
             UiSound.BACK -> backId
             UiSound.MOVE -> moveId
         }
-        soundPool.play(id, 1f, 1f, 1, 0, 1f)
+        if (id in loadedIds) {
+            soundPool.play(id, 1f, 1f, 1, 0, 1f)
+        }
     }
 
     fun release() {

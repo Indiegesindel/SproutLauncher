@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import games.indiegesindel.sproutlauncher.model.AppTile
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.UiSound
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -37,6 +39,11 @@ fun AddToGroupModal(
     innerPadding: PaddingValues = PaddingValues(0.dp),
     roundness: Int = 16
 ) {
+    val soundManager = LocalSoundManager.current
+    val playAndDismiss = {
+        soundManager?.play(UiSound.BACK)
+        onDismiss()
+    }
     val closeFocusRequester = remember { FocusRequester() }
     val firstItemFocusRequester = remember { FocusRequester() }
     val layoutDirection = LocalLayoutDirection.current
@@ -55,7 +62,7 @@ fun AddToGroupModal(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = onDismiss
+                onClick = playAndDismiss
             )
             .focusable(false)
             .background(Color.Black.copy(alpha = 0.7f))
@@ -96,10 +103,13 @@ fun AddToGroupModal(
                     )
                     var isCloseFocused by remember { mutableStateOf(false) }
                     IconButton(
-                        onClick = onDismiss,
+                        onClick = playAndDismiss,
                         modifier = Modifier
                             .focusRequester(closeFocusRequester)
-                            .onFocusChanged { isCloseFocused = it.isFocused }
+                            .onFocusChanged {
+                                isCloseFocused = it.isFocused
+                                if (it.isFocused) soundManager?.play(UiSound.MOVE)
+                            }
                             .then(
                                 if (isCloseFocused) Modifier.background(
                                     MaterialTheme.colorScheme.primaryContainer,
@@ -150,8 +160,14 @@ fun AddToGroupModal(
                                 },
                                 modifier = Modifier
                                     .then(if (index == 0) Modifier.focusRequester(firstItemFocusRequester) else Modifier)
-                                    .onFocusChanged { isItemFocused = it.isFocused }
-                                    .clickable { onGroupSelected(group.id) },
+                                    .onFocusChanged {
+                                        isItemFocused = it.isFocused
+                                        if (it.isFocused) soundManager?.play(UiSound.MOVE)
+                                    }
+                                    .clickable {
+                                        soundManager?.play(UiSound.CONFIRM)
+                                        onGroupSelected(group.id)
+                                    },
                                 colors = ListItemDefaults.colors(
                                     containerColor = if (isItemFocused) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                                 )

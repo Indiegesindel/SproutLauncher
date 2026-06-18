@@ -44,6 +44,7 @@ fun SettingsTab(
     val context = LocalContext.current
     val currentBaseTheme by settingsManager.baseTheme.collectAsState()
     val isDarkMode by settingsManager.isDarkMode.collectAsState()
+    val uiSoundsEnabled by settingsManager.uiSoundsEnabled.collectAsState()
     val showYouTube by settingsManager.showYouTube.collectAsState()
     val showDiscord by settingsManager.showDiscord.collectAsState()
     val showSpotify by settingsManager.showSpotify.collectAsState()
@@ -147,6 +148,18 @@ fun SettingsTab(
                         )
                     },
                     modifier = Modifier.clickable { settingsManager.setIsDarkMode(!isDarkMode) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+
+                ListItem(
+                    headlineContent = { Text("UI Sounds") },
+                    trailingContent = {
+                        Switch(
+                            checked = uiSoundsEnabled,
+                            onCheckedChange = { settingsManager.setUiSoundsEnabled(it) }
+                        )
+                    },
+                    modifier = Modifier.clickable { settingsManager.setUiSoundsEnabled(!uiSoundsEnabled) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
 

@@ -8,6 +8,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,6 +22,8 @@ import games.indiegesindel.sproutlauncher.ui.screens.ExtendedScreen
 import games.indiegesindel.sproutlauncher.ui.theme.SproutLauncherTheme
 import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
 import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModelFactory
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.SoundManager
 
 class ExtendedActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,8 +35,12 @@ class ExtendedActivity : ComponentActivity() {
             val settingsManager = remember { SettingsManager(context) }
             val baseTheme by settingsManager.baseTheme.collectAsState()
             val isDarkMode by settingsManager.isDarkMode.collectAsState()
+            val uiSoundsEnabled by settingsManager.uiSoundsEnabled.collectAsState()
+            val soundManager = remember { SoundManager(context) }
 
             SproutLauncherTheme(baseTheme = baseTheme, isDarkMode = isDarkMode) {
+                LaunchedEffect(uiSoundsEnabled) { soundManager.isEnabled = uiSoundsEnabled }
+
                 val appManager = remember { AppManager(context) }
                 val viewModel: ExtendedViewModel = ViewModelProvider(
                     this,
@@ -73,14 +80,17 @@ class ExtendedActivity : ComponentActivity() {
                     context.registerReceiver(receiver, filter)
                     onDispose {
                         context.unregisterReceiver(receiver)
+                        soundManager.release()
                     }
                 }
 
-                ExtendedScreen(
-                    viewModel = viewModel,
-                    settingsManager = settingsManager,
-                    onBack = { finish() }
-                )
+                CompositionLocalProvider(LocalSoundManager provides soundManager) {
+                    ExtendedScreen(
+                        viewModel = viewModel,
+                        settingsManager = settingsManager,
+                        onBack = { finish() }
+                    )
+                }
             }
         }
     }

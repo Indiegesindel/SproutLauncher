@@ -48,6 +48,8 @@ import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
 import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
 import games.indiegesindel.sproutlauncher.ui.components.SettingsDialogItem
 import games.indiegesindel.sproutlauncher.ui.components.SproutAlertDialog
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.UiSound
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
@@ -59,6 +61,7 @@ fun AppTileSettingsScreen(
     onDone: () -> Unit
 ) {
     val context = LocalContext.current
+    val soundManager = LocalSoundManager.current
     val tile by viewModel.tile.collectAsState()
     val label by viewModel.label.collectAsState()
     val iconUri by viewModel.iconUri.collectAsState()
@@ -114,12 +117,16 @@ fun AppTileSettingsScreen(
             LargeTopAppBar(
                 title = { Text("Tile Settings") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        soundManager?.play(UiSound.BACK)
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Discard")
                     }
                 },
                 actions = {
                     IconButton(onClick = {
+                        soundManager?.play(UiSound.CONFIRM)
                         viewModel.saveChanges()
                         onDone()
                     }) {

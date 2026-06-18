@@ -541,7 +541,12 @@ fun AppTileItem(
                     scaleX = focusScale * animatedEntranceScale * pressScale
                     scaleY = focusScale * animatedEntranceScale * pressScale
                 }
-                .border(focusBorderWidth.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 4).dp))
+                .then(
+                    if (focusBorderWidth > 0.5f)
+                        Modifier.border(focusBorderWidth.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 4).dp))
+                    else
+                        Modifier
+                )
                 .padding(focusPadding.dp)
                 .clip(RoundedCornerShape(roundness.dp))
                 .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
