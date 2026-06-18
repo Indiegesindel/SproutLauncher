@@ -26,6 +26,9 @@ class SettingsManager(context: Context) {
     private val _isDarkMode = MutableStateFlow(loadIsDarkMode())
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 
+    private val _uiSoundsEnabled = MutableStateFlow(loadUiSoundsEnabled())
+    val uiSoundsEnabled: StateFlow<Boolean> = _uiSoundsEnabled.asStateFlow()
+
     private val _homeScreenRows = MutableStateFlow(loadHomeScreenRows())
     val homeScreenRows: StateFlow<Int> = _homeScreenRows.asStateFlow()
 
@@ -72,6 +75,7 @@ class SettingsManager(context: Context) {
         when (key) {
             KEY_BASE_THEME -> _baseTheme.value = loadBaseTheme()
             KEY_IS_DARK_MODE -> _isDarkMode.value = loadIsDarkMode()
+            KEY_UI_SOUNDS_ENABLED -> _uiSoundsEnabled.value = loadUiSoundsEnabled()
             KEY_HOME_SCREEN_ROWS -> _homeScreenRows.value = loadHomeScreenRows()
             KEY_HORIZONTAL_SPACING -> _horizontalSpacing.value = loadHorizontalSpacing()
             KEY_VERTICAL_SPACING -> _verticalSpacing.value = loadVerticalSpacing()
@@ -96,6 +100,7 @@ class SettingsManager(context: Context) {
     companion object {
         private const val KEY_BASE_THEME = "base_theme"
         private const val KEY_IS_DARK_MODE = "is_dark_mode"
+        private const val KEY_UI_SOUNDS_ENABLED = "ui_sounds_enabled"
         private const val KEY_HOME_SCREEN_ROWS = "home_screen_rows"
         private const val KEY_HORIZONTAL_SPACING = "horizontal_spacing"
         private const val KEY_VERTICAL_SPACING = "vertical_spacing"
@@ -133,6 +138,15 @@ class SettingsManager(context: Context) {
     fun setIsDarkMode(isDark: Boolean) {
         sharedPreferences.edit { putBoolean(KEY_IS_DARK_MODE, isDark) }
         _isDarkMode.value = isDark
+    }
+
+    private fun loadUiSoundsEnabled(): Boolean {
+        return sharedPreferences.getBoolean(KEY_UI_SOUNDS_ENABLED, true)
+    }
+
+    fun setUiSoundsEnabled(enabled: Boolean) {
+        sharedPreferences.edit { putBoolean(KEY_UI_SOUNDS_ENABLED, enabled) }
+        _uiSoundsEnabled.value = enabled
     }
 
     private fun loadHomeScreenRows(): Int {

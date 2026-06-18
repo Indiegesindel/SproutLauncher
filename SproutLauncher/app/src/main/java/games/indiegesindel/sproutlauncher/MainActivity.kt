@@ -46,9 +46,12 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val baseTheme by settingsManager.baseTheme.collectAsState()
             val isDarkMode by settingsManager.isDarkMode.collectAsState()
+            val uiSoundsEnabled by settingsManager.uiSoundsEnabled.collectAsState()
             val soundManager = remember { SoundManager(context) }
 
             SproutLauncherTheme(baseTheme = baseTheme, isDarkMode = isDarkMode) {
+                LaunchedEffect(uiSoundsEnabled) { soundManager.isEnabled = uiSoundsEnabled }
+
                 val lifecycleOwner = LocalLifecycleOwner.current
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {

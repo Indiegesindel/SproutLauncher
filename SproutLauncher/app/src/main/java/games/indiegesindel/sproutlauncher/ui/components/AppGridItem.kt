@@ -74,6 +74,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.LaunchedEffect
 import games.indiegesindel.sproutlauncher.utils.IconUtils
 import games.indiegesindel.sproutlauncher.utils.LauncherUtils
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.UiSound
 import androidx.core.net.toUri
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -104,6 +106,7 @@ fun AppGridItem(
     enabled: Boolean = true
 ) {
     val context = LocalContext.current
+    val soundManager = LocalSoundManager.current
     val pm = context.packageManager
     val label = remember(app?.activityInfo?.packageName, app?.activityInfo?.name, tile?.label) {
         tile?.label ?: app?.loadLabel(pm)?.toString() ?: ""
@@ -148,6 +151,7 @@ fun AppGridItem(
                 .onFocusChanged {
                     isFocused = it.isFocused
                     if (it.isFocused) {
+                        soundManager?.play(UiSound.MOVE)
                         if (id != null) onFocused(id)
                         coroutineScope.launch {
                             val verticalPadding = with(density) { 16.dp.toPx() }
@@ -177,6 +181,7 @@ fun AppGridItem(
                         event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
                         event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_A
                     )) {
+                        soundManager?.play(UiSound.CONFIRM)
                         if (isInMultiSelectMode) {
                             if (tile?.isGroup != true) onToggleSelection()
                         } else if (tile?.isGroup == true) {
@@ -188,6 +193,7 @@ fun AppGridItem(
                         }
                         true
                     } else if (isDown && event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_B) {
+                        soundManager?.play(UiSound.BACK)
                         onDismiss()
                         true
                     } else {
@@ -216,6 +222,7 @@ fun AppGridItem(
                 .combinedClickable(
                     enabled = enabled,
                     onClick = {
+                        soundManager?.play(UiSound.CONFIRM)
                         if (isInMultiSelectMode) {
                             if (tile?.isGroup != true) onToggleSelection()
                         } else if (tile?.isGroup == true) {

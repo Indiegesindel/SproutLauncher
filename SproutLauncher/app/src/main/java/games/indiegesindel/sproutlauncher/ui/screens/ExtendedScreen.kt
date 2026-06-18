@@ -41,6 +41,8 @@ import games.indiegesindel.sproutlauncher.data.SettingsManager
 import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.viewmodels.ExtendedViewModel
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.UiSound
 
 @Composable
 fun ExtendedScreen(
@@ -49,14 +51,21 @@ fun ExtendedScreen(
     onBack: () -> Unit
 ) {
     val currentTab by viewModel.currentTab.collectAsState()
+    val soundManager = LocalSoundManager.current
 
     Row(modifier = Modifier.fillMaxSize()) {
         NavigationRail(
             header = {
                 IconButton(
-                    onClick = onBack,
+                    onClick = {
+                        soundManager?.play(UiSound.BACK)
+                        onBack()
+                    },
                     modifier = Modifier.onFocusChanged {
-                        if (it.isFocused) viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                        if (it.isFocused) {
+                            soundManager?.play(UiSound.MOVE)
+                            viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                        }
                     }
                 ) {
                     Icon(
@@ -71,30 +80,48 @@ fun ExtendedScreen(
             Spacer(modifier = Modifier.height(16.dp))
             NavigationRailItem(
                 selected = currentTab == ExtendedViewModel.Tab.ALL,
-                onClick = { viewModel.setTab(ExtendedViewModel.Tab.ALL) },
+                onClick = {
+                    soundManager?.play(UiSound.CONFIRM)
+                    viewModel.setTab(ExtendedViewModel.Tab.ALL)
+                },
                 icon = { Icon(Icons.Default.Apps, contentDescription = "All Apps") },
                 label = { Text("All") },
                 modifier = Modifier.onFocusChanged {
-                    if (it.isFocused) viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                    if (it.isFocused) {
+                        soundManager?.play(UiSound.MOVE)
+                        viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                    }
                 }
             )
             NavigationRailItem(
                 selected = currentTab == ExtendedViewModel.Tab.HOMESCREEN,
-                onClick = { viewModel.setTab(ExtendedViewModel.Tab.HOMESCREEN) },
+                onClick = {
+                    soundManager?.play(UiSound.CONFIRM)
+                    viewModel.setTab(ExtendedViewModel.Tab.HOMESCREEN)
+                },
                 icon = { Icon(Icons.Default.Home, contentDescription = "Homescreen") },
                 label = { Text("Homescreen") },
                 modifier = Modifier.onFocusChanged {
-                    if (it.isFocused) viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                    if (it.isFocused) {
+                        soundManager?.play(UiSound.MOVE)
+                        viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                    }
                 }
             )
             Spacer(modifier = Modifier.weight(1f))
             NavigationRailItem(
                 selected = currentTab == ExtendedViewModel.Tab.SETTINGS,
-                onClick = { viewModel.setTab(ExtendedViewModel.Tab.SETTINGS) },
+                onClick = {
+                    soundManager?.play(UiSound.CONFIRM)
+                    viewModel.setTab(ExtendedViewModel.Tab.SETTINGS)
+                },
                 icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
                 label = { Text("Settings") },
                 modifier = Modifier.onFocusChanged {
-                    if (it.isFocused) viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                    if (it.isFocused) {
+                        soundManager?.play(UiSound.MOVE)
+                        viewModel.onFocusChanged(FocusedElement.NAVIGATION_ITEM)
+                    }
                 }
             )
         }
