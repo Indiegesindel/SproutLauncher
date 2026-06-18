@@ -75,6 +75,8 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LayersClear
 import androidx.compose.material.icons.filled.PlayArrow
 import games.indiegesindel.sproutlauncher.utils.IconUtils
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.UiSound
 
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -90,9 +92,17 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 
 @Composable
 fun rememberReorderableLazyGridState(
@@ -310,6 +320,7 @@ fun AppTileItem(
     enabled: Boolean = true
 ) {
     val context = LocalContext.current
+    val soundManager = LocalSoundManager.current
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     var isYPressed by remember { mutableStateOf(false) }
@@ -328,15 +339,76 @@ fun AppTileItem(
     val isDragging = reorderableState.draggedIndex == index
     val dragOffset = if (isDragging) reorderableState.dragOffset else IntOffset.Zero
 
+    // Focus scale (springs up when focused, higher scale when dragging)
+    val focusScale by animateFloatAsState(
+        targetValue = when {
+            isDragging || isYPressed -> 1.15f
+            isFocused -> 1.08f
+            else -> 1.0f
+        },
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "tileFocusScale"
+    )
+    val focusAlpha by animateFloatAsState(
+        targetValue = if (isDragging || isYPressed) 0.8f else 1.0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "tileFocusAlpha"
+    )
+
+    // Staggered entrance (fires once when tile first enters composition)
+    var entranceAlpha by remember { mutableStateOf(0f) }
+    var entranceScale by remember { mutableStateOf(0.88f) }
+    val animatedEntranceAlpha by animateFloatAsState(
+        targetValue = entranceAlpha,
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+        label = "entranceAlpha"
+    )
+    val animatedEntranceScale by animateFloatAsState(
+        targetValue = entranceScale,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "entranceScale"
+    )
+    LaunchedEffect(Unit) {
+        delay((index * 30L).coerceAtMost(300L))
+        entranceAlpha = 1f
+        entranceScale = 1f
+    }
+
+    // Touch press feedback
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.93f else 1.0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "tilePress"
+    )
+
+    // Animated border width and padding
+    val focusBorderWidth by animateFloatAsState(
+        targetValue = when {
+            isSelected -> 4f
+            isFocused -> 3f
+            else -> 0f
+        },
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessHigh),
+        label = "tileBorderWidth"
+    )
+    val focusPadding by animateFloatAsState(
+        targetValue = if (isFocused || isSelected) 6f else 0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessHigh),
+        label = "tilePadding"
+    )
+
     Box(
         modifier = Modifier
             .zIndex(if (isDragging) 1f else 0f)
             .focusRequester(focusRequester)
             .bringIntoViewRequester(bringIntoViewRequester)
             .onGloballyPositioned { size = it.size }
-            .onFocusChanged { 
+            .onFocusChanged {
                 isFocused = it.isFocused
                 if (it.isFocused) {
+                    soundManager?.play(UiSound.MOVE)
                     onFocused()
                     coroutineScope.launch {
                         val horizontalPadding = with(density) { 24.dp.toPx() }
@@ -372,6 +444,7 @@ fun AppTileItem(
                         KeyEvent.KEYCODE_ENTER,
                         KeyEvent.KEYCODE_DPAD_CENTER,
                         KeyEvent.KEYCODE_BUTTON_A -> {
+                            soundManager?.play(UiSound.CONFIRM)
                             if (isInMultiSelectMode) {
                                 if (!tile.isGroup) onToggleSelection()
                             } else if (tile.isGroup) {
@@ -388,6 +461,7 @@ fun AppTileItem(
                             true
                         }
                         KeyEvent.KEYCODE_BUTTON_B -> {
+                            soundManager?.play(UiSound.BACK)
                             onDismiss()
                             true
                         }
@@ -463,23 +537,20 @@ fun AppTileItem(
                 .aspectRatio(1f)
                 .offset { dragOffset }
                 .graphicsLayer {
-                    if (isDragging || isYPressed) {
-                        alpha = 0.8f
-                        scaleX = 1.15f
-                        scaleY = 1.15f
-                    }
+                    alpha = focusAlpha * animatedEntranceAlpha
+                    scaleX = focusScale * animatedEntranceScale * pressScale
+                    scaleY = focusScale * animatedEntranceScale * pressScale
                 }
-                .then(
-                    if (isSelected) Modifier.border(4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 6).dp))
-                    else if (isFocused) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 4).dp))
-                    else Modifier
-                )
-                .padding(if (isFocused) 6.dp else 0.dp)
+                .border(focusBorderWidth.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 4).dp))
+                .padding(focusPadding.dp)
                 .clip(RoundedCornerShape(roundness.dp))
                 .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                 .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = null,
                     enabled = enabled,
                     onClick = {
+                        soundManager?.play(UiSound.CONFIRM)
                         if (isInMultiSelectMode) {
                             if (!tile.isGroup) onToggleSelection()
                         } else if (tile.isGroup) {

@@ -35,10 +35,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import games.indiegesindel.sproutlauncher.AppTileSettingsActivity
 import games.indiegesindel.sproutlauncher.ExtendedActivity
 import games.indiegesindel.sproutlauncher.FocusedElement
@@ -51,12 +61,15 @@ import games.indiegesindel.sproutlauncher.ui.components.QuickActionsBar
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.viewmodels.MainViewModel
 import games.indiegesindel.sproutlauncher.utils.LauncherUtils
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.UiSound
 
 @Composable
 fun MainScreen(
     viewModel: MainViewModel
 ) {
     val context = LocalContext.current
+    val soundManager = LocalSoundManager.current
     val appTiles by viewModel.appTiles.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val focusedItemId by viewModel.focusedItemId.collectAsState()
@@ -85,6 +98,20 @@ fun MainScreen(
         LauncherUtils.launchApp(context, packageName)
     }
 
+    val density = LocalDensity.current
+    var screenAppeared by remember { mutableStateOf(false) }
+    val screenAlpha by animateFloatAsState(
+        targetValue = if (screenAppeared) 1f else 0f,
+        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+        label = "screenAlpha"
+    )
+    val screenOffsetPx by animateFloatAsState(
+        targetValue = with(density) { if (screenAppeared) 0f else 40.dp.toPx() },
+        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
+        label = "screenSlide"
+    )
+    LaunchedEffect(Unit) { screenAppeared = true }
+
     if (tileToRemove != null) {
         RemoveTileConfirmationDialog(
             onConfirm = { viewModel.confirmRemoveTile() },
@@ -94,12 +121,14 @@ fun MainScreen(
 
     if (openedGroup != null) {
         BackHandler {
+            soundManager?.play(UiSound.BACK)
             viewModel.closeGroup()
         }
     }
 
     if (tileToMoveToGroup != null) {
         BackHandler {
+            soundManager?.play(UiSound.BACK)
             viewModel.dismissMoveToGroup()
         }
     }
@@ -138,6 +167,10 @@ fun MainScreen(
                         .padding(bottom = 44.dp) // Space for footer
                         .focusProperties {
                             if (openedGroup != null || tileToMoveToGroup != null) canFocus = false
+                        }
+                        .graphicsLayer {
+                            alpha = screenAlpha
+                            translationY = screenOffsetPx
                         },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -323,30 +356,26 @@ fun MainScreen(
                         if (openedGroup != null || tileToMoveToGroup != null) canFocus = false
                     }
             ) {
-                if (tileToMoveToGroup != null) {
-                    ButtonPrompt(button = "A", label = "Select")
-                    ButtonPrompt(button = "B", label = "Close")
-                } else {
-                    when (focusedElement) {
-                        FocusedElement.APP_TILE -> {
-                            val focusedTile = appTiles.find { "tile:${it.id}" == focusedItemId }
-                                ?: openedGroup?.groupTiles?.find { "tile:${it.id}" == focusedItemId }
-
-                            ButtonPrompt(button = "Y", label = "Move (Hold)")
-                            ButtonPrompt(button = "X", label = "Options")
-                            val label = if (focusedTile?.isGroup == true) "Open" else "Launch"
-                            ButtonPrompt(button = "A", label = label)
-                            if (openedGroup != null) {
-                                ButtonPrompt(button = "B", label = "Close")
+                Crossfade(
+                    targetState = Triple(tileToMoveToGroup != null, focusedElement, openedGroup != null),
+                    animationSpec = tween(120),
+                    label = "footerCrossfade"
+                ) { (inMoveMode, element, inGroup) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (inMoveMode) {
+                            ButtonPrompt(button = "A", label = "Select")
+                            ButtonPrompt(button = "B", label = "Close")
+                        } else when (element) {
+                            FocusedElement.APP_TILE -> {
+                                val focusedTile = appTiles.find { "tile:${it.id}" == focusedItemId }
+                                    ?: openedGroup?.groupTiles?.find { "tile:${it.id}" == focusedItemId }
+                                ButtonPrompt(button = "Y", label = "Move (Hold)")
+                                ButtonPrompt(button = "X", label = "Options")
+                                ButtonPrompt(button = "A", label = if (focusedTile?.isGroup == true) "Open" else "Launch")
+                                if (inGroup) ButtonPrompt(button = "B", label = "Close")
                             }
-                        }
-
-                        FocusedElement.QUICK_ACTION -> {
-                            ButtonPrompt(button = "A", label = "Launch")
-                        }
-
-                        else -> {
-                            // Show nothing or default
+                            FocusedElement.QUICK_ACTION -> ButtonPrompt(button = "A", label = "Launch")
+                            else -> {}
                         }
                     }
                 }

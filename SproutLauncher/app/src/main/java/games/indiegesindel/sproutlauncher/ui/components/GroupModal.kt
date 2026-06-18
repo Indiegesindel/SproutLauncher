@@ -1,6 +1,9 @@
 package games.indiegesindel.sproutlauncher.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -42,6 +45,8 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.ExperimentalComposeUiApi
 import games.indiegesindel.sproutlauncher.model.AppTile
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.UiSound
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -63,6 +68,11 @@ fun GroupModal(
     roundness: Int = 16,
     enabled: Boolean = true
 ) {
+    val soundManager = LocalSoundManager.current
+    val playAndDismiss = {
+        soundManager?.play(UiSound.BACK)
+        onDismiss()
+    }
     val layoutDirection = LocalLayoutDirection.current
     Box(
         modifier = Modifier
@@ -71,7 +81,7 @@ fun GroupModal(
                 enabled = enabled,
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = onDismiss
+                onClick = playAndDismiss
             )
             .focusable(false)
     ) {
@@ -98,8 +108,11 @@ fun GroupModal(
         ) {
             AnimatedVisibility(
                 visible = true, // We are already inside an AnimatedVisibility in the caller, but this allows us to use scaleIn/Out
-                enter = fadeIn() + scaleIn(initialScale = 0.8f),
-                exit = fadeOut() + scaleOut(targetScale = 0.8f)
+                enter = fadeIn(tween(150)) + scaleIn(
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                    initialScale = 0.82f
+                ),
+                exit = fadeOut(tween(100)) + scaleOut(animationSpec = tween(100), targetScale = 0.92f)
             ) {
                 Box(
                     modifier = Modifier
@@ -129,7 +142,7 @@ fun GroupModal(
                             )
                             var isCloseFocused by remember { mutableStateOf(false) }
                             IconButton(
-                                onClick = onDismiss,
+                                onClick = playAndDismiss,
                                 enabled = enabled,
                                 modifier = Modifier
                                     .onFocusChanged { isCloseFocused = it.isFocused }

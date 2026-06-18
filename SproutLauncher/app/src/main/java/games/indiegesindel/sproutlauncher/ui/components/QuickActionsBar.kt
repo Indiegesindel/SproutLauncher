@@ -56,7 +56,12 @@ import androidx.compose.ui.window.PopupProperties
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import games.indiegesindel.sproutlauncher.utils.IconUtils
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.UiSound
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.LaunchedEffect
@@ -217,8 +222,20 @@ fun QuickActionButton(
     enabled: Boolean = true
 ) {
     val context = LocalContext.current
+    val soundManager = LocalSoundManager.current
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
+
+    val focusScale by animateFloatAsState(
+        targetValue = if (isFocused) 1.08f else 1.0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "actionFocusScale"
+    )
+    val focusBorderWidth by animateFloatAsState(
+        targetValue = if (isFocused) 2f else 0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessHigh),
+        label = "actionBorder"
+    )
 
     LaunchedEffect(isTargetFocused) {
         if (isTargetFocused) {
@@ -239,7 +256,9 @@ fun QuickActionButton(
     } else null
 
     Box(
-        modifier = Modifier.size(56.dp),
+        modifier = Modifier
+            .size(56.dp)
+            .graphicsLayer { scaleX = focusScale; scaleY = focusScale },
         contentAlignment = Alignment.Center
     ) {
         // Tooltip
@@ -280,16 +299,19 @@ fun QuickActionButton(
             modifier = Modifier
                 .fillMaxSize()
                 .focusRequester(focusRequester)
-                .onFocusChanged { 
+                .onFocusChanged {
                     isFocused = it.isFocused
-                    if (it.isFocused) onFocused(id)
+                    if (it.isFocused) {
+                        soundManager?.play(UiSound.MOVE)
+                        onFocused(id)
+                    }
                 }
-                .then(
-                    if (isFocused) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    else Modifier
-                )
+                .border(focusBorderWidth.dp, MaterialTheme.colorScheme.primary, CircleShape)
                 .clip(CircleShape)
-                .clickable(enabled = enabled, onClick = onClick),
+                .clickable(enabled = enabled, onClick = {
+                    soundManager?.play(UiSound.CONFIRM)
+                    onClick()
+                }),
             color = MaterialTheme.colorScheme.secondary,
             shape = CircleShape
         ) {

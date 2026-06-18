@@ -8,10 +8,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -23,6 +25,8 @@ import games.indiegesindel.sproutlauncher.ui.screens.MainScreen
 import games.indiegesindel.sproutlauncher.ui.theme.SproutLauncherTheme
 import games.indiegesindel.sproutlauncher.ui.viewmodels.MainViewModel
 import games.indiegesindel.sproutlauncher.ui.viewmodels.MainViewModelFactory
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.SoundManager
 
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: MainViewModel
@@ -42,6 +46,7 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val baseTheme by settingsManager.baseTheme.collectAsState()
             val isDarkMode by settingsManager.isDarkMode.collectAsState()
+            val soundManager = remember { SoundManager(context) }
 
             SproutLauncherTheme(baseTheme = baseTheme, isDarkMode = isDarkMode) {
                 val lifecycleOwner = LocalLifecycleOwner.current
@@ -72,10 +77,13 @@ class MainActivity : ComponentActivity() {
                     context.registerReceiver(receiver, filter)
                     onDispose {
                         context.unregisterReceiver(receiver)
+                        soundManager.release()
                     }
                 }
 
-                MainScreen(viewModel = viewModel)
+                CompositionLocalProvider(LocalSoundManager provides soundManager) {
+                    MainScreen(viewModel = viewModel)
+                }
             }
         }
     }
