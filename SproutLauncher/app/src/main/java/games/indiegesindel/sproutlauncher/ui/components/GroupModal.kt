@@ -1,0 +1,192 @@
+package games.indiegesindel.sproutlauncher.ui.components
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.ExperimentalComposeUiApi
+import games.indiegesindel.sproutlauncher.model.AppTile
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.UiSound
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun GroupModal(
+    group: AppTile,
+    onDismiss: () -> Unit,
+    onAppClick: (AppTile) -> Unit,
+    onRemove: (AppTile) -> Unit,
+    onRemoveFromGroup: (String) -> Unit,
+    onSettings: (AppTile) -> Unit,
+    onReorder: (Int, Int) -> Unit = { _, _ -> },
+    onDragEnd: () -> Unit = {},
+    pendingFocus: String?,
+    onFocusConsumed: () -> Unit,
+    onTileFocused: (isGroup: Boolean) -> Unit,
+    innerPadding: PaddingValues = PaddingValues(0.dp),
+    rows: Int = 2,
+    horizontalSpacing: Int = 0,
+    verticalSpacing: Int = 0,
+    roundness: Int = 16,
+    enabled: Boolean = true
+) {
+    val soundManager = LocalSoundManager.current
+    val playAndDismiss = {
+        soundManager?.play(UiSound.BACK)
+        onDismiss()
+    }
+    val layoutDirection = LocalLayoutDirection.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                enabled = enabled,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = playAndDismiss
+            )
+            .focusable(false)
+    ) {
+        // Full screen dimmed background
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.7f))
+                .focusable(false)
+        )
+
+        // Content area avoiding system bars and footer
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    top = innerPadding.calculateTopPadding(),
+                    end = innerPadding.calculateEndPadding(layoutDirection),
+                    bottom = innerPadding.calculateBottomPadding() + 56.dp
+                )
+                .focusable(false),
+            contentAlignment = Alignment.Center
+        ) {
+            AnimatedVisibility(
+                visible = true, // Always visible; the caller already gates with AnimatedVisibility. This inner one only adds the scaleIn/Out.
+                enter = fadeIn(tween(150)) + scaleIn(
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                    initialScale = 0.82f
+                ),
+                exit = fadeOut(tween(100)) + scaleOut(animationSpec = tween(100), targetScale = 0.92f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .fillMaxSize(0.9f) // Slightly more space if padded
+                        .clip(RoundedCornerShape(roundness.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable(enabled = false) { } // Consume clicks
+                        .focusable(false)
+                        .focusProperties { exit = { FocusRequester.Cancel } }
+                        .padding(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Spacer(modifier = Modifier.size(48.dp))
+                            Text(
+                                text = group.label,
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            var isCloseFocused by remember { mutableStateOf(false) }
+                            IconButton(
+                                onClick = playAndDismiss,
+                                enabled = enabled,
+                                modifier = Modifier
+                                    .onFocusChanged { isCloseFocused = it.isFocused }
+                                    .then(
+                                        if (isCloseFocused) Modifier.background(
+                                            MaterialTheme.colorScheme.primaryContainer,
+                                            CircleShape
+                                        ) else Modifier
+                                    )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    tint = if (isCloseFocused) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        AppGrid(
+                            appTiles = group.groupTiles,
+                            onAppClick = onAppClick,
+                            onRemove = onRemove,
+                            onSettings = onSettings,
+                            onReorder = onReorder,
+                            onDragEnd = onDragEnd,
+                            modifier = Modifier.weight(1f),
+                            rows = rows,
+                            horizontalSpacing = horizontalSpacing,
+                            verticalSpacing = verticalSpacing,
+                            roundness = roundness,
+                            pendingFocus = pendingFocus,
+                            onFocusConsumed = onFocusConsumed,
+                            onTileFocused = onTileFocused,
+                            onRemoveFromGroup = onRemoveFromGroup,
+                            onDismiss = onDismiss,
+                            hasGroups = true,
+                            enabled = enabled
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
