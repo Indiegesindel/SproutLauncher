@@ -19,10 +19,11 @@ import java.io.File
 
 class SteamGridDBViewModel(
     private val steamGridDBManager: SteamGridDBManager,
-    private val context: Context
+    private val context: Context,
+    initialQuery: String = ""
 ) : ViewModel() {
 
-    private val _searchQuery = MutableStateFlow("")
+    private val _searchQuery = MutableStateFlow(initialQuery)
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private val _games = MutableStateFlow<List<SteamGridDBGame>>(emptyList())
@@ -48,6 +49,12 @@ class SteamGridDBViewModel(
 
     private val _isDownloading = MutableStateFlow(false)
     val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
+
+    init {
+        if (initialQuery.isNotBlank()) {
+            search()
+        }
+    }
 
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
@@ -121,12 +128,13 @@ class SteamGridDBViewModel(
 
 class SteamGridDBViewModelFactory(
     private val steamGridDBManager: SteamGridDBManager,
-    private val context: Context
+    private val context: Context,
+    private val initialQuery: String = ""
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SteamGridDBViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SteamGridDBViewModel(steamGridDBManager, context) as T
+            return SteamGridDBViewModel(steamGridDBManager, context, initialQuery) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

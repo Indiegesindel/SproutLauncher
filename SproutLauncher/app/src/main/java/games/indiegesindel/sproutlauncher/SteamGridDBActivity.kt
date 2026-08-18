@@ -19,6 +19,10 @@ import games.indiegesindel.sproutlauncher.ui.viewmodels.SteamGridDBViewModel
 import games.indiegesindel.sproutlauncher.ui.viewmodels.SteamGridDBViewModelFactory
 
 class SteamGridDBActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_INITIAL_QUERY = "INITIAL_QUERY"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -31,9 +35,10 @@ class SteamGridDBActivity : ComponentActivity() {
 
             SproutLauncherTheme(baseTheme = baseTheme, isDarkMode = isDarkMode) {
                 val steamGridDBManager = remember { SteamGridDBManager(context) }
+                val initialQuery = remember { intent?.getStringExtra(EXTRA_INITIAL_QUERY).orEmpty() }
                 val viewModel: SteamGridDBViewModel = ViewModelProvider(
                     this,
-                    SteamGridDBViewModelFactory(steamGridDBManager, context)
+                    SteamGridDBViewModelFactory(steamGridDBManager, context, initialQuery)
                 )[SteamGridDBViewModel::class.java]
 
                 SteamGridDBScreen(
