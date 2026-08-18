@@ -201,7 +201,9 @@ fun AppTileSettingsScreen(
                                 enabled = !apiKey.isNullOrBlank(),
                                 onClick = {
                                     showIconMenu = false
-                                    val intent = Intent(context, SteamGridDBActivity::class.java)
+                                    val intent = Intent(context, SteamGridDBActivity::class.java).apply {
+                                        putExtra(SteamGridDBActivity.EXTRA_INITIAL_QUERY, label)
+                                    }
                                     steamGridDBLauncher.launch(intent)
                                 }
                             )
