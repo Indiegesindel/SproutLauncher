@@ -33,3 +33,47 @@ google-services.json
 *.hprof
 /StoreAssets/YouTube
 /SproutLauncher/app/production
+
+# AI assistant files
+# Claude Code
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+# OpenAI Codex and other AGENTS.md based tools
+AGENTS.md
+AGENTS.override.md
+.codex/
+# Google Gemini CLI / Gemini Code Assist / Firebase Studio (Project IDX)
+GEMINI.md
+.gemini/
+.idx/
+# JetBrains Junie and AI Assistant
+.junie/
+.aiassistant/
+.aiignore
+# GitHub Copilot
+.github/copilot-instructions.md
+.github/instructions/
+.github/prompts/
+.copilotignore
+# Cursor
+.cursor/
+.cursorrules
+.cursorignore
+.cursorindexingignore
+# Windsurf / Codeium
+.windsurf/
+.windsurfrules
+.codeiumignore
+# Aider
+.aider*
+# Cline / Roo Code
+.clinerules
+.clineignore
+.roo/
+.roomodes
+# Continue
+.continue/
+# Amazon Q / Kiro
+.amazonq/
+.kiro/
