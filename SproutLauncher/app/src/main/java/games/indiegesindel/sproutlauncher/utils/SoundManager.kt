@@ -3,12 +3,14 @@ package games.indiegesindel.sproutlauncher.utils
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
-import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.staticCompositionLocalOf
 import games.indiegesindel.sproutlauncher.R
+import java.util.concurrent.ConcurrentHashMap
 
 enum class UiSound { CONFIRM, BACK, MOVE }
 
-class SoundManager(context: Context) {
+class SoundManager(context: Context, private val isEnabled: () -> Boolean) {
+
     private val soundPool = SoundPool.Builder()
         .setMaxStreams(3)
         .setAudioAttributes(
@@ -19,37 +21,26 @@ class SoundManager(context: Context) {
         )
         .build()
 
-    var isEnabled: Boolean = true
+    private val loadedSamples = ConcurrentHashMap.newKeySet<Int>()
 
-    private val loadedIds = mutableSetOf<Int>()
-    private val confirmId: Int
-    private val backId: Int
-    private val moveId: Int
+    private val samples: Map<UiSound, Int>
 
     init {
         soundPool.setOnLoadCompleteListener { _, sampleId, status ->
-            if (status == 0) loadedIds.add(sampleId)
+            if (status == 0) loadedSamples += sampleId
         }
-        confirmId = soundPool.load(context, R.raw.cursor_confirm, 1)
-        backId = soundPool.load(context, R.raw.cursor_back, 1)
-        moveId = soundPool.load(context, R.raw.cursor_move, 1)
+        samples = mapOf(
+            UiSound.CONFIRM to soundPool.load(context, R.raw.cursor_confirm, 1),
+            UiSound.BACK to soundPool.load(context, R.raw.cursor_back, 1),
+            UiSound.MOVE to soundPool.load(context, R.raw.cursor_move, 1)
+        )
     }
 
     fun play(sound: UiSound) {
-        if (!isEnabled) return
-        val id = when (sound) {
-            UiSound.CONFIRM -> confirmId
-            UiSound.BACK -> backId
-            UiSound.MOVE -> moveId
-        }
-        if (id in loadedIds) {
-            soundPool.play(id, 1f, 1f, 1, 0, 1f)
-        }
-    }
-
-    fun release() {
-        soundPool.release()
+        if (!isEnabled()) return
+        val sampleId = samples.getValue(sound)
+        if (sampleId in loadedSamples) soundPool.play(sampleId, 1f, 1f, 1, 0, 1f)
     }
 }
 
-val LocalSoundManager = compositionLocalOf<SoundManager?> { null }
+val LocalSoundManager = staticCompositionLocalOf<SoundManager?> { null }

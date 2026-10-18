@@ -1,44 +1,48 @@
 package games.indiegesindel.sproutlauncher
 
 import android.app.Application
-import coil.ImageLoader
-import coil.ImageLoaderFactory
-import coil.decode.DataSource
-import coil.fetch.DrawableResult
-import coil.fetch.FetchResult
-import coil.fetch.Fetcher
-import coil.request.Options
-import android.content.pm.ResolveInfo
-import games.indiegesindel.sproutlauncher.utils.IconUtils
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.crossfade
+import games.indiegesindel.sproutlauncher.model.AppTile
+import games.indiegesindel.sproutlauncher.ui.icons.AppIconFetcher
+import kotlinx.coroutines.launch
 
-class LauncherApplication : Application(), ImageLoaderFactory {
-    override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(this)
-            .components {
-                add(ResolveInfoFetcher.Factory())
+class LauncherApplication : Application(), SingletonImageLoader.Factory {
+
+    lateinit var container: AppContainer
+        private set
+
+    override fun onCreate() {
+        super.onCreate()
+        container = AppContainer(this)
+
+        with(container) {
+            installedAppsRepository.addPackageRemovedListener(tileRepository::removePackage)
+            installedAppsRepository.addPackagesChangedListener {
+                SingletonImageLoader.get(this@LauncherApplication).memoryCache?.clear()
             }
-            .build()
-    }
-}
+            installedAppsRepository.start()
 
-class ResolveInfoFetcher(
-    private val data: ResolveInfo,
-    private val options: Options
-) : Fetcher {
-    override suspend fun fetch(): FetchResult {
-        val pm = options.context.packageManager
-        val icon = data.loadIcon(pm)
-        val unmaskedIcon = IconUtils.getUnmaskedDrawable(options.context, icon)
-        return DrawableResult(
-            drawable = unmaskedIcon,
-            isSampled = false,
-            dataSource = DataSource.DISK
-        )
-    }
-
-    class Factory : Fetcher.Factory<ResolveInfo> {
-        override fun create(data: ResolveInfo, options: Options, imageLoader: ImageLoader): Fetcher {
-            return ResolveInfoFetcher(data, options)
+            applicationScope.launch {
+                val referenced = tileRepository.tiles.value.allIconUris()
+                imageStore.pruneIcons(referenced)
+            }
         }
     }
+
+    override fun newImageLoader(context: PlatformContext): ImageLoader =
+        ImageLoader.Builder(context)
+            .components {
+                add(AppIconFetcher.Factory(context))
+                add(AppIconFetcher.Key())
+                add(OkHttpNetworkFetcherFactory(callFactory = { container.httpClient }))
+            }
+            .crossfade(true)
+            .build()
 }
+
+private fun List<AppTile>.allIconUris(): Set<String> =
+    flatMap { tile -> listOfNotNull(tile.iconUri) + tile.groupTiles.allIconUris() }.toSet()
