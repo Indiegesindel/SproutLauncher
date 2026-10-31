@@ -11,6 +11,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import games.indiegesindel.sproutlauncher.data.BaseTheme
 
@@ -24,7 +25,6 @@ private val LightColorScheme = lightColorScheme(
     primary = Purple40,
     secondary = PurpleGrey40,
     tertiary = Pink40
-
 )
 
 private val PurpleLightScheme = lightColorScheme(
@@ -439,46 +439,48 @@ private val TealDarkScheme = darkColorScheme(
     surfaceContainerHighest = tealSurfaceContainerHighestDark,
 )
 
+val BaseTheme.previewColor: Color?
+    get() = when (this) {
+        BaseTheme.SYSTEM -> null
+        BaseTheme.PURPLE -> primaryLight
+        BaseTheme.MINT_GREEN -> mintGreenPrimaryLight
+        BaseTheme.DEEP_BLUE -> deepBluePrimaryLight
+        BaseTheme.FIRE_RED -> fireRedPrimaryLight
+        BaseTheme.REFRESHING_ORANGE -> orangePrimaryLight
+        BaseTheme.MONOCHROME -> monochromePrimaryLight
+        BaseTheme.ROSE_PINK -> rosePinkPrimaryLight
+        BaseTheme.TEAL -> tealPrimaryLight
+    }
+
 @Composable
 fun SproutLauncherTheme(
     baseTheme: BaseTheme = BaseTheme.SYSTEM,
     isDarkMode: Boolean = false,
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val darkTheme = isDarkMode
-
     val context = LocalContext.current
-    DisposableEffect(darkTheme) {
-        (context as? ComponentActivity)?.enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT,
-            ) { darkTheme },
-            navigationBarStyle = SystemBarStyle.auto(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT,
-            ) { darkTheme }
-        )
+
+    DisposableEffect(isDarkMode) {
+        val barStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT) { isDarkMode }
+        (context as? ComponentActivity)?.enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
         onDispose {}
     }
 
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && baseTheme == BaseTheme.SYSTEM -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    val colorScheme = when (baseTheme) {
+        BaseTheme.SYSTEM -> when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+                if (isDarkMode) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            isDarkMode -> DarkColorScheme
+            else -> LightColorScheme
         }
-
-        baseTheme == BaseTheme.PURPLE -> if (darkTheme) PurpleDarkScheme else PurpleLightScheme
-        baseTheme == BaseTheme.MINT_GREEN -> if (darkTheme) MintGreenDarkScheme else MintGreenLightScheme
-        baseTheme == BaseTheme.DEEP_BLUE -> if (darkTheme) DeepBlueDarkScheme else DeepBlueLightScheme
-        baseTheme == BaseTheme.FIRE_RED -> if (darkTheme) FireRedDarkScheme else FireRedLightScheme
-        baseTheme == BaseTheme.REFRESHING_ORANGE -> if (darkTheme) OrangeDarkScheme else OrangeLightScheme
-        baseTheme == BaseTheme.MONOCHROME -> if (darkTheme) MonochromeDarkScheme else MonochromeLightScheme
-        baseTheme == BaseTheme.ROSE_PINK -> if (darkTheme) RosePinkDarkScheme else RosePinkLightScheme
-        baseTheme == BaseTheme.TEAL -> if (darkTheme) TealDarkScheme else TealLightScheme
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        BaseTheme.PURPLE -> if (isDarkMode) PurpleDarkScheme else PurpleLightScheme
+        BaseTheme.MINT_GREEN -> if (isDarkMode) MintGreenDarkScheme else MintGreenLightScheme
+        BaseTheme.DEEP_BLUE -> if (isDarkMode) DeepBlueDarkScheme else DeepBlueLightScheme
+        BaseTheme.FIRE_RED -> if (isDarkMode) FireRedDarkScheme else FireRedLightScheme
+        BaseTheme.REFRESHING_ORANGE -> if (isDarkMode) OrangeDarkScheme else OrangeLightScheme
+        BaseTheme.MONOCHROME -> if (isDarkMode) MonochromeDarkScheme else MonochromeLightScheme
+        BaseTheme.ROSE_PINK -> if (isDarkMode) RosePinkDarkScheme else RosePinkLightScheme
+        BaseTheme.TEAL -> if (isDarkMode) TealDarkScheme else TealLightScheme
     }
 
     MaterialTheme(

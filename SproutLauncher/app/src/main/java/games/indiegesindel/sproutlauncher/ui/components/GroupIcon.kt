@@ -1,6 +1,5 @@
 package games.indiegesindel.sproutlauncher.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,24 +10,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import coil.size.Size
+import coil3.compose.AsyncImage
 import games.indiegesindel.sproutlauncher.model.AppTile
-import games.indiegesindel.sproutlauncher.utils.IconUtils
+import games.indiegesindel.sproutlauncher.ui.icons.iconModel
 
 @Composable
-fun GroupIcon(
-    groupTiles: List<AppTile>,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    
+fun GroupIcon(groupTiles: List<AppTile>, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(64.dp)
@@ -37,48 +27,27 @@ fun GroupIcon(
             .padding(8.dp)
     ) {
         Column {
-            Row(modifier = Modifier.weight(1f)) {
-                Box(modifier = Modifier.weight(1f).padding(3.dp)) {
-                    groupTiles.getOrNull(0)?.let { SmallIcon(it) }
-                }
-                Box(modifier = Modifier.weight(1f).padding(3.dp)) {
-                    groupTiles.getOrNull(1)?.let { SmallIcon(it) }
-                }
-            }
-            Row(modifier = Modifier.weight(1f)) {
-                Box(modifier = Modifier.weight(1f).padding(3.dp)) {
-                    groupTiles.getOrNull(2)?.let { SmallIcon(it) }
-                }
-                Box(modifier = Modifier.weight(1f).padding(3.dp)) {
-                    groupTiles.getOrNull(3)?.let { SmallIcon(it) }
+            for (row in 0 until 2) {
+                Row(modifier = Modifier.weight(1f)) {
+                    for (column in 0 until 2) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(3.dp)
+                        ) {
+                            groupTiles.getOrNull(row * 2 + column)?.let { tile ->
+                                AsyncImage(
+                                    model = tile.iconModel,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(4.dp))
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
-}
-
-@Composable
-private fun SmallIcon(tile: AppTile) {
-    val context = LocalContext.current
-    val shortcutIcon = remember(tile.packageName, tile.shortcutId) {
-        tile.shortcutId?.let { IconUtils.getShortcutIcon(context, tile.packageName, it) }
-    }
-    
-    val appIcon = remember(tile.packageName) {
-        IconUtils.getFullSquareIcon(context, tile.packageName, 128)
-    }
-
-    Image(
-        painter = rememberAsyncImagePainter(
-            model = remember(tile.packageName, tile.activityName, tile.iconUri, shortcutIcon, appIcon) {
-                ImageRequest.Builder(context)
-                    .data(tile.iconUri ?: shortcutIcon ?: appIcon)
-                    .size(Size(128, 128))
-                    .crossfade(true)
-                    .build()
-            }
-        ),
-        contentDescription = null,
-        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp))
-    )
 }

@@ -1,74 +1,67 @@
 package games.indiegesindel.sproutlauncher.ui.viewmodels
 
-import android.content.Intent
-import android.content.pm.ResolveInfo
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
-import games.indiegesindel.sproutlauncher.data.AppManager
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import games.indiegesindel.sproutlauncher.appContainer
+import games.indiegesindel.sproutlauncher.data.InstalledAppsRepository
+import games.indiegesindel.sproutlauncher.data.TileRepository
 import games.indiegesindel.sproutlauncher.model.AppTile
-import kotlinx.coroutines.Dispatchers
+import games.indiegesindel.sproutlauncher.model.InstalledApp
+import games.indiegesindel.sproutlauncher.model.leafTiles
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 
 class AllAppsViewModel(
-    private val appManager: AppManager,
-    private val packageManager: android.content.pm.PackageManager
+    private val tileRepository: TileRepository,
+    installedApps: InstalledAppsRepository
 ) : ViewModel() {
+
     enum class Tab { ALL, HOMESCREEN }
 
-    private val _selectedTiles = MutableStateFlow<List<AppTile>>(emptyList())
-    val selectedTiles: StateFlow<List<AppTile>> = _selectedTiles.asStateFlow()
+    data class AppEntry(val app: InstalledApp, val tile: AppTile?)
 
-    private val _installedApps = MutableStateFlow<List<ResolveInfo>>(emptyList())
-    val installedApps: StateFlow<List<ResolveInfo>> = _installedApps.asStateFlow()
+    data class UiState(
+        val tab: Tab = Tab.ALL,
+        val isLoading: Boolean = true,
+        val apps: List<AppEntry> = emptyList(),
+        val shortcuts: List<AppTile> = emptyList()
+    )
 
-    private val _isLoadingApps = MutableStateFlow(true)
-    val isLoadingApps: StateFlow<Boolean> = _isLoadingApps.asStateFlow()
+    private val tab = MutableStateFlow(Tab.ALL)
 
-    private val _currentTab = MutableStateFlow(Tab.ALL)
-    val currentTab: StateFlow<Tab> = _currentTab.asStateFlow()
+    val uiState: StateFlow<UiState> = combine(tab, installedApps.apps, tileRepository.tiles) { tab, apps, tiles ->
+        val leaves = tiles.leafTiles().toList()
+        val tilesByActivity = leaves.filterNot { it.isShortcut }.associateBy { it.packageName to it.activityName }
+        val entries = apps.orEmpty().map { AppEntry(it, tilesByActivity[it.packageName to it.activityName]) }
+        when (tab) {
+            Tab.ALL -> UiState(tab, apps == null, entries)
+            Tab.HOMESCREEN -> UiState(
+                tab = tab,
+                isLoading = apps == null,
+                apps = entries.filter { it.tile != null },
+                shortcuts = leaves.filter { it.isShortcut }
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState())
 
     private val _tileToRemove = MutableStateFlow<AppTile?>(null)
     val tileToRemove: StateFlow<AppTile?> = _tileToRemove.asStateFlow()
 
-    init {
-        loadTiles()
-        loadApps()
-    }
-
-    fun loadTiles() {
-        viewModelScope.launch {
-            _selectedTiles.value = appManager.getAppTiles()
-        }
-    }
-
-    fun loadApps() {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
-                    addCategory(Intent.CATEGORY_LAUNCHER)
-                }
-                val apps = packageManager.queryIntentActivities(mainIntent, 0)
-                val appsWithLabels = apps.map {
-                    it to it.loadLabel(packageManager).toString()
-                }.sortedBy { it.second.lowercase() }
-                _installedApps.value = appsWithLabels.map { it.first }
-                _isLoadingApps.value = false
-            }
-        }
-    }
-
-    fun resetFocus() {
-        loadTiles()
-        loadApps()
-    }
-
     fun setTab(tab: Tab) {
-        _currentTab.value = tab
+        this.tab.value = tab
+    }
+
+    fun addToHomeScreen(app: InstalledApp) {
+        tileRepository.addIfAbsent(
+            AppTile(packageName = app.packageName, activityName = app.activityName, label = app.label)
+        ) { it.matchesActivity(app.packageName, app.activityName) }
     }
 
     fun requestRemoveTile(tile: AppTile) {
@@ -80,23 +73,16 @@ class AllAppsViewModel(
     }
 
     fun confirmRemoveTile() {
-        _tileToRemove.value?.let {
-            appManager.removeAppTile(it.id)
-            loadTiles()
-            _tileToRemove.value = null
-        }
+        _tileToRemove.value?.let { tileRepository.remove(it.id) }
+        _tileToRemove.value = null
     }
-}
 
-class AllAppsViewModelFactory(
-    private val appManager: AppManager,
-    private val packageManager: android.content.pm.PackageManager
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(AllAppsViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return AllAppsViewModel(appManager, packageManager) as T
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                val container = this[APPLICATION_KEY]!!.appContainer
+                AllAppsViewModel(container.tileRepository, container.installedAppsRepository)
+            }
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

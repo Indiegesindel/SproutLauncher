@@ -1,3 +1,159 @@
 <resources>
-    <string name="app_name">SproutLauncher</string>
+    <string name="app_name" translatable="false">SproutLauncher</string>
+
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_close">Close</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_done">Done</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_save">Save</string>
+    <string name="action_search">Search</string>
+
+    <string name="value_dp">%1$ddp</string>
+    <string name="value_percent">%1$d%%</string>
+    <plurals name="rows_count">
+        <item quantity="one">%1$d Row</item>
+        <item quantity="other">%1$d Rows</item>
+    </plurals>
+    <plurals name="results_count">
+        <item quantity="one">%1$d Result</item>
+        <item quantity="other">%1$d Results</item>
+    </plurals>
+
+    <string name="prompt_close">Close</string>
+    <string name="prompt_launch">Launch</string>
+    <string name="prompt_move">Move (Hold)</string>
+    <string name="prompt_open">Open</string>
+    <string name="prompt_options">Options</string>
+    <string name="prompt_select">Select</string>
+
+    <string name="home_empty_hint">You can add apps by going to the %1$s menu.</string>
+    <string name="default_group_name">New Group</string>
+    <string name="remove_tile_title">Remove Tile</string>
+    <string name="remove_tile_message">Are you sure you want to remove this tile from your home screen?</string>
+    <string name="add_to_group_title">Add to Group</string>
+    <string name="add_to_group_empty">No groups found</string>
+
+    <string name="quick_action_all_apps">All Apps</string>
+    <string name="quick_action_browser">Browser</string>
+    <string name="quick_action_youtube">YouTube</string>
+    <string name="quick_action_play_store">Play Store</string>
+    <string name="quick_action_discord">Discord</string>
+    <string name="quick_action_spotify">Spotify</string>
+    <string name="quick_action_photos">Photos</string>
+    <string name="quick_action_settings">Settings</string>
+
+    <string name="menu_launch">Launch</string>
+    <string name="menu_open">Open</string>
+    <string name="menu_edit">Edit</string>
+    <string name="menu_details">Details</string>
+    <string name="menu_uninstall">Uninstall</string>
+    <string name="menu_add_to_home">Add to Homescreen</string>
+    <string name="menu_remove_from_home">Remove from Homescreen</string>
+    <string name="menu_create_group">Create group</string>
+    <string name="menu_add_to_group">Add to Group</string>
+    <string name="menu_remove_from_group">Remove from group</string>
+    <string name="menu_ungroup">Ungroup</string>
+    <string name="menu_group_selected">Group selected</string>
+    <string name="menu_remove_selected">Remove selected</string>
+    <string name="menu_clear_selection">Clear selection</string>
+
+    <string name="all_apps_tab_all">All Apps</string>
+    <string name="all_apps_tab_home">Homescreen</string>
+    <string name="all_apps_section_apps">Apps</string>
+    <string name="all_apps_section_shortcuts">Shortcuts</string>
+    <string name="all_apps_shortcuts_hint">You can add shortcuts to the homescreen from supported apps by using their \'Add to home screen\' feature.</string>
+
+    <string name="shortcut_default_label">Shortcut</string>
+    <string name="shortcut_added">Added %1$s to home screen</string>
+
+    <string name="error_launch">Could not launch %1$s</string>
+    <string name="error_open_browser">Could not open browser</string>
+    <string name="error_open_settings">Could not open settings</string>
+    <string name="error_open_app_details">Could not open app details</string>
+    <string name="error_uninstall">Could not start uninstall</string>
+    <string name="error_icon_import">Could not load that image</string>
+    <string name="error_wallpaper_not_persisted">Could not persist wallpaper. It might reset after a reboot.</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_version_unknown">Unknown</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_steamgriddb">SteamGridDB</string>
+    <string name="settings_section_homescreen">Homescreen</string>
+    <string name="settings_section_groups">Groups</string>
+    <string name="settings_section_quick_actions">Quick Actions</string>
+    <string name="settings_dark_mode">Dark Mode</string>
+    <string name="settings_ui_sounds">UI Sounds</string>
+    <string name="settings_wallpaper">Wallpaper</string>
+    <string name="settings_wallpaper_custom">Custom Image</string>
+    <string name="settings_wallpaper_default">Default color background</string>
+    <string name="settings_wallpaper_dim">Wallpaper Dimming</string>
+    <string name="settings_api_key">API Key</string>
+    <string name="settings_api_key_set">Set</string>
+    <string name="settings_api_key_not_set">Not Set</string>
+    <string name="settings_api_key_dialog_title">Edit SteamGridDB API Key</string>
+    <string name="settings_api_key_field">SteamGridDB API Key</string>
+    <string name="settings_rows">Number of Rows</string>
+    <string name="settings_horizontal_spacing">Horizontal Spacing</string>
+    <string name="settings_vertical_spacing">Vertical Spacing</string>
+    <string name="settings_roundness">App Tile Roundness</string>
+    <string name="settings_group_rows_title">Group: Number of Rows</string>
+    <string name="settings_group_horizontal_spacing_title">Group: Horizontal Spacing</string>
+    <string name="settings_group_vertical_spacing_title">Group: Vertical Spacing</string>
+    <string name="settings_group_roundness_title">Group: App Tile Roundness</string>
+    <string name="settings_slider_rows">Rows</string>
+    <string name="settings_slider_spacing">Spacing</string>
+    <string name="settings_slider_roundness">Roundness</string>
+    <string name="settings_slider_amount">Amount</string>
+    <string name="settings_show_youtube">Show YouTube</string>
+    <string name="settings_show_discord">Show Discord</string>
+    <string name="settings_show_spotify">Show Spotify</string>
+
+    <string name="theme_system">System</string>
+    <string name="theme_purple">Purple</string>
+    <string name="theme_mint">Mint</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_red">Red</string>
+    <string name="theme_orange">Orange</string>
+    <string name="theme_gray">Gray</string>
+    <string name="theme_pink">Pink</string>
+    <string name="theme_teal">Teal</string>
+
+    <string name="tile_settings_title">Tile Settings</string>
+    <string name="tile_settings_icon">Tile icon</string>
+    <string name="tile_settings_change_icon">Change Icon</string>
+    <string name="tile_settings_icon_local">Local file</string>
+    <string name="tile_settings_icon_steamgriddb">SteamGridDB</string>
+    <string name="tile_settings_section_general">General</string>
+    <string name="tile_settings_section_details">App Details</string>
+    <string name="tile_settings_section_actions">Actions</string>
+    <string name="tile_settings_label">Label</string>
+    <string name="tile_settings_edit_label">Edit Label</string>
+    <string name="tile_settings_package">Package</string>
+    <string name="tile_settings_activity">Activity</string>
+    <string name="tile_settings_remove">Remove Tile</string>
+
+    <string name="steamgriddb_search_hint">Search SteamGridDB…</string>
+    <string name="steamgriddb_search_prompt">Search for a game to find icons</string>
+    <string name="steamgriddb_no_games">No games found</string>
+    <string name="steamgriddb_no_icons">No icons found for this game</string>
+    <string name="steamgriddb_released_on">Released on %1$s</string>
+    <string name="steamgriddb_release_unknown">Unknown release date</string>
+    <string name="steamgriddb_icon_by">Icon by %1$s</string>
+    <string name="steamgriddb_icon_details">Icon Details</string>
+    <string name="steamgriddb_select_icon">Select this icon</string>
+    <string name="steamgriddb_metadata">Metadata</string>
+    <string name="steamgriddb_notes">Notes</string>
+    <string name="steamgriddb_size">Size</string>
+    <string name="steamgriddb_dimensions">%1$d × %2$d</string>
+    <string name="steamgriddb_author">Author</string>
+    <string name="steamgriddb_attribution">Provided by SteamGridDB</string>
+    <string name="steamgriddb_error_missing_key">Add a SteamGridDB API key in Settings to search for icons.</string>
+    <string name="steamgriddb_error_unauthorized">SteamGridDB rejected the API key. Check it in Settings.</string>
+    <string name="steamgriddb_error_network">Couldn\'t reach SteamGridDB. Check your connection.</string>
+    <string name="steamgriddb_error_server">SteamGridDB returned an unexpected response. Try again later.</string>
+    <string name="steamgriddb_error_download">Downloading the icon failed. Try again.</string>
 </resources>

@@ -1,45 +1,83 @@
 package games.indiegesindel.sproutlauncher.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
-import games.indiegesindel.sproutlauncher.data.AppManager
-import games.indiegesindel.sproutlauncher.data.SettingsManager
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import games.indiegesindel.sproutlauncher.appContainer
+import games.indiegesindel.sproutlauncher.data.GridLayout
+import games.indiegesindel.sproutlauncher.data.InstalledAppsRepository
+import games.indiegesindel.sproutlauncher.data.SettingsRepository
+import games.indiegesindel.sproutlauncher.data.TileRepository
 import games.indiegesindel.sproutlauncher.model.AppTile
+import games.indiegesindel.sproutlauncher.model.QuickApp
+import games.indiegesindel.sproutlauncher.model.findTile
+import games.indiegesindel.sproutlauncher.model.groupTiles
+import games.indiegesindel.sproutlauncher.model.moveIntoGroup
+import games.indiegesindel.sproutlauncher.model.moveTile
+import games.indiegesindel.sproutlauncher.model.moveTileInGroup
+import games.indiegesindel.sproutlauncher.model.removeFromGroup
+import games.indiegesindel.sproutlauncher.model.ungroup
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+data class Wallpaper(val uri: String, val dim: Float)
+
 class MainViewModel(
-    private val appManager: AppManager,
-    settingsManager: SettingsManager
+    private val tileRepository: TileRepository,
+    settings: SettingsRepository,
+    installedApps: InstalledAppsRepository
 ) : ViewModel() {
-    private val _appTiles = MutableStateFlow<List<AppTile>>(emptyList())
-    val appTiles: StateFlow<List<AppTile>> = _appTiles.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    val appTiles: StateFlow<List<AppTile>> = tileRepository.tiles
 
-    val homeScreenRows: StateFlow<Int> = settingsManager.homeScreenRows
-    val horizontalSpacing: StateFlow<Int> = settingsManager.horizontalSpacing
-    val verticalSpacing: StateFlow<Int> = settingsManager.verticalSpacing
-    val appTileRoundness: StateFlow<Int> = settingsManager.appTileRoundness
-    val groupRows: StateFlow<Int> = settingsManager.groupRows
-    val groupHorizontalSpacing: StateFlow<Int> = settingsManager.groupHorizontalSpacing
-    val groupVerticalSpacing: StateFlow<Int> = settingsManager.groupVerticalSpacing
-    val groupAppTileRoundness: StateFlow<Int> = settingsManager.groupAppTileRoundness
-    val wallpaperUri: StateFlow<String?> = settingsManager.wallpaperUri
-    val wallpaperDim: StateFlow<Float> = settingsManager.wallpaperDim
-    val showYouTube: StateFlow<Boolean> = settingsManager.showYouTube
-    val showDiscord: StateFlow<Boolean> = settingsManager.showDiscord
-    val showSpotify: StateFlow<Boolean> = settingsManager.showSpotify
+    val homeLayout: StateFlow<GridLayout> = settings.homeGrid.layout
+        .stateIn(viewModelScope, SharingStarted.Eagerly, settings.homeGrid.currentLayout)
 
-    private val _pendingFocus = MutableStateFlow<String?>(null)
-    val pendingFocus: StateFlow<String?> = _pendingFocus.asStateFlow()
+    val groupLayout: StateFlow<GridLayout> = settings.groupGrid.layout
+        .stateIn(viewModelScope, SharingStarted.Eagerly, settings.groupGrid.currentLayout)
+
+    val wallpaper: StateFlow<Wallpaper?> = combine(settings.wallpaperUri.flow, settings.wallpaperDim.flow) { uri, dim ->
+        uri?.let { Wallpaper(it, dim) }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val quickApps: StateFlow<List<QuickApp>> = combine(
+        installedApps.apps.map { apps -> apps.orEmpty().mapTo(HashSet()) { it.packageName } },
+        settings.showYouTube.flow,
+        settings.showDiscord.flow,
+        settings.showSpotify.flow
+    ) { installed, showYouTube, showDiscord, showSpotify ->
+        QuickApp.entries.filter { app ->
+            app.packageName in installed && when (app) {
+                QuickApp.YOUTUBE -> showYouTube
+                QuickApp.DISCORD -> showDiscord
+                QuickApp.SPOTIFY -> showSpotify
+                QuickApp.PLAY_STORE, QuickApp.PHOTOS -> true
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _pendingFocusTileId = MutableStateFlow<String?>(null)
+    val pendingFocusTileId: StateFlow<String?> = _pendingFocusTileId.asStateFlow()
+
+    private val _openedGroupId = MutableStateFlow<String?>(null)
+    val openedGroup: StateFlow<AppTile?> = combine(appTiles, _openedGroupId) { tiles, id ->
+        id?.let { tiles.firstOrNull { tile -> tile.id == it && tile.isGroup } }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _tileToRemove = MutableStateFlow<AppTile?>(null)
     val tileToRemove: StateFlow<AppTile?> = _tileToRemove.asStateFlow()
+
+    private val _tileToMoveToGroup = MutableStateFlow<AppTile?>(null)
+    val tileToMoveToGroup: StateFlow<AppTile?> = _tileToMoveToGroup.asStateFlow()
 
     private val _isInMultiSelectMode = MutableStateFlow(false)
     val isInMultiSelectMode: StateFlow<Boolean> = _isInMultiSelectMode.asStateFlow()
@@ -47,70 +85,25 @@ class MainViewModel(
     private val _selectedTileIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedTileIds: StateFlow<Set<String>> = _selectedTileIds.asStateFlow()
 
-    private val _openedGroup = MutableStateFlow<AppTile?>(null)
-    val openedGroup: StateFlow<AppTile?> = _openedGroup.asStateFlow()
-
-    private val _tileToMoveToGroup = MutableStateFlow<AppTile?>(null)
-    val tileToMoveToGroup: StateFlow<AppTile?> = _tileToMoveToGroup.asStateFlow()
-
-    private val _installedQuickActions = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    val installedQuickActions: StateFlow<Map<String, Boolean>> = _installedQuickActions.asStateFlow()
-
     private val _showAllApps = MutableStateFlow(false)
     val showAllApps: StateFlow<Boolean> = _showAllApps.asStateFlow()
 
-    fun openAllApps() { _showAllApps.value = true }
-    fun closeAllApps() { _showAllApps.value = false }
-
-    fun loadAppTiles() {
+    init {
         viewModelScope.launch {
-            val tiles = appManager.getAppTiles()
-            _appTiles.value = tiles
-            
-            _openedGroup.value?.let { currentGroup ->
-                findTileById(tiles, currentGroup.id)?.let { updatedGroup ->
-                    _openedGroup.value = updatedGroup
-                }
-            }
-
-            checkInstalledQuickActions()
-            _isLoading.value = false
-
-            if (!_hasPlacedInitialFocus) {
-                _appTiles.value.firstOrNull()?.let {
-                    _pendingFocus.value = "tile:${it.id}"
-                    _hasPlacedInitialFocus = true
-                }
-            }
+            _pendingFocusTileId.value = appTiles.first { it.isNotEmpty() }.first().id
         }
     }
-
-    private var _hasPlacedInitialFocus = false
 
     fun consumePendingFocus() {
-        _pendingFocus.value = null
+        _pendingFocusTileId.value = null
     }
 
-    private fun findTileById(tiles: List<AppTile>, id: String): AppTile? {
-        for (tile in tiles) {
-            if (tile.id == id) return tile
-            if (tile.isGroup) {
-                findTileById(tile.groupTiles, id)?.let { return it }
-            }
-        }
-        return null
+    fun openAllApps() {
+        _showAllApps.value = true
     }
 
-    private fun checkInstalledQuickActions() {
-        val apps = listOf(
-            "com.google.android.youtube",
-            "com.android.vending",
-            "com.discord",
-            "com.spotify.music",
-            "com.google.android.apps.photos"
-        )
-        val status = apps.associateWith { appManager.isPackageInstalled(it) }
-        _installedQuickActions.value = status
+    fun closeAllApps() {
+        _showAllApps.value = false
     }
 
     fun requestRemoveTile(tile: AppTile) {
@@ -122,71 +115,26 @@ class MainViewModel(
     }
 
     fun confirmRemoveTile() {
-        _tileToRemove.value?.let {
-            appManager.removeAppTile(it.id)
-            loadAppTiles()
-            _tileToRemove.value = null
-        }
+        _tileToRemove.value?.let { tileRepository.remove(it.id) }
+        _tileToRemove.value = null
     }
 
-    fun removeAppTile(tileId: String) {
-        appManager.removeAppTile(tileId)
-        loadAppTiles()
-    }
+    fun reorderTiles(from: Int, to: Int) = tileRepository.update { it.moveTile(from, to) }
 
-    fun reorderAppTiles(from: Int, to: Int) {
-        val newList = _appTiles.value.toMutableList()
-        if (from in newList.indices && to in newList.indices) {
-            val tile = newList.removeAt(from)
-            newList.add(to, tile)
-            _appTiles.value = newList
-        }
-    }
+    fun reorderGroupTiles(groupId: String, from: Int, to: Int) =
+        tileRepository.update { it.moveTileInGroup(groupId, from, to) }
 
-    fun reorderGroupTiles(groupId: String, from: Int, to: Int) {
-        val currentTiles = _appTiles.value.toMutableList()
-        val groupIndex = currentTiles.indexOfFirst { it.id == groupId }
-        if (groupIndex != -1) {
-            val group = currentTiles[groupIndex]
-            val groupTiles = group.groupTiles.toMutableList()
-            if (from in groupTiles.indices && to in groupTiles.indices) {
-                val item = groupTiles.removeAt(from)
-                groupTiles.add(to, item)
-                val updatedGroup = group.copy(groupTiles = groupTiles)
-                currentTiles[groupIndex] = updatedGroup
-                _appTiles.value = currentTiles
-                if (_openedGroup.value?.id == groupId) {
-                    _openedGroup.value = updatedGroup
-                }
-            }
-        }
-    }
-
-    fun saveAppTiles() {
-        appManager.saveAppTiles(_appTiles.value)
-    }
-
-    fun enterMultiSelectMode(initialTileId: String) {
-        val tile = findTileById(_appTiles.value, initialTileId)
-        if (tile?.isGroup == true) return
-
+    fun enterMultiSelectMode(tileId: String) {
+        if (appTiles.value.findTile(tileId)?.isGroup == true) return
         _isInMultiSelectMode.value = true
-        _selectedTileIds.value = setOf(initialTileId)
+        _selectedTileIds.value = setOf(tileId)
     }
 
     fun toggleTileSelection(tileId: String) {
-        val tile = findTileById(_appTiles.value, tileId)
-        if (tile?.isGroup == true) return
-
-        val currentSelection = _selectedTileIds.value
-        if (currentSelection.contains(tileId)) {
-            _selectedTileIds.value = currentSelection - tileId
-        } else {
-            _selectedTileIds.value = currentSelection + tileId
-        }
-        if (_selectedTileIds.value.isEmpty()) {
-            _isInMultiSelectMode.value = false
-        }
+        if (appTiles.value.findTile(tileId)?.isGroup == true) return
+        val selection = _selectedTileIds.value.let { if (tileId in it) it - tileId else it + tileId }
+        _selectedTileIds.value = selection
+        if (selection.isEmpty()) _isInMultiSelectMode.value = false
     }
 
     fun clearSelection() {
@@ -194,95 +142,52 @@ class MainViewModel(
         _isInMultiSelectMode.value = false
     }
 
-    fun groupSelectedTiles() {
-        val selectedIds = _selectedTileIds.value
-        if (selectedIds.isEmpty()) return
-
-        val currentTiles = _appTiles.value
-        val tilesToGroup = currentTiles.filter { selectedIds.contains(it.id) }
-        val remainingTiles = currentTiles.filter { !selectedIds.contains(it.id) }
-
-        val newGroup = AppTile(
-            label = "New Group",
-            packageName = "",
-            activityName = "",
-            isGroup = true,
-            groupTiles = tilesToGroup
-        )
-
-        _appTiles.value = remainingTiles + newGroup
-        saveAppTiles()
+    fun groupSelectedTiles(groupLabel: String) {
+        val selection = _selectedTileIds.value
+        if (selection.isEmpty()) return
+        var groupId: String? = null
+        tileRepository.update { tiles ->
+            tiles.groupTiles(selection) { selected -> AppTile.group(groupLabel, selected).also { groupId = it.id } }
+        }
         clearSelection()
-        _pendingFocus.value = "tile:${newGroup.id}"
+        groupId?.let { _pendingFocusTileId.value = it }
     }
 
     fun removeSelectedTiles() {
-        val selectedIds = _selectedTileIds.value
-        if (selectedIds.isEmpty()) return
-
-        val currentTiles = _appTiles.value
-        val remainingTiles = currentTiles.filter { !selectedIds.contains(it.id) }
-
-        _appTiles.value = remainingTiles
-        saveAppTiles()
+        val selection = _selectedTileIds.value
+        if (selection.isEmpty()) return
+        tileRepository.update { tiles -> tiles.filterNot { it.id in selection } }
         clearSelection()
     }
 
-    fun ungroup(groupTileId: String) {
-        val currentTiles = _appTiles.value.toMutableList()
-        val index = currentTiles.indexOfFirst { it.id == groupTileId }
-        if (index != -1) {
-            val group = currentTiles.removeAt(index)
-            if (group.isGroup) {
-                val firstUngroupedId = group.groupTiles.firstOrNull()?.id
-                currentTiles.addAll(group.groupTiles)
-                _appTiles.value = currentTiles
-                saveAppTiles()
-                firstUngroupedId?.let { _pendingFocus.value = "tile:$it" }
-            }
+    fun ungroup(groupId: String) {
+        val firstChild = appTiles.value.findTile(groupId)?.groupTiles?.firstOrNull()
+        tileRepository.update { it.ungroup(groupId) }
+        firstChild?.let { _pendingFocusTileId.value = it.id }
+    }
+
+    fun removeTileFromGroup(groupId: String, tileId: String) {
+        tileRepository.update { it.removeFromGroup(groupId, tileId) }
+        if (_openedGroupId.value != groupId) return
+
+        val group = appTiles.value.firstOrNull { it.id == groupId && it.isGroup }
+        if (group == null) {
+            _openedGroupId.value = null
+            _pendingFocusTileId.value = tileId
+        } else {
+            group.groupTiles.firstOrNull()?.let { _pendingFocusTileId.value = it.id }
         }
     }
 
-    fun removeTileFromGroup(groupTileId: String, tileId: String) {
-        val currentTiles = _appTiles.value.toMutableList()
-        val groupIndex = currentTiles.indexOfFirst { it.id == groupTileId }
-        if (groupIndex != -1) {
-            val group = currentTiles[groupIndex]
-            if (group.isGroup) {
-                val tileToRemove = group.groupTiles.find { it.id == tileId }
-                if (tileToRemove != null) {
-                    val newGroupTiles = group.groupTiles.filter { it.id != tileId }
-                    if (newGroupTiles.size <= 1) {
-                        currentTiles.removeAt(groupIndex)
-                        currentTiles.addAll(newGroupTiles)
-                    } else {
-                        currentTiles[groupIndex] = group.copy(groupTiles = newGroupTiles)
-                    }
-                    currentTiles.add(tileToRemove)
-                    _appTiles.value = currentTiles
-                    saveAppTiles()
-                    
-                    if (_openedGroup.value?.id == groupTileId) {
-                        if (newGroupTiles.size <= 1) {
-                            _openedGroup.value = null
-                            _pendingFocus.value = "tile:${tileToRemove.id}"
-                        } else {
-                            _openedGroup.value = currentTiles[groupIndex]
-                            newGroupTiles.firstOrNull()?.let {
-                                _pendingFocus.value = "tile:${it.id}"
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    fun openGroup(group: AppTile) {
+        _openedGroupId.value = group.id
+        group.groupTiles.firstOrNull()?.let { _pendingFocusTileId.value = it.id }
     }
 
-    fun openGroup(groupTile: AppTile) {
-        _openedGroup.value = groupTile
-        groupTile.groupTiles.firstOrNull()?.let {
-            _pendingFocus.value = "tile:${it.id}"
-        }
+    fun closeGroup() {
+        val groupId = _openedGroupId.value ?: return
+        _openedGroupId.value = null
+        _pendingFocusTileId.value = groupId
     }
 
     fun requestMoveToGroup(tile: AppTile) {
@@ -294,51 +199,24 @@ class MainViewModel(
     }
 
     fun moveTileToGroup(tileId: String, groupId: String) {
-        val currentTiles = _appTiles.value.toMutableList()
-        val tileIndex = currentTiles.indexOfFirst { it.id == tileId }
-        val groupIndex = currentTiles.indexOfFirst { it.id == groupId }
-
-        if (tileIndex != -1 && groupIndex != -1) {
-            val tileToMove = currentTiles.removeAt(tileIndex)
-            val newGroupIndex = currentTiles.indexOfFirst { it.id == groupId }
-            val group = currentTiles[newGroupIndex]
-
-            if (group.isGroup) {
-                val newGroupTiles = group.groupTiles + tileToMove
-                currentTiles[newGroupIndex] = group.copy(groupTiles = newGroupTiles)
-                _appTiles.value = currentTiles
-                saveAppTiles()
-                _tileToMoveToGroup.value = null
-                _pendingFocus.value = "tile:${groupId}"
-            }
-        }
-    }
-
-    fun closeGroup() {
-        val currentGroup = _openedGroup.value
-        _openedGroup.value = null
-        currentGroup?.let {
-            _pendingFocus.value = "tile:${it.id}"
-        }
+        tileRepository.update { it.moveIntoGroup(tileId, groupId) }
+        _tileToMoveToGroup.value = null
+        _pendingFocusTileId.value = groupId
     }
 
     fun resetState() {
-        _openedGroup.value = null
-        _isInMultiSelectMode.value = false
-        _selectedTileIds.value = emptySet()
+        _openedGroupId.value = null
+        _tileToMoveToGroup.value = null
         _showAllApps.value = false
+        clearSelection()
     }
-}
 
-class MainViewModelFactory(
-    private val appManager: AppManager,
-    private val settingsManager: SettingsManager
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return MainViewModel(appManager, settingsManager) as T
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                val container = this[APPLICATION_KEY]!!.appContainer
+                MainViewModel(container.tileRepository, container.settingsRepository, container.installedAppsRepository)
+            }
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

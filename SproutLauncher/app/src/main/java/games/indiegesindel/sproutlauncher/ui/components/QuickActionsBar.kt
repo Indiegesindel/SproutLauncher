@@ -1,6 +1,9 @@
 package games.indiegesindel.sproutlauncher.ui.components
 
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.annotation.StringRes
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,9 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Apps
@@ -32,8 +32,8 @@ import androidx.compose.material.icons.filled.Shop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,245 +41,153 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import games.indiegesindel.sproutlauncher.utils.IconUtils
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
+import coil3.request.ImageRequest
+import games.indiegesindel.sproutlauncher.R
+import games.indiegesindel.sproutlauncher.model.QuickApp
+import games.indiegesindel.sproutlauncher.ui.icons.AppIcon
 import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
 import games.indiegesindel.sproutlauncher.utils.UiSound
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.scaleIn
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.TransformOrigin
+private const val BROWSER_ICON_PACKAGE = "com.android.chrome"
+private const val QUICK_ACTION_ICON_PX = 192
+
+@get:StringRes
+private val QuickApp.label: Int
+    get() = when (this) {
+        QuickApp.YOUTUBE -> R.string.quick_action_youtube
+        QuickApp.PLAY_STORE -> R.string.quick_action_play_store
+        QuickApp.DISCORD -> R.string.quick_action_discord
+        QuickApp.SPOTIFY -> R.string.quick_action_spotify
+        QuickApp.PHOTOS -> R.string.quick_action_photos
+    }
+
+private val QuickApp.fallbackIcon: ImageVector
+    get() = when (this) {
+        QuickApp.YOUTUBE -> Icons.Filled.PlayArrow
+        QuickApp.PLAY_STORE -> Icons.Filled.Shop
+        QuickApp.DISCORD -> Icons.AutoMirrored.Filled.Chat
+        QuickApp.SPOTIFY -> Icons.Filled.MusicNote
+        QuickApp.PHOTOS -> Icons.Filled.Image
+    }
 
 @Composable
 fun QuickActionsBar(
-    onAllAppsClick: () -> Unit,
-    onBrowserClick: () -> Unit,
-    onSettingsClick: () -> Unit,
-    onYouTubeClick: (() -> Unit)? = null,
-    onPlayStoreClick: (() -> Unit)? = null,
-    onDiscordClick: (() -> Unit)? = null,
-    onSpotifyClick: (() -> Unit)? = null,
-    onPhotosClick: (() -> Unit)? = null,
-    onQuickActionFocused: () -> Unit = {},
-    allAppsFocusRequester: FocusRequester? = null,
-    enabled: Boolean = true
+    quickApps: List<QuickApp>,
+    onAllApps: () -> Unit,
+    onBrowser: () -> Unit,
+    onQuickApp: (QuickApp) -> Unit,
+    onSystemSettings: () -> Unit,
+    onFocused: () -> Unit,
+    allAppsFocusRequester: FocusRequester,
+    enabled: Boolean
 ) {
-    val scrollState = rememberScrollState()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 0.dp, bottom = 8.dp)
-            .horizontalScroll(scrollState),
-        horizontalArrangement = Arrangement.Center,
+            .padding(bottom = 8.dp)
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(modifier = Modifier.width(16.dp))
         QuickActionButton(
-            label = "All Apps",
-            onClick = onAllAppsClick,
-            onFocused = onQuickActionFocused,
+            label = stringResource(R.string.quick_action_all_apps),
             icon = Icons.Filled.Apps,
+            onClick = onAllApps,
+            onFocused = onFocused,
             enabled = enabled,
-            focusRequester = allAppsFocusRequester
+            modifier = Modifier.focusRequester(allAppsFocusRequester)
         )
-
-        Spacer(modifier = Modifier.width(16.dp))
         Box(
             modifier = Modifier
                 .width(2.dp)
                 .height(40.dp)
                 .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
         )
-        Spacer(modifier = Modifier.width(16.dp))
-
         QuickActionButton(
-            label = "Browser",
-            onClick = onBrowserClick,
-            onFocused = onQuickActionFocused,
-            packageName = "com.android.chrome",
+            label = stringResource(R.string.quick_action_browser),
             icon = Icons.Filled.Language,
+            iconPackage = BROWSER_ICON_PACKAGE,
+            onClick = onBrowser,
+            onFocused = onFocused,
             enabled = enabled
         )
-
-        if (onYouTubeClick != null) {
-            Spacer(modifier = Modifier.width(16.dp))
+        quickApps.forEach { app ->
             QuickActionButton(
-                label = "YouTube",
-                onClick = onYouTubeClick,
-                onFocused = onQuickActionFocused,
-                packageName = "com.google.android.youtube",
-                icon = Icons.Filled.PlayArrow,
+                label = stringResource(app.label),
+                icon = app.fallbackIcon,
+                iconPackage = app.packageName,
+                onClick = { onQuickApp(app) },
+                onFocused = onFocused,
                 enabled = enabled
             )
         }
-
-        if (onPlayStoreClick != null) {
-            Spacer(modifier = Modifier.width(16.dp))
-            QuickActionButton(
-                label = "Play Store",
-                onClick = onPlayStoreClick,
-                onFocused = onQuickActionFocused,
-                packageName = "com.android.vending",
-                icon = Icons.Filled.Shop,
-                enabled = enabled
-            )
-        }
-
-        if (onDiscordClick != null) {
-            Spacer(modifier = Modifier.width(16.dp))
-            QuickActionButton(
-                label = "Discord",
-                onClick = onDiscordClick,
-                onFocused = onQuickActionFocused,
-                packageName = "com.discord",
-                icon = Icons.AutoMirrored.Filled.Chat,
-                enabled = enabled
-            )
-        }
-
-        if (onSpotifyClick != null) {
-            Spacer(modifier = Modifier.width(16.dp))
-            QuickActionButton(
-                label = "Spotify",
-                onClick = onSpotifyClick,
-                onFocused = onQuickActionFocused,
-                packageName = "com.spotify.music",
-                icon = Icons.Filled.MusicNote,
-                enabled = enabled
-            )
-        }
-
-        if (onPhotosClick != null) {
-            Spacer(modifier = Modifier.width(16.dp))
-            QuickActionButton(
-                label = "Photos",
-                onClick = onPhotosClick,
-                onFocused = onQuickActionFocused,
-                packageName = "com.google.android.apps.photos",
-                icon = Icons.Filled.Image,
-                enabled = enabled
-            )
-        }
-
-        Spacer(modifier = Modifier.width(16.dp))
         QuickActionButton(
-            label = "Settings",
-            onClick = onSettingsClick,
-            onFocused = onQuickActionFocused,
+            label = stringResource(R.string.quick_action_settings),
             icon = Icons.Filled.Settings,
+            onClick = onSystemSettings,
+            onFocused = onFocused,
             enabled = enabled
         )
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun QuickActionButton(
+private fun QuickActionButton(
     label: String,
+    icon: ImageVector,
     onClick: () -> Unit,
     onFocused: () -> Unit,
-    icon: ImageVector? = null,
-    packageName: String? = null,
-    enabled: Boolean = true,
-    focusRequester: FocusRequester? = null
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    iconPackage: String? = null
 ) {
-    val context = LocalContext.current
     val soundManager = LocalSoundManager.current
     var isFocused by remember { mutableStateOf(false) }
 
     val focusScale by animateFloatAsState(
-        targetValue = if (isFocused) 1.08f else 1.0f,
+        targetValue = if (isFocused) 1.08f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
-        label = "actionFocusScale"
+        label = "quickActionScale"
     )
-    val focusBorderWidth by animateFloatAsState(
+    val borderWidth by animateFloatAsState(
         targetValue = if (isFocused) 2f else 0f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessHigh),
-        label = "actionBorder"
+        label = "quickActionBorder"
     )
 
     val tint = MaterialTheme.colorScheme.onSecondary
-    val iconPainter = if (packageName != null) {
+    val context = LocalContext.current
+    val painter = iconPackage?.let { packageName ->
         rememberAsyncImagePainter(
-            model = remember(packageName, tint) {
-                ImageRequest.Builder(context)
-                    .data(IconUtils.getThemedIcon(context, packageName, tint))
-                    .crossfade(true)
-                    .build()
+            remember(packageName, tint) {
+                ImageRequest.Builder(context).data(AppIcon.Themed(packageName, tint.toArgb())).size(QUICK_ACTION_ICON_PX).build()
             }
         )
-    } else null
+    }
+    val painterState = painter?.state?.collectAsState()?.value
 
-    Box(
-        modifier = Modifier.size(56.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        if (isFocused) {
-            val density = LocalDensity.current
-            val yOffset = with(density) { (-30).dp.roundToPx() }
-            Popup(
-                alignment = Alignment.TopCenter,
-                offset = IntOffset(0, yOffset),
-                properties = PopupProperties(focusable = false)
-            ) {
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn(animationSpec = tween(120)) + scaleIn(
-                        initialScale = 0.85f,
-                        animationSpec = tween(120),
-                        transformOrigin = TransformOrigin(0.5f, 1f)
-                    )
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.inverseSurface)
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = label,
-                                color = MaterialTheme.colorScheme.inverseOnSurface,
-                                style = MaterialTheme.typography.labelLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(14.dp, 7.dp)
-                                .background(MaterialTheme.colorScheme.inverseSurface, shape = TriangleShape)
-                        )
-                    }
-                }
-            }
-        }
+    Box(modifier = Modifier.size(56.dp), contentAlignment = Alignment.Center) {
+        if (isFocused) FocusTooltip(text = label)
 
         Surface(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
-                .graphicsLayer { scaleX = focusScale; scaleY = focusScale }
-                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+                .graphicsLayer {
+                    scaleX = focusScale
+                    scaleY = focusScale
+                }
                 .onFocusChanged {
                     isFocused = it.isFocused
                     if (it.isFocused) {
@@ -287,29 +195,30 @@ fun QuickActionButton(
                         onFocused()
                     }
                 }
-                .border(focusBorderWidth.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                .border(borderWidth.dp, MaterialTheme.colorScheme.primary, CircleShape)
                 .clip(CircleShape)
-                .clickable(enabled = enabled, onClick = {
+                .clickable(enabled = enabled) {
                     soundManager?.play(UiSound.CONFIRM)
                     onClick()
-                }),
+                },
             color = MaterialTheme.colorScheme.secondary,
             shape = CircleShape
         ) {
             Box(contentAlignment = Alignment.Center) {
-                if (iconPainter != null) {
+                if (painter != null && painterState is AsyncImagePainter.State.Success) {
                     Image(
-                        painter = iconPainter,
+                        painter = painter,
                         contentDescription = label,
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer(scaleX = 1.15f, scaleY = 1.15f)
                     )
-                } else if (icon != null) {
+                } else {
                     Icon(
                         imageVector = icon,
                         contentDescription = label,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
                             .padding(12.dp),
                         tint = tint
                     )

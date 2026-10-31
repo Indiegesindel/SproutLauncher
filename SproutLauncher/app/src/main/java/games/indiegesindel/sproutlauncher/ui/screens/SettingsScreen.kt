@@ -1,89 +1,107 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import games.indiegesindel.sproutlauncher.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.border
-import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import games.indiegesindel.sproutlauncher.R
+import games.indiegesindel.sproutlauncher.data.BaseTheme
+import games.indiegesindel.sproutlauncher.data.GridSettings
+import games.indiegesindel.sproutlauncher.data.ImageStore
+import games.indiegesindel.sproutlauncher.data.Setting
+import games.indiegesindel.sproutlauncher.data.SettingsRepository
+import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
+import games.indiegesindel.sproutlauncher.ui.components.SettingsDialog
+import games.indiegesindel.sproutlauncher.ui.components.SettingsDialogItem
+import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
+import games.indiegesindel.sproutlauncher.ui.components.SettingsSwitchItem
+import games.indiegesindel.sproutlauncher.ui.components.SliderSetting
+import games.indiegesindel.sproutlauncher.ui.theme.previewColor
 import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
 import games.indiegesindel.sproutlauncher.utils.UiSound
-import coil.compose.AsyncImage
-import games.indiegesindel.sproutlauncher.data.BaseTheme
-import games.indiegesindel.sproutlauncher.data.SettingsManager
-import games.indiegesindel.sproutlauncher.ui.theme.*
-import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
-import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
-import games.indiegesindel.sproutlauncher.ui.components.SettingsDialogItem
-import games.indiegesindel.sproutlauncher.ui.components.SproutAlertDialog
-import games.indiegesindel.sproutlauncher.utils.FileUtils
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+private enum class ValueUnit { ROWS, DP }
+
+private data class SliderSpec(
+    @param:StringRes val itemLabel: Int,
+    @param:StringRes val title: Int,
+    @param:StringRes val label: Int,
+    val setting: Setting<Int>,
+    val range: IntRange,
+    val unit: ValueUnit
+)
+
+private sealed interface SettingsDialogState {
+    data object ApiKey : SettingsDialogState
+    data object WallpaperDim : SettingsDialogState
+    data class Slider(val spec: SliderSpec) : SettingsDialogState
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsTab(
-    settingsManager: SettingsManager,
+fun SettingsScreen(
+    settings: SettingsRepository,
+    imageStore: ImageStore,
     onBack: () -> Unit
 ) {
-    val context = LocalContext.current
-    val currentBaseTheme by settingsManager.baseTheme.collectAsState()
-    val isDarkMode by settingsManager.isDarkMode.collectAsState()
-    val uiSoundsEnabled by settingsManager.uiSoundsEnabled.collectAsState()
-    val showYouTube by settingsManager.showYouTube.collectAsState()
-    val showDiscord by settingsManager.showDiscord.collectAsState()
-    val showSpotify by settingsManager.showSpotify.collectAsState()
-
-    val currentRows by settingsManager.homeScreenRows.collectAsState()
-    val horizontalSpacing by settingsManager.horizontalSpacing.collectAsState()
-    val verticalSpacing by settingsManager.verticalSpacing.collectAsState()
-    val appTileRoundness by settingsManager.appTileRoundness.collectAsState()
-
-    val groupRows by settingsManager.groupRows.collectAsState()
-    val groupHorizontalSpacing by settingsManager.groupHorizontalSpacing.collectAsState()
-    val groupVerticalSpacing by settingsManager.groupVerticalSpacing.collectAsState()
-    val groupAppTileRoundness by settingsManager.groupAppTileRoundness.collectAsState()
-
-    val wallpaperDim by settingsManager.wallpaperDim.collectAsState()
-
-    val steamGridDBApiKey by settingsManager.steamGridDBApiKey.collectAsState()
-    var showSteamGridDBApiKeyDialog by remember { mutableStateOf(false) }
-
-    var showWallpaperDimDialog by remember { mutableStateOf(false) }
-    var showRowsDialog by remember { mutableStateOf(false) }
-    var showHorizontalSpacingDialog by remember { mutableStateOf(false) }
-    var showVerticalSpacingDialog by remember { mutableStateOf(false) }
-    var showRoundnessDialog by remember { mutableStateOf(false) }
-
-    var showGroupRowsDialog by remember { mutableStateOf(false) }
-    var showGroupHorizontalSpacingDialog by remember { mutableStateOf(false) }
-    var showGroupVerticalSpacingDialog by remember { mutableStateOf(false) }
-    var showGroupRoundnessDialog by remember { mutableStateOf(false) }
-    
-    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-    val versionName = packageInfo.versionName ?: "Unknown"
-    val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
     val soundManager = LocalSoundManager.current
+    var dialog by remember { mutableStateOf<SettingsDialogState?>(null) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -93,13 +111,13 @@ fun SettingsTab(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             LargeTopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = {
                         soundManager?.play(UiSound.BACK)
                         onBack()
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 scrollBehavior = scrollBehavior
@@ -112,241 +130,32 @@ fun SettingsTab(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                AsyncImage(
-                    model = R.mipmap.ic_launcher,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    text = appName,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                Text(
-                    text = "Version $versionName",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            AppInfoHeader()
+
+            SettingsSectionHeader(stringResource(R.string.settings_section_appearance))
+            AppearanceSettings(settings, imageStore, onEditWallpaperDim = { dialog = SettingsDialogState.WallpaperDim })
+
+            SettingsSectionHeader(stringResource(R.string.settings_section_steamgriddb))
+            SettingsCard {
+                val apiKey by settings.steamGridDbApiKey.flow.collectAsStateWithLifecycle()
+                SettingsDialogItem(
+                    label = stringResource(R.string.settings_api_key),
+                    value = stringResource(if (apiKey.isNullOrBlank()) R.string.settings_api_key_not_set else R.string.settings_api_key_set),
+                    onClick = { dialog = SettingsDialogState.ApiKey }
                 )
             }
 
-            SettingsSectionHeader(title = "Appearance")
+            SettingsSectionHeader(stringResource(R.string.settings_section_homescreen))
+            GridSettingsCard(gridSliderSpecs(settings.homeGrid, isGroup = false)) { dialog = SettingsDialogState.Slider(it) }
 
+            SettingsSectionHeader(stringResource(R.string.settings_section_groups))
+            GridSettingsCard(gridSliderSpecs(settings.groupGrid, isGroup = true)) { dialog = SettingsDialogState.Slider(it) }
+
+            SettingsSectionHeader(stringResource(R.string.settings_section_quick_actions))
             SettingsCard {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    BaseTheme.entries.forEach { theme ->
-                        ThemePreviewButton(
-                            theme = theme,
-                            selected = currentBaseTheme == theme,
-                            onClick = { settingsManager.setBaseTheme(theme) }
-                        )
-                    }
-                }
-
-                ListItem(
-                    headlineContent = { Text("Dark Mode") },
-                    trailingContent = {
-                        Switch(
-                            checked = isDarkMode,
-                            onCheckedChange = { settingsManager.setIsDarkMode(it) }
-                        )
-                    },
-                    modifier = Modifier.clickable { settingsManager.setIsDarkMode(!isDarkMode) },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-
-                ListItem(
-                    headlineContent = { Text("UI Sounds") },
-                    trailingContent = {
-                        Switch(
-                            checked = uiSoundsEnabled,
-                            onCheckedChange = { settingsManager.setUiSoundsEnabled(it) }
-                        )
-                    },
-                    modifier = Modifier.clickable { settingsManager.setUiSoundsEnabled(!uiSoundsEnabled) },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-
-                val wallpaperUri by settingsManager.wallpaperUri.collectAsState()
-                val launcher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.PickVisualMedia(),
-                    onResult = { uri ->
-                        if (uri != null) {
-                            FileUtils.cleanupWallpaperFiles(context)
-                            val fileName = "wallpaper_${System.currentTimeMillis()}"
-                            val localUri = FileUtils.saveUriToInternalStorage(context, uri, fileName)
-                            if (localUri != null) {
-                                settingsManager.setWallpaperUri(localUri.toString())
-                            } else {
-                                try {
-                                    context.contentResolver.takePersistableUriPermission(
-                                        uri,
-                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                    )
-                                } catch (e: SecurityException) {
-                                    Log.e("SettingsScreen", "Failed to take persistable URI permission", e)
-                                    Toast.makeText(
-                                        context,
-                                        "Could not persist wallpaper. It might reset after a reboot.",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                                settingsManager.setWallpaperUri(uri.toString())
-                            }
-                        }
-                    }
-                )
-
-                ListItem(
-                    headlineContent = { Text("Wallpaper") },
-                    supportingContent = {
-                        Text(if (wallpaperUri != null) "Custom Image" else "Default color background")
-                    },
-                    trailingContent = {
-                        if (wallpaperUri != null) {
-                            TextButton(onClick = {
-                                settingsManager.setWallpaperUri(null)
-                                FileUtils.cleanupWallpaperFiles(context)
-                            }) {
-                                Text("Reset")
-                            }
-                        }
-                    },
-                    modifier = Modifier.clickable {
-                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-
-                if (wallpaperUri != null) {
-                    SettingsDialogItem(
-                        label = "Wallpaper Dimming",
-                        value = "${(wallpaperDim * 100f).roundToInt()}%",
-                        onClick = { showWallpaperDimDialog = true }
-                    )
-                }
-            }
-
-            SettingsSectionHeader(title = "SteamGridDB")
-            SettingsCard {
-                SettingsDialogItem(
-                    label = "API Key",
-                    value = if(steamGridDBApiKey?.isEmpty() ?: false || steamGridDBApiKey.toString() == "") "Not Set" else "Set",
-                    onClick = { showSteamGridDBApiKeyDialog = true }
-                )
-            }
-
-            SettingsSectionHeader(title = "Homescreen")
-
-            SettingsCard {
-                SettingsDialogItem(
-                    label = "Number of Rows",
-                    value = if (currentRows == 1) "1 Row" else "$currentRows Rows",
-                    onClick = { showRowsDialog = true }
-                )
-
-                SettingsDialogItem(
-                    label = "Horizontal Spacing",
-                    value = "${horizontalSpacing}dp",
-                    onClick = { showHorizontalSpacingDialog = true }
-                )
-
-                SettingsDialogItem(
-                    label = "Vertical Spacing",
-                    value = "${verticalSpacing}dp",
-                    onClick = { showVerticalSpacingDialog = true }
-                )
-
-                SettingsDialogItem(
-                    label = "App Tile Roundness",
-                    value = "${appTileRoundness}dp",
-                    onClick = { showRoundnessDialog = true }
-                )
-            }
-
-            SettingsSectionHeader(title = "Groups")
-
-            SettingsCard {
-                SettingsDialogItem(
-                    label = "Number of Rows",
-                    value = if (groupRows == 1) "1 Row" else "$groupRows Rows",
-                    onClick = { showGroupRowsDialog = true }
-                )
-
-                SettingsDialogItem(
-                    label = "Horizontal Spacing",
-                    value = "${groupHorizontalSpacing}dp",
-                    onClick = { showGroupHorizontalSpacingDialog = true }
-                )
-
-                SettingsDialogItem(
-                    label = "Vertical Spacing",
-                    value = "${groupVerticalSpacing}dp",
-                    onClick = { showGroupVerticalSpacingDialog = true }
-                )
-
-                SettingsDialogItem(
-                    label = "App Tile Roundness",
-                    value = "${groupAppTileRoundness}dp",
-                    onClick = { showGroupRoundnessDialog = true }
-                )
-            }
-
-            SettingsSectionHeader(title = "Quick Actions")
-
-            SettingsCard {
-                ListItem(
-                    headlineContent = { Text("Show YouTube") },
-                    trailingContent = {
-                        Switch(
-                            checked = showYouTube,
-                            onCheckedChange = { settingsManager.setShowYouTube(it) }
-                        )
-                    },
-                    modifier = Modifier.clickable { settingsManager.setShowYouTube(!showYouTube) },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-
-                ListItem(
-                    headlineContent = { Text("Show Discord") },
-                    trailingContent = {
-                        Switch(
-                            checked = showDiscord,
-                            onCheckedChange = { settingsManager.setShowDiscord(it) }
-                        )
-                    },
-                    modifier = Modifier.clickable { settingsManager.setShowDiscord(!showDiscord) },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
-
-                ListItem(
-                    headlineContent = { Text("Show Spotify") },
-                    trailingContent = {
-                        Switch(
-                            checked = showSpotify,
-                            onCheckedChange = { settingsManager.setShowSpotify(it) }
-                        )
-                    },
-                    modifier = Modifier.clickable { settingsManager.setShowSpotify(!showSpotify) },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
+                SettingToggle(R.string.settings_show_youtube, settings.showYouTube)
+                SettingToggle(R.string.settings_show_discord, settings.showDiscord)
+                SettingToggle(R.string.settings_show_spotify, settings.showSpotify)
             }
 
             DemoFeatures()
@@ -355,256 +164,225 @@ fun SettingsTab(
         }
     }
 
-    if (showSteamGridDBApiKeyDialog) {
-        SproutAlertDialog(
-            onDismissRequest = { showSteamGridDBApiKeyDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showSteamGridDBApiKeyDialog = false }) {
-                    Text("Done")
-                }
-            },
-            title = { Text("Edit SteamGridDB API Key") },
-            text = {
-                OutlinedTextField(
-                    value = steamGridDBApiKey ?: "",
-                    onValueChange = { settingsManager.setSteamGridDBApiKey(it) },
-                    label = { Text("SteamGridDB API Key") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-            }
-        )
-    }
-
-    if (showWallpaperDimDialog) {
-        SproutAlertDialog(
-            onDismissRequest = { showWallpaperDimDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showWallpaperDimDialog = false }) {
-                    Text("Done")
-                }
-            },
-            title = { Text("Wallpaper Dimming") },
-            text = {
+    when (val current = dialog) {
+        null -> Unit
+        SettingsDialogState.ApiKey -> ApiKeyDialog(settings.steamGridDbApiKey) { dialog = null }
+        SettingsDialogState.WallpaperDim -> {
+            val dim by settings.wallpaperDim.flow.collectAsStateWithLifecycle()
+            SettingsDialog(title = stringResource(R.string.settings_wallpaper_dim), onDismiss = { dialog = null }) {
                 SliderSetting(
-                    label = "Amount",
-                    value = (wallpaperDim * 100f).roundToInt(),
-                    valueRange = 0f..100f,
-                    steps = 99,
-                    onValueChange = { settingsManager.setWallpaperDim(it / 100f) },
-                    valueDisplay = { "$it%" }
+                    label = stringResource(R.string.settings_slider_amount),
+                    value = (dim * 100f).roundToInt(),
+                    range = 0..100,
+                    onValueChange = { settings.wallpaperDim.set(it / 100f) },
+                    valueDisplay = { stringResource(R.string.value_percent, it) }
                 )
             }
-        )
-    }
-
-    if (showRowsDialog) {
-        SproutAlertDialog(
-            onDismissRequest = { showRowsDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showRowsDialog = false }) {
-                    Text("Done")
-                }
-            },
-            title = { Text("Number of Rows") },
-            text = {
+        }
+        is SettingsDialogState.Slider -> {
+            val spec = current.spec
+            val value by spec.setting.flow.collectAsStateWithLifecycle()
+            SettingsDialog(title = stringResource(spec.title), onDismiss = { dialog = null }) {
                 SliderSetting(
-                    label = "Rows",
-                    value = currentRows,
-                    valueRange = 1f..5f,
-                    steps = 3,
-                    onValueChange = { settingsManager.setHomeScreenRows(it) },
-                    valueDisplay = { if (it == 1) "1 Row" else "$it Rows" }
+                    label = stringResource(spec.label),
+                    value = value,
+                    range = spec.range,
+                    onValueChange = spec.setting::set,
+                    valueDisplay = { formatValue(it, spec.unit) }
                 )
             }
-        )
+        }
     }
+}
 
-    if (showHorizontalSpacingDialog) {
-        SproutAlertDialog(
-            onDismissRequest = { showHorizontalSpacingDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showHorizontalSpacingDialog = false }) {
-                    Text("Done")
-                }
-            },
-            title = { Text("Horizontal Spacing") },
-            text = {
-                SliderSetting(
-                    label = "Spacing",
-                    value = horizontalSpacing,
-                    valueRange = 0f..64f,
-                    steps = 63,
-                    onValueChange = { settingsManager.setHorizontalSpacing(it) },
-                    valueDisplay = { "${it}dp" }
-                )
-            }
-        )
+@Composable
+private fun AppInfoHeader() {
+    val context = LocalContext.current
+    val versionName = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
     }
-
-    if (showVerticalSpacingDialog) {
-        SproutAlertDialog(
-            onDismissRequest = { showVerticalSpacingDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showVerticalSpacingDialog = false }) {
-                    Text("Done")
-                }
-            },
-            title = { Text("Vertical Spacing") },
-            text = {
-                SliderSetting(
-                    label = "Spacing",
-                    value = verticalSpacing,
-                    valueRange = 0f..64f,
-                    steps = 63,
-                    onValueChange = { settingsManager.setVerticalSpacing(it) },
-                    valueDisplay = { "${it}dp" }
-                )
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        AsyncImage(
+            model = R.mipmap.ic_launcher,
+            contentDescription = null,
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
         )
-    }
-
-    if (showRoundnessDialog) {
-        SproutAlertDialog(
-            onDismissRequest = { showRoundnessDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showRoundnessDialog = false }) {
-                    Text("Done")
-                }
-            },
-            title = { Text("App Tile Roundness") },
-            text = {
-                SliderSetting(
-                    label = "Roundness",
-                    value = appTileRoundness,
-                    valueRange = 0f..100f,
-                    steps = 100,
-                    onValueChange = { settingsManager.setAppTileRoundness(it) },
-                    valueDisplay = { "${it}dp" }
-                )
-            }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.app_name),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
         )
-    }
-
-    if (showGroupRowsDialog) {
-        SproutAlertDialog(
-            onDismissRequest = { showGroupRowsDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showGroupRowsDialog = false }) {
-                    Text("Done")
-                }
-            },
-            title = { Text("Group: Number of Rows") },
-            text = {
-                SliderSetting(
-                    label = "Rows",
-                    value = groupRows,
-                    valueRange = 1f..5f,
-                    steps = 3,
-                    onValueChange = { settingsManager.setGroupRows(it) },
-                    valueDisplay = { if (it == 1) "1 Row" else "$it Rows" }
-                )
-            }
-        )
-    }
-
-    if (showGroupHorizontalSpacingDialog) {
-        SproutAlertDialog(
-            onDismissRequest = { showGroupHorizontalSpacingDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showGroupHorizontalSpacingDialog = false }) {
-                    Text("Done")
-                }
-            },
-            title = { Text("Group: Horizontal Spacing") },
-            text = {
-                SliderSetting(
-                    label = "Spacing",
-                    value = groupHorizontalSpacing,
-                    valueRange = 0f..64f,
-                    steps = 63,
-                    onValueChange = { settingsManager.setGroupHorizontalSpacing(it) },
-                    valueDisplay = { "${it}dp" }
-                )
-            }
-        )
-    }
-
-    if (showGroupVerticalSpacingDialog) {
-        SproutAlertDialog(
-            onDismissRequest = { showGroupVerticalSpacingDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showGroupVerticalSpacingDialog = false }) {
-                    Text("Done")
-                }
-            },
-            title = { Text("Group: Vertical Spacing") },
-            text = {
-                SliderSetting(
-                    label = "Spacing",
-                    value = groupVerticalSpacing,
-                    valueRange = 0f..64f,
-                    steps = 63,
-                    onValueChange = { settingsManager.setGroupVerticalSpacing(it) },
-                    valueDisplay = { "${it}dp" }
-                )
-            }
-        )
-    }
-
-    if (showGroupRoundnessDialog) {
-        SproutAlertDialog(
-            onDismissRequest = { showGroupRoundnessDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showGroupRoundnessDialog = false }) {
-                    Text("Done")
-                }
-            },
-            title = { Text("Group: App Tile Roundness") },
-            text = {
-                SliderSetting(
-                    label = "Roundness",
-                    value = groupAppTileRoundness,
-                    valueRange = 0f..100f,
-                    steps = 100,
-                    onValueChange = { settingsManager.setGroupAppTileRoundness(it) },
-                    valueDisplay = { "${it}dp" }
-                )
-            }
+        Text(
+            text = stringResource(R.string.settings_version, versionName ?: stringResource(R.string.settings_version_unknown)),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
 @Composable
-fun ThemePreviewButton(
-    theme: BaseTheme,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val color = when (theme) {
-        BaseTheme.SYSTEM -> MaterialTheme.colorScheme.outline
-        BaseTheme.PURPLE -> primaryLight
-        BaseTheme.MINT_GREEN -> mintGreenPrimaryLight
-        BaseTheme.DEEP_BLUE -> deepBluePrimaryLight
-        BaseTheme.FIRE_RED -> fireRedPrimaryLight
-        BaseTheme.REFRESHING_ORANGE -> orangePrimaryLight
-        BaseTheme.MONOCHROME -> monochromePrimaryLight
-        BaseTheme.ROSE_PINK -> rosePinkPrimaryLight
-        BaseTheme.TEAL -> tealPrimaryLight
+private fun AppearanceSettings(settings: SettingsRepository, imageStore: ImageStore, onEditWallpaperDim: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val currentTheme by settings.baseTheme.flow.collectAsStateWithLifecycle()
+    val wallpaperUri by settings.wallpaperUri.flow.collectAsStateWithLifecycle()
+    val wallpaperDim by settings.wallpaperDim.flow.collectAsStateWithLifecycle()
+
+    val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val local = imageStore.importWallpaper(uri)
+            if (local != null) {
+                settings.wallpaperUri.set(local.toString())
+            } else {
+                persistReadPermission(context, uri)
+                settings.wallpaperUri.set(uri.toString())
+            }
+        }
     }
 
-    val label = when (theme) {
-        BaseTheme.SYSTEM -> "System"
-        BaseTheme.PURPLE -> "Purple"
-        BaseTheme.MINT_GREEN -> "Mint"
-        BaseTheme.DEEP_BLUE -> "Blue"
-        BaseTheme.FIRE_RED -> "Red"
-        BaseTheme.REFRESHING_ORANGE -> "Orange"
-        BaseTheme.MONOCHROME -> "Gray"
-        BaseTheme.ROSE_PINK -> "Pink"
-        BaseTheme.TEAL -> "Teal"
-    }
+    SettingsCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            BaseTheme.entries.forEach { theme ->
+                ThemePreviewButton(theme = theme, selected = currentTheme == theme) { settings.baseTheme.set(theme) }
+            }
+        }
 
+        SettingToggle(R.string.settings_dark_mode, settings.isDarkMode)
+        SettingToggle(R.string.settings_ui_sounds, settings.uiSoundsEnabled)
+
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.settings_wallpaper)) },
+            supportingContent = {
+                Text(stringResource(if (wallpaperUri != null) R.string.settings_wallpaper_custom else R.string.settings_wallpaper_default))
+            },
+            trailingContent = {
+                if (wallpaperUri != null) {
+                    TextButton(onClick = {
+                        settings.wallpaperUri.set(null)
+                        scope.launch { imageStore.clearWallpapers() }
+                    }) {
+                        Text(stringResource(R.string.action_reset))
+                    }
+                }
+            },
+            modifier = Modifier.clickable {
+                wallpaperPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        )
+
+        if (wallpaperUri != null) {
+            SettingsDialogItem(
+                label = stringResource(R.string.settings_wallpaper_dim),
+                value = stringResource(R.string.value_percent, (wallpaperDim * 100f).roundToInt()),
+                onClick = onEditWallpaperDim
+            )
+        }
+    }
+}
+
+private fun persistReadPermission(context: Context, uri: Uri) {
+    try {
+        context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    } catch (e: SecurityException) {
+        Log.w("SettingsScreen", "No persistable permission for $uri", e)
+        Toast.makeText(context, R.string.error_wallpaper_not_persisted, Toast.LENGTH_LONG).show()
+    }
+}
+
+private fun gridSliderSpecs(grid: GridSettings, isGroup: Boolean): List<SliderSpec> = listOf(
+    SliderSpec(
+        itemLabel = R.string.settings_rows,
+        title = if (isGroup) R.string.settings_group_rows_title else R.string.settings_rows,
+        label = R.string.settings_slider_rows,
+        setting = grid.rows,
+        range = 1..5,
+        unit = ValueUnit.ROWS
+    ),
+    SliderSpec(
+        itemLabel = R.string.settings_horizontal_spacing,
+        title = if (isGroup) R.string.settings_group_horizontal_spacing_title else R.string.settings_horizontal_spacing,
+        label = R.string.settings_slider_spacing,
+        setting = grid.horizontalSpacing,
+        range = 0..64,
+        unit = ValueUnit.DP
+    ),
+    SliderSpec(
+        itemLabel = R.string.settings_vertical_spacing,
+        title = if (isGroup) R.string.settings_group_vertical_spacing_title else R.string.settings_vertical_spacing,
+        label = R.string.settings_slider_spacing,
+        setting = grid.verticalSpacing,
+        range = 0..64,
+        unit = ValueUnit.DP
+    ),
+    SliderSpec(
+        itemLabel = R.string.settings_roundness,
+        title = if (isGroup) R.string.settings_group_roundness_title else R.string.settings_roundness,
+        label = R.string.settings_slider_roundness,
+        setting = grid.roundness,
+        range = 0..100,
+        unit = ValueUnit.DP
+    )
+)
+
+@Composable
+private fun GridSettingsCard(specs: List<SliderSpec>, onEdit: (SliderSpec) -> Unit) {
+    SettingsCard {
+        specs.forEach { spec ->
+            val value by spec.setting.flow.collectAsStateWithLifecycle()
+            SettingsDialogItem(
+                label = stringResource(spec.itemLabel),
+                value = formatValue(value, spec.unit),
+                onClick = { onEdit(spec) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingToggle(@StringRes label: Int, setting: Setting<Boolean>) {
+    val checked by setting.flow.collectAsStateWithLifecycle()
+    SettingsSwitchItem(label = stringResource(label), checked = checked, onCheckedChange = setting::set)
+}
+
+@Composable
+private fun formatValue(value: Int, unit: ValueUnit): String = when (unit) {
+    ValueUnit.ROWS -> pluralStringResource(R.plurals.rows_count, value, value)
+    ValueUnit.DP -> stringResource(R.string.value_dp, value)
+}
+
+@Composable
+private fun ApiKeyDialog(setting: Setting<String?>, onDismiss: () -> Unit) {
+    val apiKey by setting.flow.collectAsStateWithLifecycle()
+    SettingsDialog(title = stringResource(R.string.settings_api_key_dialog_title), onDismiss = onDismiss) {
+        OutlinedTextField(
+            value = apiKey.orEmpty(),
+            onValueChange = { setting.set(it.ifEmpty { null }) },
+            label = { Text(stringResource(R.string.settings_api_key_field)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+    }
+}
+
+@Composable
+private fun ThemePreviewButton(theme: BaseTheme, selected: Boolean, onClick: () -> Unit) {
+    val color = theme.previewColor ?: MaterialTheme.colorScheme.outline
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable(onClick = onClick)
@@ -614,61 +392,27 @@ fun ThemePreviewButton(
                 .size(56.dp)
                 .clip(CircleShape)
                 .background(color)
-                .then(
-                    if (selected) {
-                        Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    } else {
-                        Modifier
-                    }
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-        }
+                .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape) else Modifier)
+        )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = label,
+            text = stringResource(theme.label),
             style = MaterialTheme.typography.labelMedium,
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
     }
 }
 
-@Composable
-fun SliderSetting(
-    label: String,
-    value: Int,
-    valueRange: ClosedFloatingPointRange<Float>,
-    steps: Int,
-    onValueChange: (Int) -> Unit,
-    valueDisplay: (Int) -> String = { it.toString() }
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Text(
-                text = valueDisplay(value),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        Slider(
-            value = value.toFloat(),
-            onValueChange = { onValueChange(it.roundToInt()) },
-            valueRange = valueRange,
-            steps = steps,
-            modifier = Modifier.fillMaxWidth()
-        )
+@get:StringRes
+private val BaseTheme.label: Int
+    get() = when (this) {
+        BaseTheme.SYSTEM -> R.string.theme_system
+        BaseTheme.PURPLE -> R.string.theme_purple
+        BaseTheme.MINT_GREEN -> R.string.theme_mint
+        BaseTheme.DEEP_BLUE -> R.string.theme_blue
+        BaseTheme.FIRE_RED -> R.string.theme_red
+        BaseTheme.REFRESHING_ORANGE -> R.string.theme_orange
+        BaseTheme.MONOCHROME -> R.string.theme_gray
+        BaseTheme.ROSE_PINK -> R.string.theme_pink
+        BaseTheme.TEAL -> R.string.theme_teal
     }
-}

@@ -3,5 +3,4 @@ package games.indiegesindel.sproutlauncher.ui.screens
 import androidx.compose.runtime.Composable
 
 @Composable
-fun DemoFeatures() {
-}
+fun DemoFeatures() = Unit

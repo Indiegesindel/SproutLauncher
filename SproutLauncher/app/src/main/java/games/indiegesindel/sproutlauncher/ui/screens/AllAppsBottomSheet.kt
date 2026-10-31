@@ -1,7 +1,7 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
-import android.content.Intent
-import android.view.KeyEvent
+import android.content.Context
+import androidx.annotation.StringRes
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -30,9 +31,14 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -42,17 +48,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
@@ -61,262 +65,147 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import games.indiegesindel.sproutlauncher.AppTileSettingsActivity
-import games.indiegesindel.sproutlauncher.FocusedElement
-import games.indiegesindel.sproutlauncher.data.AppManager
+import games.indiegesindel.sproutlauncher.R
 import games.indiegesindel.sproutlauncher.model.AppTile
-import games.indiegesindel.sproutlauncher.ui.components.AppGridItem
+import games.indiegesindel.sproutlauncher.model.InstalledApp
+import games.indiegesindel.sproutlauncher.ui.FocusedElement
+import games.indiegesindel.sproutlauncher.ui.components.AllAppsItem
 import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
+import games.indiegesindel.sproutlauncher.ui.components.MenuAction
 import games.indiegesindel.sproutlauncher.ui.components.PromptsFooter
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
+import games.indiegesindel.sproutlauncher.ui.components.requestFocusWithRetry
+import games.indiegesindel.sproutlauncher.ui.icons.AppIcon
+import games.indiegesindel.sproutlauncher.ui.icons.iconModel
 import games.indiegesindel.sproutlauncher.ui.viewmodels.AllAppsViewModel
+import games.indiegesindel.sproutlauncher.ui.viewmodels.AllAppsViewModel.AppEntry
+import games.indiegesindel.sproutlauncher.utils.AppLauncher
 import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
 import games.indiegesindel.sproutlauncher.utils.UiSound
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+private const val COLLAPSED_FRACTION = 0.78f
+private const val EXPANDED_FRACTION = 0.96f
+
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun AllAppsBottomSheet(
     viewModel: AllAppsViewModel,
     onDismiss: () -> Unit,
-    onSettingsClick: () -> Unit,
-    appManager: AppManager,
-    onTilesChanged: () -> Unit = {}
+    onSettingsClick: () -> Unit
 ) {
-    val context = LocalContext.current
     val soundManager = LocalSoundManager.current
     val focusManager = LocalFocusManager.current
-    val currentTab by viewModel.currentTab.collectAsState()
-    val installedApps by viewModel.installedApps.collectAsState()
-    val selectedTiles by viewModel.selectedTiles.collectAsState()
-    val isLoadingApps by viewModel.isLoadingApps.collectAsState()
-    val tileToRemove by viewModel.tileToRemove.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val tileToRemove by viewModel.tileToRemove.collectAsStateWithLifecycle()
 
     var focusedElement by remember { mutableStateOf(FocusedElement.NONE) }
-
     var isExpanded by remember { mutableStateOf(false) }
     val sheetFraction by animateFloatAsState(
-        targetValue = if (isExpanded) 0.96f else 0.78f,
+        targetValue = if (isExpanded) EXPANDED_FRACTION else COLLAPSED_FRACTION,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
-        label = "sheetExpand"
+        label = "sheetFraction"
     )
 
     val entryFocusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         focusManager.clearFocus(force = true)
-        var attempt = 0
-        while (attempt < 10 && runCatching { entryFocusRequester.requestFocus() }.isFailure) {
-            withFrameNanos {}
-            attempt++
-        }
+        entryFocusRequester.requestFocusWithRetry()
     }
 
-    BackHandler { onDismiss() }
+    BackHandler(onBack = onDismiss)
 
-    val filteredApps = remember(installedApps, selectedTiles, currentTab) {
-        if (currentTab == AllAppsViewModel.Tab.HOMESCREEN) {
-            installedApps.filter { app ->
-                fun isAppOnHomeScreen(tiles: List<AppTile>): Boolean {
-                    return tiles.any { tile ->
-                        if (tile.isGroup) isAppOnHomeScreen(tile.groupTiles)
-                        else tile.packageName == app.activityInfo.packageName &&
-                                tile.activityName == app.activityInfo.name &&
-                                tile.shortcutId == null
-                    }
-                }
-                isAppOnHomeScreen(selectedTiles)
-            }
-        } else {
-            installedApps
-        }
-    }
-
-    val shortcuts = remember(selectedTiles, currentTab) {
-        if (currentTab == AllAppsViewModel.Tab.HOMESCREEN) {
-            fun getAllShortcuts(tiles: List<AppTile>): List<AppTile> {
-                val result = mutableListOf<AppTile>()
-                for (tile in tiles) {
-                    if (tile.isGroup) result.addAll(getAllShortcuts(tile.groupTiles))
-                    else if (tile.shortcutId != null) result.add(tile)
-                }
-                return result
-            }
-            getAllShortcuts(selectedTiles)
-        } else {
-            emptyList()
-        }
-    }
-
-    val isHomeScreen = currentTab == AllAppsViewModel.Tab.HOMESCREEN
-
-    if (tileToRemove != null) {
+    tileToRemove?.let {
         RemoveTileConfirmationDialog(
-            onConfirm = {
-                viewModel.confirmRemoveTile()
-                onTilesChanged()
-            },
-            onDismiss = { viewModel.dismissRemoveConfirmation() }
+            onConfirm = viewModel::confirmRemoveTile,
+            onDismiss = viewModel::dismissRemoveConfirmation
         )
     }
+
+    val onHeaderFocused = { focusedElement = FocusedElement.NONE }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
-                if (event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN &&
-                    (event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BACK ||
-                     event.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_B)
-                ) {
-                    soundManager?.play(UiSound.BACK)
-                    onDismiss()
-                    true
-                } else false
+                if (event.key != Key.Back && event.key != Key.ButtonB) return@onPreviewKeyEvent false
+                if (event.type == KeyEventType.KeyDown) onDismiss()
+                true
             }
+            .background(Color.Black.copy(alpha = 0.5f))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onDismiss
-            )
-            .focusable(false)
+            ),
+        contentAlignment = Alignment.BottomCenter
     ) {
-        Box(
+        Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-        )
-
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter
+                .fillMaxWidth()
+                .fillMaxHeight(sheetFraction)
+                .focusProperties {
+                    onExit = {
+                        if (requestedFocusDirection == FocusDirection.Up) entryFocusRequester.requestFocus()
+                        cancelFocusChange()
+                    }
+                },
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 2.dp
         ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(sheetFraction)
-                    .focusProperties {
-                        exit = { direction ->
-                            if (direction == FocusDirection.Up) entryFocusRequester
-                            else FocusRequester.Cancel
-                        }
-                    },
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 2.dp
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            FilterChip(
-                                selected = currentTab == AllAppsViewModel.Tab.ALL,
-                                onClick = {
-                                    soundManager?.play(UiSound.CONFIRM)
-                                    viewModel.setTab(AllAppsViewModel.Tab.ALL)
-                                },
-                                label = { Text("All Apps") },
-                                modifier = Modifier
-                                    .focusRequester(entryFocusRequester)
-                                    .onFocusChanged {
-                                        if (it.isFocused) {
-                                            soundManager?.play(UiSound.MOVE)
-                                            focusedElement = FocusedElement.NONE
-                                        }
-                                    }
-                            )
-                            FilterChip(
-                                selected = currentTab == AllAppsViewModel.Tab.HOMESCREEN,
-                                onClick = {
-                                    soundManager?.play(UiSound.CONFIRM)
-                                    viewModel.setTab(AllAppsViewModel.Tab.HOMESCREEN)
-                                },
-                                label = { Text("Homescreen") },
-                                modifier = Modifier
-                                    .onFocusChanged {
-                                        if (it.isFocused) {
-                                            soundManager?.play(UiSound.MOVE)
-                                            focusedElement = FocusedElement.NONE
-                                        }
-                                    }
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            IconButton(
-                                onClick = {
-                                    soundManager?.play(UiSound.CONFIRM)
-                                    onSettingsClick()
-                                },
-                                modifier = Modifier
-                                    .onFocusChanged {
-                                        if (it.isFocused) {
-                                            soundManager?.play(UiSound.MOVE)
-                                            focusedElement = FocusedElement.NONE
-                                        }
-                                    }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Settings,
-                                    contentDescription = "Settings",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        HorizontalDivider()
-
-                        Box(modifier = Modifier.weight(1f)) {
-                            AppGrid(
-                                filteredApps = filteredApps,
-                                shortcuts = shortcuts,
-                                selectedTiles = selectedTiles,
-                                isLoading = isLoadingApps,
-                                isHomeScreen = isHomeScreen,
-                                appManager = appManager,
-                                onTilesChanged = {
-                                    viewModel.loadTiles()
-                                    onTilesChanged()
-                                },
-                                onRequestRemove = { viewModel.requestRemoveTile(it) },
-                                hasGroups = selectedTiles.any { it.isGroup },
-                                onDismiss = onDismiss,
-                                enabled = tileToRemove == null,
-                                onExpand = { isExpanded = true },
-                                onCollapse = { isExpanded = false },
-                                onAppTileFocused = { focusedElement = FocusedElement.APP_TILE },
-                                onLabelFocused = { focusedElement = FocusedElement.NONE }
-                            )
-                        }
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    SheetHeader(
+                        tab = uiState.tab,
+                        onTabSelected = viewModel::setTab,
+                        onSettingsClick = onSettingsClick,
+                        onFocused = onHeaderFocused,
+                        entryFocusRequester = entryFocusRequester
+                    )
+                    HorizontalDivider()
+                    Box(modifier = Modifier.weight(1f)) {
+                        AppsGrid(
+                            uiState = uiState,
+                            onAddToHomeScreen = viewModel::addToHomeScreen,
+                            onRequestRemove = viewModel::requestRemoveTile,
+                            onDismiss = onDismiss,
+                            enabled = tileToRemove == null,
+                            onExpandedChange = { isExpanded = it },
+                            onItemFocused = { focusedElement = FocusedElement.APP_TILE },
+                            onHintFocused = onHeaderFocused
+                        )
                     }
+                }
 
-                    PromptsFooter(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .zIndex(2f)
-                    ) {
-                        when (focusedElement) {
-                            FocusedElement.APP_TILE -> {
-                                ButtonPrompt(button = "A", label = "Launch")
-                                ButtonPrompt(button = "X", label = "Options")
-                                ButtonPrompt(button = "B", label = "Close")
-                            }
-                            else -> {
-                                ButtonPrompt(button = "B", label = "Close")
-                            }
-                        }
+                PromptsFooter(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .zIndex(2f)
+                ) {
+                    if (focusedElement == FocusedElement.APP_TILE) {
+                        ButtonPrompt(button = "A", label = stringResource(R.string.prompt_launch))
+                        ButtonPrompt(button = "X", label = stringResource(R.string.prompt_options))
                     }
+                    ButtonPrompt(button = "B", label = stringResource(R.string.prompt_close))
                 }
             }
         }
@@ -324,41 +213,83 @@ fun AllAppsBottomSheet(
 }
 
 @Composable
-private fun AppGrid(
-    filteredApps: List<android.content.pm.ResolveInfo>,
-    shortcuts: List<AppTile>,
-    selectedTiles: List<AppTile>,
-    isLoading: Boolean,
-    isHomeScreen: Boolean,
-    appManager: AppManager,
-    onTilesChanged: (List<AppTile>) -> Unit,
+private fun SheetHeader(
+    tab: AllAppsViewModel.Tab,
+    onTabSelected: (AllAppsViewModel.Tab) -> Unit,
+    onSettingsClick: () -> Unit,
+    onFocused: () -> Unit,
+    entryFocusRequester: FocusRequester
+) {
+    val soundManager = LocalSoundManager.current
+    val focusFeedback = Modifier.onFocusChanged {
+        if (it.isFocused) {
+            soundManager?.play(UiSound.MOVE)
+            onFocused()
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        AllAppsViewModel.Tab.entries.forEach { entry ->
+            FilterChip(
+                selected = tab == entry,
+                onClick = {
+                    soundManager?.play(UiSound.CONFIRM)
+                    onTabSelected(entry)
+                },
+                label = {
+                    Text(stringResource(if (entry == AllAppsViewModel.Tab.ALL) R.string.all_apps_tab_all else R.string.all_apps_tab_home))
+                },
+                modifier = (if (entry == AllAppsViewModel.Tab.ALL) Modifier.focusRequester(entryFocusRequester) else Modifier)
+                    .then(focusFeedback)
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        IconButton(
+            onClick = {
+                soundManager?.play(UiSound.CONFIRM)
+                onSettingsClick()
+            },
+            modifier = focusFeedback
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = stringResource(R.string.settings_title),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppsGrid(
+    uiState: AllAppsViewModel.UiState,
+    onAddToHomeScreen: (InstalledApp) -> Unit,
     onRequestRemove: (AppTile) -> Unit,
-    hasGroups: Boolean,
     onDismiss: () -> Unit,
     enabled: Boolean,
-    onExpand: () -> Unit,
-    onCollapse: () -> Unit,
-    onAppTileFocused: () -> Unit,
-    onLabelFocused: () -> Unit
+    onExpandedChange: (Boolean) -> Unit,
+    onItemFocused: () -> Unit,
+    onHintFocused: () -> Unit
 ) {
     val context = LocalContext.current
-    val pm = context.packageManager
     val gridState = rememberLazyGridState()
-    val showAppsHeader = isHomeScreen && filteredApps.isNotEmpty()
+    val isHomeTab = uiState.tab == AllAppsViewModel.Tab.HOMESCREEN
 
     LaunchedEffect(gridState) {
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
             .collect { (index, offset) ->
-                if (index > 0) onExpand()
-                else if (index == 0 && offset == 0) onCollapse()
+                if (index > 0) onExpandedChange(true) else if (offset == 0) onExpandedChange(false)
             }
     }
 
-    if (isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+    if (uiState.isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.testTag("allapps_loading")
@@ -375,172 +306,129 @@ private fun AppGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (showAppsHeader) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(
-                    text = "Apps",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
+        if (isHomeTab && uiState.apps.isNotEmpty()) {
+            sectionHeader(R.string.all_apps_section_apps, topPadding = 8.dp)
         }
 
-        items(
-            filteredApps,
-            key = { app -> "${app.activityInfo.packageName}_${app.activityInfo.name}" }
-        ) { app ->
-            val packageName = app.activityInfo.packageName
-            val activityName = app.activityInfo.name
-            val itemId = "${packageName}_${activityName}"
-            val tile = remember(selectedTiles, packageName, activityName) {
-                fun findTile(tiles: List<AppTile>): AppTile? {
-                    for (tile in tiles) {
-                        if (tile.isGroup) findTile(tile.groupTiles)?.let { return it }
-                        else if (tile.packageName == packageName &&
-                            tile.activityName == activityName &&
-                            tile.shortcutId == null) return tile
-                    }
-                    return null
-                }
-                findTile(selectedTiles)
-            }
-            val isSelected = tile != null
-
-            AppGridItem(
-                app = app,
-                isOnHomeScreen = isSelected,
-                tile = tile,
-                onToggleHomeScreen = {
-                    if (!isSelected) {
-                        val newTile = AppTile(
-                            packageName = packageName,
-                            activityName = activityName,
-                            label = app.loadLabel(pm).toString()
-                        )
-                        appManager.addAppTile(newTile)
-                        onTilesChanged(appManager.getAppTiles())
-                    } else {
-                        tile?.let { onRequestRemove(it) }
-                    }
-                },
-                onEdit = {
-                    tile?.let {
-                        val intent = Intent(context, AppTileSettingsActivity::class.java).apply {
-                            putExtra("TILE_ID", it.id)
-                        }
-                        context.startActivity(intent)
-                    }
-                },
-                id = itemId,
-                onFocused = { onAppTileFocused() },
-                isInMultiSelectMode = false,
-                isSelected = false,
-                onDismiss = onDismiss,
-                showGroupOptions = false,
-                hasGroups = hasGroups,
+        items(uiState.apps, key = { "${it.app.packageName}/${it.app.activityName}" }) { entry ->
+            AllAppsItem(
+                label = entry.tile?.label ?: entry.app.label,
+                iconModel = entry.tile?.iconUri ?: AppIcon.Activity(entry.app.packageName, entry.app.activityName),
+                isOnHomeScreen = entry.tile != null,
+                onLaunch = { AppLauncher.launch(context, entry.app) },
+                menuActions = appMenuActions(context, entry, onAddToHomeScreen, onRequestRemove),
+                onFocused = onItemFocused,
+                onBack = onDismiss,
                 enabled = enabled
             )
         }
 
-        if (isHomeScreen && shortcuts.isEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                ShortcutsHintBlock(enabled = enabled, onFocused = onLabelFocused)
-            }
-        } else if (shortcuts.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(
-                    text = "Shortcuts",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                )
-            }
-
-            items(shortcuts, key = { tile -> "shortcut_${tile.id}" }) { tile ->
-                val itemId = "shortcut_${tile.id}"
-                AppGridItem(
-                    app = null,
-                    isOnHomeScreen = true,
-                    tile = tile,
-                    onToggleHomeScreen = { onRequestRemove(tile) },
-                    onEdit = {
-                        val intent = Intent(context, AppTileSettingsActivity::class.java).apply {
-                            putExtra("TILE_ID", tile.id)
-                        }
-                        context.startActivity(intent)
-                    },
-                    id = itemId,
-                    onFocused = { onAppTileFocused() },
-                    isInMultiSelectMode = false,
-                    isSelected = false,
-                    onDismiss = onDismiss,
-                    showGroupOptions = false,
-                    hasGroups = hasGroups,
-                    enabled = enabled
-                )
+        if (isHomeTab) {
+            if (uiState.shortcuts.isEmpty()) {
+                item(key = "shortcuts_hint", span = { GridItemSpan(maxLineSpan) }) {
+                    ShortcutsHintBlock(enabled = enabled, onFocused = onHintFocused)
+                }
+            } else {
+                sectionHeader(R.string.all_apps_section_shortcuts, topPadding = 16.dp)
+                items(uiState.shortcuts, key = { "shortcut_${it.id}" }) { tile ->
+                    AllAppsItem(
+                        label = tile.label,
+                        iconModel = tile.iconModel,
+                        isOnHomeScreen = true,
+                        onLaunch = { AppLauncher.launch(context, tile) },
+                        menuActions = shortcutMenuActions(context, tile, onRequestRemove),
+                        onFocused = onItemFocused,
+                        onBack = onDismiss,
+                        enabled = enabled
+                    )
+                }
             }
         }
     }
 }
 
+private fun LazyGridScope.sectionHeader(@StringRes title: Int, topPadding: Dp) {
+    item(key = "header_$title", span = { GridItemSpan(maxLineSpan) }) {
+        Text(
+            text = stringResource(title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = topPadding, bottom = 8.dp)
+        )
+    }
+}
+
+private fun appMenuActions(
+    context: Context,
+    entry: AppEntry,
+    onAddToHomeScreen: (InstalledApp) -> Unit,
+    onRequestRemove: (AppTile) -> Unit
+): List<MenuAction> = buildList {
+    val tile = entry.tile
+    val packageName = entry.app.packageName
+    add(MenuAction(R.string.menu_launch, Icons.Default.PlayArrow) { AppLauncher.launch(context, entry.app) })
+    if (tile != null) {
+        add(MenuAction(R.string.menu_edit, Icons.Default.Edit) { context.startActivity(AppTileSettingsActivity.newIntent(context, tile.id)) })
+    }
+    add(MenuAction(R.string.menu_details, Icons.Default.Info) { AppLauncher.openAppDetails(context, packageName) })
+    if (tile != null) {
+        add(MenuAction(R.string.menu_remove_from_home, Icons.Default.Delete) { onRequestRemove(tile) })
+    } else {
+        add(MenuAction(R.string.menu_add_to_home, Icons.Default.Add) { onAddToHomeScreen(entry.app) })
+    }
+    add(MenuAction(R.string.menu_uninstall, Icons.Default.DeleteForever) { AppLauncher.requestUninstall(context, packageName) })
+}
+
+private fun shortcutMenuActions(context: Context, tile: AppTile, onRequestRemove: (AppTile) -> Unit) = listOf(
+    MenuAction(R.string.menu_launch, Icons.Default.PlayArrow) { AppLauncher.launch(context, tile) },
+    MenuAction(R.string.menu_edit, Icons.Default.Edit) { context.startActivity(AppTileSettingsActivity.newIntent(context, tile.id)) },
+    MenuAction(R.string.menu_remove_from_home, Icons.Default.Delete) { onRequestRemove(tile) }
+)
+
 @Composable
 private fun ShortcutsHintBlock(enabled: Boolean, onFocused: () -> Unit) {
     val soundManager = LocalSoundManager.current
     val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
     var isFocused by remember { mutableStateOf(false) }
     var size by remember { mutableStateOf(IntSize.Zero) }
-    val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    val scope = rememberCoroutineScope()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp)
-            .onGloballyPositioned { size = it.size }
+            .onSizeChanged { size = it }
             .bringIntoViewRequester(bringIntoViewRequester)
             .onFocusChanged {
                 isFocused = it.isFocused
-                if (it.isFocused) {
-                    soundManager?.play(UiSound.MOVE)
-                    onFocused()
-                    scope.launch {
-                        runCatching {
-                            if (size == IntSize.Zero) {
-                                bringIntoViewRequester.bringIntoView()
-                            } else {
-                                val extraBottom = with(density) { 96.dp.toPx() }
-                                bringIntoViewRequester.bringIntoView(
-                                    Rect(
-                                        left = 0f,
-                                        top = 0f,
-                                        right = size.width.toFloat(),
-                                        bottom = size.height.toFloat() + extraBottom
-                                    )
-                                )
-                            }
-                        }
+                if (!it.isFocused) return@onFocusChanged
+                soundManager?.play(UiSound.MOVE)
+                onFocused()
+                scope.launch {
+                    val footerClearance = with(density) { 96.dp.toPx() }
+                    runCatching {
+                        bringIntoViewRequester.bringIntoView(
+                            Rect(0f, 0f, size.width.toFloat(), size.height + footerClearance)
+                        )
                     }
                 }
             }
             .clip(RoundedCornerShape(12.dp))
-            .then(
-                if (isFocused) Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
-                else Modifier
-            )
+            .then(if (isFocused) Modifier.background(MaterialTheme.colorScheme.surfaceVariant) else Modifier)
             .focusable(enabled = enabled)
-            .padding(horizontal = 12.dp, vertical = 12.dp)
+            .padding(12.dp)
     ) {
         Text(
-            text = "Shortcuts",
+            text = stringResource(R.string.all_apps_section_shortcuts),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "You can add shortcuts to the homescreen from supported apps by using their 'Add to home screen' feature.",
+            text = stringResource(R.string.all_apps_shortcuts_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
