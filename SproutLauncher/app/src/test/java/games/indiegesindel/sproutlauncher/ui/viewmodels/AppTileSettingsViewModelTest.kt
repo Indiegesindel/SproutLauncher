@@ -31,7 +31,7 @@ class AppTileSettingsViewModelTest {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         val context = ApplicationProvider.getApplicationContext<Context>()
         tiles = TileRepository(context.getSharedPreferences("tile_settings_tiles", Context.MODE_PRIVATE).also { it.edit().clear().commit() })
-        settings = SettingsRepository(context.getSharedPreferences("tile_settings_settings", Context.MODE_PRIVATE).also { it.edit().clear().commit() }, isPhone = false)
+        settings = SettingsRepository(context.getSharedPreferences("tile_settings_settings", Context.MODE_PRIVATE).also { it.edit().clear().commit() }, shortScreen = false)
         tiles.add(shortcut)
     }
 

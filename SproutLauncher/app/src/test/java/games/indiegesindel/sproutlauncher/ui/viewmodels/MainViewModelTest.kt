@@ -39,7 +39,7 @@ class MainViewModelTest {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         val context = ApplicationProvider.getApplicationContext<Context>()
         tiles = TileRepository(context.getSharedPreferences("main_vm_tiles", Context.MODE_PRIVATE).also { it.edit().clear().commit() })
-        settings = SettingsRepository(context.getSharedPreferences("main_vm_settings", Context.MODE_PRIVATE).also { it.edit().clear().commit() }, isPhone = false)
+        settings = SettingsRepository(context.getSharedPreferences("main_vm_settings", Context.MODE_PRIVATE).also { it.edit().clear().commit() }, shortScreen = false)
     }
 
     @After
