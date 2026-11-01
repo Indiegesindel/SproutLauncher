@@ -2,65 +2,62 @@ package games.indiegesindel.sproutlauncher
 
 import android.content.Context
 import android.content.Intent
+import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
-import games.indiegesindel.sproutlauncher.data.AppManager
-import org.junit.Before
+import games.indiegesindel.sproutlauncher.model.AppTile
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+@Suppress("DEPRECATION")
 @RunWith(RobolectricTestRunner::class)
 class LegacyShortcutReceiverTest {
-    private lateinit var context: Context
-    private lateinit var appManager: AppManager
-    private lateinit var receiver: LegacyShortcutReceiver
+    private val context: Context = ApplicationProvider.getApplicationContext()
+    private val tiles get() = context.appContainer.tileRepository.tiles.value
 
-    @Before
-    fun setup() {
-        context = ApplicationProvider.getApplicationContext()
-        context.getSharedPreferences("sprout_launcher_prefs", Context.MODE_PRIVATE).edit().clear().commit()
-        appManager = AppManager(context)
-        receiver = LegacyShortcutReceiver()
-    }
+    private fun installIntent(target: Intent, name: String? = "My ROM") =
+        Intent(LegacyShortcutReceiver.ACTION_INSTALL_SHORTCUT).apply {
+            name?.let { putExtra(Intent.EXTRA_SHORTCUT_NAME, it) }
+            putExtra(Intent.EXTRA_SHORTCUT_INTENT, target)
+        }
 
     @Test
-    fun onReceive_validLegacyShortcut_addsTile() {
-        val targetIntent = Intent(Intent.ACTION_VIEW).apply {
-            `package` = "com.example.app"
-            data = android.net.Uri.parse("rom://path/to/rom")
-        }
-        val installIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
-            putExtra(Intent.EXTRA_SHORTCUT_NAME, "My ROM")
-            putExtra(Intent.EXTRA_SHORTCUT_INTENT, targetIntent)
-        }
+    fun validShortcut_addsTile() {
+        val target = Intent(Intent.ACTION_VIEW, "rom://path/to/rom".toUri()).setPackage("com.example.app")
 
-        receiver.onReceive(context, installIntent)
+        LegacyShortcutReceiver().onReceive(context, installIntent(target))
 
-        val tiles = appManager.getAppTiles()
-        assertThat(tiles).hasSize(1)
-        val tile = tiles[0]
+        val tile = tiles.single()
         assertThat(tile.label).isEqualTo("My ROM")
         assertThat(tile.packageName).isEqualTo("com.example.app")
-        assertThat(tile.shortcutId).startsWith("legacy:intent:")
+        assertThat(tile.isLegacyShortcut).isTrue()
+        assertThat(tile.shortcutId).startsWith("${AppTile.LEGACY_SHORTCUT_PREFIX}intent:")
         assertThat(tile.shortcutId).contains("path/to/rom")
         assertThat(tile.shortcutId).contains("scheme=rom")
     }
 
     @Test
-    fun onReceive_duplicateLegacyShortcut_doesNotAddTile() {
-        val targetIntent = Intent(Intent.ACTION_VIEW).apply {
-            `package` = "com.example.app"
-        }
-        val installIntent = Intent("com.android.launcher.action.INSTALL_SHORTCUT").apply {
-            putExtra(Intent.EXTRA_SHORTCUT_NAME, "My ROM")
-            putExtra(Intent.EXTRA_SHORTCUT_INTENT, targetIntent)
-        }
+    fun duplicateShortcut_isIgnored() {
+        val install = installIntent(Intent(Intent.ACTION_VIEW).setPackage("com.example.app"))
 
-        receiver.onReceive(context, installIntent)
-        receiver.onReceive(context, installIntent)
+        LegacyShortcutReceiver().onReceive(context, install)
+        LegacyShortcutReceiver().onReceive(context, install)
 
-        val tiles = appManager.getAppTiles()
         assertThat(tiles).hasSize(1)
+    }
+
+    @Test
+    fun missingName_usesDefaultLabel() {
+        LegacyShortcutReceiver().onReceive(context, installIntent(Intent(Intent.ACTION_VIEW), name = null))
+
+        assertThat(tiles.single().label).isEqualTo(context.getString(R.string.shortcut_default_label))
+    }
+
+    @Test
+    fun otherActions_areIgnored() {
+        LegacyShortcutReceiver().onReceive(context, Intent("some.other.ACTION"))
+
+        assertThat(tiles).isEmpty()
     }
 }

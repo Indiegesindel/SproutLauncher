@@ -1,63 +1,106 @@
 package games.indiegesindel.sproutlauncher.ui.viewmodels
 
-import games.indiegesindel.sproutlauncher.data.AppManager
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import com.google.common.truth.Truth.assertThat
+import games.indiegesindel.sproutlauncher.data.ImageStore
+import games.indiegesindel.sproutlauncher.data.SettingsRepository
+import games.indiegesindel.sproutlauncher.data.TileRepository
 import games.indiegesindel.sproutlauncher.model.AppTile
-import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class AppTileSettingsViewModelTest {
+    private lateinit var tiles: TileRepository
+    private lateinit var settings: SettingsRepository
+    private val shortcut = AppTile(packageName = "pkg", activityName = "", label = "Label", iconUri = "file://old", shortcutId = "s1")
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        tiles = TileRepository(context.getSharedPreferences("tile_settings_tiles", Context.MODE_PRIVATE).also { it.edit().clear().commit() })
+        settings = SettingsRepository(context.getSharedPreferences("tile_settings_settings", Context.MODE_PRIVATE).also { it.edit().clear().commit() }, isPhone = false)
+        tiles.add(shortcut)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    private fun viewModel(tileId: String = shortcut.id) = AppTileSettingsViewModel(tiles, mockk<ImageStore>(), settings, tileId)
 
     @Test
-    fun init_loads_tile_and_exposes_fields() {
-        val tile = AppTile(packageName = "pkg", activityName = "Act", label = "Label", iconUri = "uri")
-        val appManager = mockk<AppManager>()
-        every { appManager.getAppTileById(tile.id) } returns tile
-
-        val vm = AppTileSettingsViewModel(appManager, tile.id)
-
-        assert(vm.tile.value == tile)
-        assert(vm.label.value == "Label")
-        assert(vm.iconUri.value == "uri")
+    fun init_exposesTileFields() {
+        val vm = viewModel()
+        assertThat(vm.tile).isEqualTo(shortcut)
+        assertThat(vm.label.value).isEqualTo("Label")
+        assertThat(vm.iconUri.value).isEqualTo("file://old")
     }
 
     @Test
-    fun saveChanges_updates_tile_via_manager() {
-        val tile = AppTile(packageName = "pkg", activityName = "Act", label = "Label", iconUri = null)
-        val appManager = mockk<AppManager>(relaxed = true)
-        every { appManager.getAppTileById(tile.id) } returns tile
+    fun missingTile_isNull() {
+        assertThat(viewModel("unknown").tile).isNull()
+    }
 
-        val vm = AppTileSettingsViewModel(appManager, tile.id)
-        vm.onLabelChanged("New")
-        vm.onIconUriChanged("icon://new.png")
+    @Test
+    fun saveChanges_persistsLabelAndIcon_preservingOtherFields() {
+        val vm = viewModel()
+        vm.onLabelChanged("  New  ")
+        vm.onIconUriChanged(null)
+
         vm.saveChanges()
 
-        verify { appManager.updateAppTile(tile.copy(label = "New", iconUri = "icon://new.png")) }
+        assertThat(tiles.find(shortcut.id)).isEqualTo(shortcut.copy(label = "New", iconUri = null))
     }
 
     @Test
-    fun removeTile_calls_manager() {
-        val tile = AppTile(packageName = "pkg", activityName = "Act", label = "Label")
-        val appManager = mockk<AppManager>(relaxed = true)
-        every { appManager.getAppTileById(tile.id) } returns tile
+    fun saveChanges_keepsOldLabelWhenBlank() {
+        val vm = viewModel()
+        vm.onLabelChanged("   ")
 
-        val vm = AppTileSettingsViewModel(appManager, tile.id)
-        vm.removeTile()
-
-        verify { appManager.removeAppTile(tile.id) }
-    }
-
-    @Test
-    fun saveChanges_updates_tile_via_manager_preserving_shortcutId() {
-        val tile = AppTile(packageName = "pkg", activityName = "Act", label = "Label", shortcutId = "shorty")
-        val appManager = mockk<AppManager>(relaxed = true)
-        every { appManager.getAppTileById(tile.id) } returns tile
-
-        val vm = AppTileSettingsViewModel(appManager, tile.id)
-        vm.onLabelChanged("New")
         vm.saveChanges()
 
-        verify { appManager.updateAppTile(tile.copy(label = "New")) }
+        assertThat(tiles.find(shortcut.id)?.label).isEqualTo("Label")
+    }
+
+    @Test
+    fun saveChanges_doesNotRevertConcurrentMoveIntoGroup() {
+        val vm = viewModel()
+        tiles.update { listOf(AppTile.group("G", it)) }
+        vm.onLabelChanged("Renamed")
+
+        vm.saveChanges()
+
+        val group = tiles.tiles.value.single()
+        assertThat(group.groupTiles.single().label).isEqualTo("Renamed")
+    }
+
+    @Test
+    fun removeTile_removesFromRepository() {
+        viewModel().removeTile()
+        assertThat(tiles.tiles.value).isEmpty()
+    }
+
+    @Test
+    fun steamGridDbAvailability_followsApiKey() {
+        val vm = viewModel()
+        assertThat(vm.isSteamGridDbAvailable.value).isFalse()
+
+        settings.steamGridDbApiKey.set("key")
+
+        assertThat(vm.isSteamGridDbAvailable.value).isTrue()
     }
 }

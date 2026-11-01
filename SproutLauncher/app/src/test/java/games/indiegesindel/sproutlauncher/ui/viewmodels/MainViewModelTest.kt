@@ -1,16 +1,21 @@
 package games.indiegesindel.sproutlauncher.ui.viewmodels
 
-import games.indiegesindel.sproutlauncher.data.AppManager
-import games.indiegesindel.sproutlauncher.data.SettingsManager
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import com.google.common.truth.Truth.assertThat
+import games.indiegesindel.sproutlauncher.data.InstalledAppsRepository
+import games.indiegesindel.sproutlauncher.data.SettingsRepository
+import games.indiegesindel.sproutlauncher.data.TileRepository
 import games.indiegesindel.sproutlauncher.model.AppTile
+import games.indiegesindel.sproutlauncher.model.InstalledApp
+import games.indiegesindel.sproutlauncher.model.QuickApp
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
@@ -21,18 +26,20 @@ import org.robolectric.RobolectricTestRunner
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class MainViewModelTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private lateinit var tiles: TileRepository
+    private lateinit var settings: SettingsRepository
+    private val installedApps = MutableStateFlow<List<InstalledApp>?>(emptyList())
 
-    private lateinit var appManager: AppManager
-    private lateinit var settingsManager: SettingsManager
-    private lateinit var vm: MainViewModel
+    private val a = AppTile(packageName = "pkg.a", activityName = "A", label = "a")
+    private val b = AppTile(packageName = "pkg.b", activityName = "B", label = "b")
+    private val c = AppTile(packageName = "pkg.c", activityName = "C", label = "c")
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
-        appManager = mockk(relaxed = true)
-        settingsManager = mockk(relaxed = true)
-        vm = MainViewModel(appManager, settingsManager)
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        tiles = TileRepository(context.getSharedPreferences("main_vm_tiles", Context.MODE_PRIVATE).also { it.edit().clear().commit() })
+        settings = SettingsRepository(context.getSharedPreferences("main_vm_settings", Context.MODE_PRIVATE).also { it.edit().clear().commit() }, isPhone = false)
     }
 
     @After
@@ -40,181 +47,208 @@ class MainViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun viewModel(): MainViewModel {
+        val installedAppsRepository = mockk<InstalledAppsRepository> { every { apps } returns installedApps }
+        return MainViewModel(tiles, settings, installedAppsRepository)
+    }
+
     @Test
-    fun loadAppTiles_sets_initial_focus() = runTest(testDispatcher) {
-        val tiles = listOf(
-            AppTile(packageName = "pkg1", activityName = "A", label = "L1")
+    fun initialFocus_targetsFirstTile() {
+        tiles.add(a)
+        tiles.add(b)
+        assertThat(viewModel().pendingFocusTileId.value).isEqualTo(a.id)
+    }
+
+    @Test
+    fun initialFocus_waitsForFirstTile() {
+        val vm = viewModel()
+        assertThat(vm.pendingFocusTileId.value).isNull()
+
+        tiles.add(b)
+
+        assertThat(vm.pendingFocusTileId.value).isEqualTo(b.id)
+    }
+
+    @Test
+    fun quickApps_requireInstallAndRespectToggles() {
+        installedApps.value = listOf(
+            InstalledApp(QuickApp.YOUTUBE.packageName, "Main", "YouTube"),
+            InstalledApp(QuickApp.DISCORD.packageName, "Main", "Discord"),
+            InstalledApp(QuickApp.PHOTOS.packageName, "Main", "Photos")
         )
-        every { appManager.getAppTiles() } returns tiles
+        val vm = viewModel()
+        assertThat(vm.quickApps.value).containsExactly(QuickApp.YOUTUBE, QuickApp.DISCORD, QuickApp.PHOTOS).inOrder()
 
-        vm.loadAppTiles()
+        settings.showDiscord.set(false)
 
-        assert(vm.pendingFocus.value == "tile:${tiles[0].id}")
+        assertThat(vm.quickApps.value).containsExactly(QuickApp.YOUTUBE, QuickApp.PHOTOS).inOrder()
     }
 
     @Test
-    fun loadAppTiles_requests_no_focus_when_no_tiles() = runTest(testDispatcher) {
-        every { appManager.getAppTiles() } returns emptyList()
+    fun wallpaper_combinesUriAndDim() {
+        val vm = viewModel()
+        assertThat(vm.wallpaper.value).isNull()
 
-        vm.loadAppTiles()
+        settings.wallpaperUri.set("file://wall")
+        settings.wallpaperDim.set(0.5f)
 
-        assert(vm.pendingFocus.value == null)
+        assertThat(vm.wallpaper.value).isEqualTo(Wallpaper("file://wall", 0.5f))
     }
 
     @Test
-    fun loadAppTiles_populates_list_and_stops_loading_and_checks_quick_actions() = runTest(testDispatcher) {
-        val tiles = listOf(
-            AppTile(packageName = "pkg1", activityName = "A", label = "L1"),
-            AppTile(packageName = "pkg2", activityName = "B", label = "L2")
-        )
-        every { appManager.getAppTiles() } returns tiles
-        every { appManager.isPackageInstalled(any()) } returns false
-        every { appManager.isPackageInstalled("com.discord") } returns true
+    fun groupSelectedTiles_createsGroupAndFocusesIt() {
+        tiles.update { listOf(a, b, c) }
+        val vm = viewModel()
 
-        vm.loadAppTiles()
+        vm.enterMultiSelectMode(a.id)
+        vm.toggleTileSelection(c.id)
+        vm.groupSelectedTiles("Group")
 
-        assert(vm.appTiles.value == tiles)
-        assert(vm.isLoading.value == false)
-        val quick = vm.installedQuickActions.value
-        assert(quick.containsKey("com.discord"))
-        assert(quick.size == 5)
+        val group = tiles.tiles.value.last()
+        assertThat(group.isGroup).isTrue()
+        assertThat(group.label).isEqualTo("Group")
+        assertThat(group.groupTiles).containsExactly(a, c).inOrder()
+        assertThat(vm.isInMultiSelectMode.value).isFalse()
+        assertThat(vm.pendingFocusTileId.value).isEqualTo(group.id)
     }
 
     @Test
-    fun removeAppTile_delegates_and_reload() = runTest(testDispatcher) {
-        every { appManager.getAppTiles() } returns emptyList()
-        every { appManager.removeAppTile(any()) } returns Unit
+    fun toggleSelection_leavesMultiSelectWhenEmpty() {
+        tiles.add(a)
+        val vm = viewModel()
 
-        vm.removeAppTile("id")
+        vm.enterMultiSelectMode(a.id)
+        vm.toggleTileSelection(a.id)
 
-        verify { appManager.removeAppTile("id") }
+        assertThat(vm.isInMultiSelectMode.value).isFalse()
     }
 
     @Test
-    fun reorderAppTiles_moves_items_when_indices_valid() {
-        val tiles = listOf(
-            AppTile(packageName = "pkg1", activityName = "A", label = "1"),
-            AppTile(packageName = "pkg2", activityName = "B", label = "2"),
-            AppTile(packageName = "pkg3", activityName = "C", label = "3")
-        )
-        val field = MainViewModel::class.java.getDeclaredField("_appTiles")
-        field.isAccessible = true
-        val state = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<List<AppTile>>
-        state.value = tiles
+    fun enterMultiSelectMode_ignoresGroups() {
+        val group = AppTile.group("G", listOf(a))
+        tiles.add(group)
+        val vm = viewModel()
 
-        vm.reorderAppTiles(0, 2)
+        vm.enterMultiSelectMode(group.id)
 
-        val expected = listOf(tiles[1], tiles[2], tiles[0])
-        assert(vm.appTiles.value == expected)
+        assertThat(vm.isInMultiSelectMode.value).isFalse()
     }
 
     @Test
-    fun reorderGroupTiles_moves_items_within_group() {
-        val groupTiles = listOf(
-            AppTile(packageName = "p1", activityName = "A1", label = "L1"),
-            AppTile(packageName = "p2", activityName = "A2", label = "L2")
-        )
-        val group = AppTile(id = "group1", packageName = "", activityName = "", label = "G", isGroup = true, groupTiles = groupTiles)
-        val tiles = listOf(group)
+    fun openAndCloseGroup_moveFocus() {
+        val group = AppTile.group("G", listOf(a, b))
+        tiles.add(group)
+        val vm = viewModel()
 
-        val field = MainViewModel::class.java.getDeclaredField("_appTiles")
-        field.isAccessible = true
-        val state = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<List<AppTile>>
-        state.value = tiles
+        vm.openGroup(group)
+        assertThat(vm.openedGroup.value).isEqualTo(group)
+        assertThat(vm.pendingFocusTileId.value).isEqualTo(a.id)
 
-        vm.reorderGroupTiles("group1", 0, 1)
-
-        val updatedGroup = vm.appTiles.value[0]
-        assert(updatedGroup.groupTiles[0].packageName == "p2")
-        assert(updatedGroup.groupTiles[1].packageName == "p1")
+        vm.closeGroup()
+        assertThat(vm.openedGroup.value).isNull()
+        assertThat(vm.pendingFocusTileId.value).isEqualTo(group.id)
     }
 
     @Test
-    fun saveAppTiles_calls_manager_with_current_list() {
-        val tiles = listOf(AppTile(packageName = "pkg1", activityName = "A", label = "1"))
-        val field = MainViewModel::class.java.getDeclaredField("_appTiles")
-        field.isAccessible = true
-        val state = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<List<AppTile>>
-        state.value = tiles
+    fun openedGroup_reflectsRepositoryChanges() {
+        val group = AppTile.group("G", listOf(a))
+        tiles.add(group)
+        val vm = viewModel()
+        vm.openGroup(group)
 
-        every { appManager.saveAppTiles(any()) } returns Unit
-        vm.saveAppTiles()
+        tiles.replace(a.copy(label = "renamed"))
 
-        verify { appManager.saveAppTiles(tiles) }
+        assertThat(vm.openedGroup.value?.groupTiles?.single()?.label).isEqualTo("renamed")
     }
 
     @Test
-    fun loadAppTiles_maintains_openedGroup_if_exists() = runTest(testDispatcher) {
-        val group = AppTile(id = "g1", packageName = "", activityName = "", label = "Old Label", isGroup = true)
-        val updatedGroup = group.copy(label = "New Label")
-        
-        val field = MainViewModel::class.java.getDeclaredField("_openedGroup")
-        field.isAccessible = true
-        val openedGroupState = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<AppTile?>
-        openedGroupState.value = group
-        
-        every { appManager.getAppTiles() } returns listOf(updatedGroup)
-        
-        vm.loadAppTiles()
-        
-        assert(vm.openedGroup.value?.label == "New Label")
+    fun ungroup_focusesFirstChild() {
+        val group = AppTile.group("G", listOf(b, c))
+        tiles.update { listOf(a, group) }
+        val vm = viewModel()
+
+        vm.ungroup(group.id)
+
+        assertThat(tiles.tiles.value).containsExactly(a, b, c).inOrder()
+        assertThat(vm.pendingFocusTileId.value).isEqualTo(b.id)
     }
 
     @Test
-    fun loadAppTiles_places_initial_focus_only_once() = runTest(testDispatcher) {
-        val tiles = listOf(AppTile(id = "t1", packageName = "p", activityName = "a", label = "l"))
-        every { appManager.getAppTiles() } returns tiles
+    fun removeTileFromGroup_closesDissolvedGroupAndFocusesRemovedTile() {
+        val group = AppTile.group("G", listOf(a, b))
+        tiles.add(group)
+        val vm = viewModel()
+        vm.openGroup(group)
 
-        vm.loadAppTiles()
-        assert(vm.pendingFocus.value == "tile:t1")
+        vm.removeTileFromGroup(group.id, a.id)
 
-        vm.consumePendingFocus()
-        vm.loadAppTiles()
-        assert(vm.pendingFocus.value == null)
+        assertThat(vm.openedGroup.value).isNull()
+        assertThat(tiles.tiles.value).containsExactly(b, a).inOrder()
+        assertThat(vm.pendingFocusTileId.value).isEqualTo(a.id)
     }
 
     @Test
-    fun removeSelectedTiles_removes_tiles_and_clears_selection() = runTest(testDispatcher) {
-        val tile1 = AppTile(id = "1", packageName = "p1", activityName = "a1", label = "l1")
-        val tile2 = AppTile(id = "2", packageName = "p2", activityName = "a2", label = "l2")
-        val tile3 = AppTile(id = "3", packageName = "p3", activityName = "a3", label = "l3")
-        val tiles = listOf(tile1, tile2, tile3)
+    fun removeTileFromGroup_keepsGroupOpenWhenTilesRemain() {
+        val group = AppTile.group("G", listOf(a, b, c))
+        tiles.add(group)
+        val vm = viewModel()
+        vm.openGroup(group)
 
-        val field = MainViewModel::class.java.getDeclaredField("_appTiles")
-        field.isAccessible = true
-        val state = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<List<AppTile>>
-        state.value = tiles
+        vm.removeTileFromGroup(group.id, a.id)
 
-        vm.enterMultiSelectMode("1")
-        vm.toggleTileSelection("2")
-
-        vm.removeSelectedTiles()
-
-        assert(vm.appTiles.value == listOf(tile3))
-        assert(vm.selectedTileIds.value.isEmpty())
-        assert(vm.isInMultiSelectMode.value == false)
-        verify { appManager.saveAppTiles(listOf(tile3)) }
+        assertThat(vm.openedGroup.value?.groupTiles).containsExactly(b, c).inOrder()
+        assertThat(vm.pendingFocusTileId.value).isEqualTo(b.id)
     }
 
     @Test
-    fun multiSelectMode_prevents_selecting_groups() = runTest(testDispatcher) {
-        val tile1 = AppTile(id = "1", packageName = "p1", activityName = "a1", label = "l1")
-        val group = AppTile(id = "g1", packageName = "", activityName = "", label = "G", isGroup = true)
-        val tiles = listOf(tile1, group)
+    fun moveTileToGroup_movesAndFocusesGroup() {
+        val group = AppTile.group("G", listOf(b))
+        tiles.update { listOf(a, group) }
+        val vm = viewModel()
+        vm.requestMoveToGroup(a)
 
-        val field = MainViewModel::class.java.getDeclaredField("_appTiles")
-        field.isAccessible = true
-        val state = field.get(vm) as kotlinx.coroutines.flow.MutableStateFlow<List<AppTile>>
-        state.value = tiles
+        vm.moveTileToGroup(a.id, group.id)
 
-        vm.enterMultiSelectMode("g1")
-        assert(vm.isInMultiSelectMode.value == false)
+        assertThat(tiles.tiles.value.single().groupTiles).containsExactly(b, a).inOrder()
+        assertThat(vm.tileToMoveToGroup.value).isNull()
+        assertThat(vm.pendingFocusTileId.value).isEqualTo(group.id)
+    }
 
-        vm.enterMultiSelectMode("1")
-        assert(vm.isInMultiSelectMode.value == true)
-        assert(vm.selectedTileIds.value == setOf("1"))
+    @Test
+    fun confirmRemoveTile_removesFromRepository() {
+        tiles.update { listOf(a, b) }
+        val vm = viewModel()
 
-        vm.toggleTileSelection("g1")
-        assert(vm.selectedTileIds.value == setOf("1"))
+        vm.requestRemoveTile(a)
+        vm.confirmRemoveTile()
+
+        assertThat(tiles.tiles.value).containsExactly(b)
+        assertThat(vm.tileToRemove.value).isNull()
+    }
+
+    @Test
+    fun reorderTiles_persists() {
+        tiles.update { listOf(a, b, c) }
+        viewModel().reorderTiles(0, 2)
+        assertThat(tiles.tiles.value).containsExactly(b, c, a).inOrder()
+    }
+
+    @Test
+    fun resetState_closesEverything() {
+        val group = AppTile.group("G", listOf(a))
+        tiles.update { listOf(group, b) }
+        val vm = viewModel()
+        vm.openGroup(group)
+        vm.enterMultiSelectMode(b.id)
+        vm.requestMoveToGroup(b)
+        vm.openAllApps()
+
+        vm.resetState()
+
+        assertThat(vm.openedGroup.value).isNull()
+        assertThat(vm.isInMultiSelectMode.value).isFalse()
+        assertThat(vm.selectedTileIds.value).isEmpty()
+        assertThat(vm.tileToMoveToGroup.value).isNull()
+        assertThat(vm.showAllApps.value).isFalse()
     }
 }
