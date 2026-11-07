@@ -12,14 +12,13 @@ import androidx.compose.ui.platform.LocalContext
 import games.indiegesindel.sproutlauncher.appContainer
 import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.components.SettingsCard
-import games.indiegesindel.sproutlauncher.ui.components.SettingsSectionHeader
 import java.util.UUID
+
+const val HAS_DEMO_FEATURES = true
 
 @Composable
 fun DemoFeatures() {
     val context = LocalContext.current
-
-    SettingsSectionHeader(title = "Demo Tools")
 
     SettingsCard {
         ListItem(

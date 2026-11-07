@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import games.indiegesindel.sproutlauncher.R
 import kotlin.math.roundToInt
+import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.UiSound
 
 @Composable
 fun SproutAlertDialog(
@@ -81,10 +83,15 @@ fun SettingsDialogItem(label: String, value: String, onClick: () -> Unit) {
 
 @Composable
 fun SettingsSwitchItem(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    val soundManager = LocalSoundManager.current
+    val toggle: (Boolean) -> Unit = { on ->
+        onCheckedChange(on)
+        soundManager?.play(if (on) UiSound.TOGGLE_ON else UiSound.TOGGLE_OFF)
+    }
     ListItem(
         headlineContent = { Text(label) },
-        trailingContent = { Switch(checked = checked, onCheckedChange = onCheckedChange) },
-        modifier = Modifier.clickable { onCheckedChange(!checked) },
+        trailingContent = { Switch(checked = checked, onCheckedChange = toggle) },
+        modifier = Modifier.clickable { toggle(!checked) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
     )
 }
