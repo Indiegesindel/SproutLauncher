@@ -1,12 +1,16 @@
 package games.indiegesindel.sproutlauncher.ui.viewmodels
 
+import games.indiegesindel.sproutlauncher.data.Accent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import games.indiegesindel.sproutlauncher.appContainer
+import games.indiegesindel.sproutlauncher.data.AmbientSource
+import games.indiegesindel.sproutlauncher.data.BackgroundMode
 import games.indiegesindel.sproutlauncher.data.GridLayout
+import games.indiegesindel.sproutlauncher.data.PlainBase
 import games.indiegesindel.sproutlauncher.data.InstalledAppsRepository
 import games.indiegesindel.sproutlauncher.data.SettingsRepository
 import games.indiegesindel.sproutlauncher.data.TileRepository
@@ -36,7 +40,6 @@ class MainViewModel(
     settings: SettingsRepository,
     installedApps: InstalledAppsRepository
 ) : ViewModel() {
-
     val appTiles: StateFlow<List<AppTile>> = tileRepository.tiles
 
     val homeLayout: StateFlow<GridLayout> = settings.homeGrid.layout
@@ -48,6 +51,20 @@ class MainViewModel(
     val wallpaper: StateFlow<Wallpaper?> = combine(settings.wallpaperUri.flow, settings.wallpaperDim.flow) { uri, dim ->
         uri?.let { Wallpaper(it, dim) }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val backgroundMode: StateFlow<BackgroundMode> = settings.backgroundMode.flow
+    val ambientSource: StateFlow<AmbientSource> = settings.ambientSource.flow
+    val plainBase: StateFlow<PlainBase> = settings.plainBase.flow
+    val customPlain: StateFlow<Int> = settings.customPlain.flow
+    val ambientColor: StateFlow<Accent> = settings.ambientColor.flow
+    val customAmbient: StateFlow<Int> = settings.customAmbient.flow
+
+    private val _wakeCount = MutableStateFlow(0)
+    val wakeCount: StateFlow<Int> = _wakeCount.asStateFlow()
+
+    fun onWake() {
+        _wakeCount.value++
+    }
 
     val quickApps: StateFlow<List<QuickApp>> = combine(
         installedApps.apps.map { apps -> apps.orEmpty().mapTo(HashSet()) { it.packageName } },

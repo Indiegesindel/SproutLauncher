@@ -20,6 +20,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onRestart() {
+        super.onRestart()
+        viewModel.onWake()
+    }
+
     override fun onResume() {
         super.onResume()
         appContainer.installedAppsRepository.refresh()

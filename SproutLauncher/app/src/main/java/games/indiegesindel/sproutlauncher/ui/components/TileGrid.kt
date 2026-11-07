@@ -11,16 +11,21 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.dp
+import games.indiegesindel.sproutlauncher.data.GridAlignment
 import games.indiegesindel.sproutlauncher.data.GridLayout
 import games.indiegesindel.sproutlauncher.model.AppTile
+import games.indiegesindel.sproutlauncher.ui.motion.Motion
 
 @Stable
 interface TileGridActions {
-    fun onLaunch(tile: AppTile)
-    fun onOpenGroup(group: AppTile)
+    fun onLaunch(tile: AppTile, origin: Rect? = null): Boolean
+    fun onOpenGroup(group: AppTile, origin: Rect? = null)
     fun onEdit(tile: AppTile)
     fun onRemove(tile: AppTile)
     fun onReorder(from: Int, to: Int)
@@ -54,13 +59,39 @@ fun TileGrid(
     pendingFocusTileId: String? = null,
     onFocusConsumed: () -> Unit = {},
     onTileFocused: (AppTile) -> Unit = {},
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    entranceDelayMs: Long = 0L
 ) {
-    val isPhone = LocalConfiguration.current.smallestScreenWidthDp < 600
-    val gridHeight = if (isPhone) 240.dp else 440.dp
+    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
+        val rows = layout.rows.coerceAtLeast(1)
+        val cap = MAX_TILE * rows + layout.verticalSpacing.dp * (rows - 1) + GRID_VERTICAL_PADDING * 2
+        val gridHeight = if (maxHeight == Dp.Infinity) cap else minOf(maxHeight, cap)
+        TileGridContent(
+            tiles, layout, actions, menuContext, gridHeight, selectedTileIds, pendingFocusTileId,
+            onFocusConsumed, onTileFocused, enabled, entranceDelayMs
+        )
+    }
+}
 
+private val MAX_TILE = 200.dp
+private val GRID_VERTICAL_PADDING = 8.dp
+
+@Composable
+private fun TileGridContent(
+    tiles: List<AppTile>,
+    layout: GridLayout,
+    actions: TileGridActions,
+    menuContext: TileMenuContext,
+    gridHeight: Dp,
+    selectedTileIds: Set<String>,
+    pendingFocusTileId: String?,
+    onFocusConsumed: () -> Unit,
+    onTileFocused: (AppTile) -> Unit,
+    enabled: Boolean,
+    entranceDelayMs: Long
+) {
     if (tiles.isEmpty()) {
-        HomeDisclaimer(modifier = modifier.height(gridHeight).fillMaxWidth())
+        HomeDisclaimer(modifier = Modifier.height(gridHeight).fillMaxWidth())
         return
     }
 
@@ -82,8 +113,13 @@ fun TileGrid(
     LazyHorizontalGrid(
         rows = GridCells.Fixed(layout.rows.coerceAtLeast(1)),
         state = gridState,
-        modifier = modifier.height(gridHeight).wrapContentWidth(),
-        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+        modifier = Modifier
+            .height(gridHeight)
+            .then(
+                if (layout.alignment == GridAlignment.START) Modifier.fillMaxWidth().wrapContentWidth(Alignment.Start)
+                else Modifier.wrapContentWidth()
+            ),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = GRID_VERTICAL_PADDING),
         horizontalArrangement = Arrangement.spacedBy(layout.horizontalSpacing.dp),
         verticalArrangement = Arrangement.spacedBy(layout.verticalSpacing.dp)
     ) {
@@ -100,7 +136,14 @@ fun TileGrid(
                 onFocusHandled = onFocusConsumed,
                 onFocused = { onTileFocused(tile) },
                 onMove = { move(index, it) },
-                enabled = enabled
+                enabled = enabled,
+                rows = layout.rows.coerceAtLeast(1),
+                entranceDelayMs = entranceDelayMs,
+                modifier = Modifier.animateItem(
+                    fadeInSpec = null,
+                    fadeOutSpec = null,
+                    placementSpec = if (reorderState.draggedKey == tile.id) null else Motion.focus()
+                )
             )
         }
     }

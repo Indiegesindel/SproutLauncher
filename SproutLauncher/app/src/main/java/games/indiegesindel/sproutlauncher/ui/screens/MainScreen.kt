@@ -1,6 +1,31 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
+import games.indiegesindel.sproutlauncher.ui.theme.accentColor
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalView
+import games.indiegesindel.sproutlauncher.data.AmbientSource
+import games.indiegesindel.sproutlauncher.data.BackgroundMode
+import games.indiegesindel.sproutlauncher.ui.theme.LocalSproutColors
+import games.indiegesindel.sproutlauncher.ui.theme.plainBaseColor
+import games.indiegesindel.sproutlauncher.ui.components.AmbientBackground
+import games.indiegesindel.sproutlauncher.ui.components.LocalFocusPulse
+import games.indiegesindel.sproutlauncher.ui.components.trackNavInput
+import games.indiegesindel.sproutlauncher.ui.motion.Motion
+import games.indiegesindel.sproutlauncher.utils.LaunchOrigin
+import games.indiegesindel.sproutlauncher.utils.LocalControllerRumble
+import kotlinx.coroutines.launch
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -53,7 +78,9 @@ import games.indiegesindel.sproutlauncher.ui.FocusedElement
 import games.indiegesindel.sproutlauncher.ui.components.AddToGroupModal
 import games.indiegesindel.sproutlauncher.ui.components.ButtonPrompt
 import games.indiegesindel.sproutlauncher.ui.components.GroupModal
+import games.indiegesindel.sproutlauncher.ui.components.PROMPT_SPACING
 import games.indiegesindel.sproutlauncher.ui.components.PromptsFooter
+import games.indiegesindel.sproutlauncher.ui.components.PromptsFooterHeight
 import games.indiegesindel.sproutlauncher.ui.components.QuickActionsBar
 import games.indiegesindel.sproutlauncher.ui.components.RemoveTileConfirmationDialog
 import games.indiegesindel.sproutlauncher.ui.components.TileGrid
@@ -84,13 +111,25 @@ fun MainScreen(viewModel: MainViewModel, allAppsViewModel: AllAppsViewModel) {
     val openedGroup by viewModel.openedGroup.collectAsStateWithLifecycle()
     val tileToMoveToGroup by viewModel.tileToMoveToGroup.collectAsStateWithLifecycle()
     val showAllApps by viewModel.showAllApps.collectAsStateWithLifecycle()
+    val backgroundMode by viewModel.backgroundMode.collectAsStateWithLifecycle()
+    val ambientSource by viewModel.ambientSource.collectAsStateWithLifecycle()
+    val plainBase by viewModel.plainBase.collectAsStateWithLifecycle()
+    val customPlain by viewModel.customPlain.collectAsStateWithLifecycle()
+    val ambientColor by viewModel.ambientColor.collectAsStateWithLifecycle()
+    val customAmbient by viewModel.customAmbient.collectAsStateWithLifecycle()
+    val wakeCount by viewModel.wakeCount.collectAsStateWithLifecycle()
+    val view = LocalView.current
+    val rumble = LocalControllerRumble.current
 
     var footerElement by remember { mutableStateOf(FocusedElement.NONE) }
     var focusedTileIsGroup by remember { mutableStateOf(false) }
+    var focusedTile by remember { mutableStateOf<AppTile?>(null) }
     val onTileFocused: (AppTile) -> Unit = { tile ->
         footerElement = FocusedElement.APP_TILE
         focusedTileIsGroup = tile.isGroup
+        focusedTile = tile
     }
+    var groupOrigin by remember { mutableStateOf<Rect?>(null) }
 
     val isHomeInteractive = openedGroup == null && tileToMoveToGroup == null && !showAllApps
 
@@ -98,6 +137,7 @@ fun MainScreen(viewModel: MainViewModel, allAppsViewModel: AllAppsViewModel) {
     var sheetWasOpen by remember { mutableStateOf(false) }
     LaunchedEffect(showAllApps) {
         if (showAllApps) {
+            soundManager?.play(UiSound.SHEET_OPEN)
             sheetWasOpen = true
         } else if (sheetWasOpen) {
             sheetWasOpen = false
@@ -119,6 +159,23 @@ fun MainScreen(viewModel: MainViewModel, allAppsViewModel: AllAppsViewModel) {
     )
     LaunchedEffect(Unit) { hasAppeared = true }
 
+    val wakeFade = remember { Animatable(0f) }
+    val wakeScale = remember { Animatable(1f) }
+    LaunchedEffect(wakeCount) {
+        if (wakeCount == 0) return@LaunchedEffect
+        soundManager?.playWake()
+        wakeFade.snapTo(1f)
+        wakeScale.snapTo(WAKE_SCALE)
+        launch { wakeScale.animateTo(1f, spring(dampingRatio = 0.9f, stiffness = 500f)) }
+        wakeFade.animateTo(0f, tween(WAKE_FADE_MS, easing = LinearEasing))
+    }
+
+    val homeBlur by animateDpAsState(
+        targetValue = if (openedGroup != null) Motion.FolderBlur else 0.dp,
+        animationSpec = tween(Motion.FOLDER_ZOOM_MS),
+        label = "homeBlur"
+    )
+
     tileToRemove?.let {
         RemoveTileConfirmationDialog(
             onConfirm = viewModel::confirmRemoveTile,
@@ -133,7 +190,7 @@ fun MainScreen(viewModel: MainViewModel, allAppsViewModel: AllAppsViewModel) {
                 viewModel.dismissMoveToGroup()
             }
             openedGroup != null -> {
-                soundManager?.play(UiSound.BACK)
+                soundManager?.play(UiSound.FOLDER_CLOSE)
                 viewModel.closeGroup()
             }
         }
@@ -144,8 +201,12 @@ fun MainScreen(viewModel: MainViewModel, allAppsViewModel: AllAppsViewModel) {
 
     val homeActions = remember(viewModel, newGroupLabel) {
         object : TileGridActions {
-            override fun onLaunch(tile: AppTile) = AppLauncher.launch(context, tile)
-            override fun onOpenGroup(group: AppTile) = viewModel.openGroup(group)
+            override fun onLaunch(tile: AppTile, origin: Rect?) =
+                AppLauncher.launch(context, tile, origin?.let { LaunchOrigin(view, it) })
+            override fun onOpenGroup(group: AppTile, origin: Rect?) {
+                groupOrigin = origin
+                viewModel.openGroup(group)
+            }
             override fun onEdit(tile: AppTile) = openTileSettings(tile)
             override fun onRemove(tile: AppTile) = viewModel.requestRemoveTile(tile)
             override fun onReorder(from: Int, to: Int) = viewModel.reorderTiles(from, to)
@@ -162,8 +223,9 @@ fun MainScreen(viewModel: MainViewModel, allAppsViewModel: AllAppsViewModel) {
     val groupActions = remember(viewModel) {
         object : TileGridActions {
             private val groupId get() = viewModel.openedGroup.value?.id
-            override fun onLaunch(tile: AppTile) = AppLauncher.launch(context, tile)
-            override fun onOpenGroup(group: AppTile) = Unit
+            override fun onLaunch(tile: AppTile, origin: Rect?) =
+                AppLauncher.launch(context, tile, origin?.let { LaunchOrigin(view, it) })
+            override fun onOpenGroup(group: AppTile, origin: Rect?) = Unit
             override fun onEdit(tile: AppTile) = openTileSettings(tile)
             override fun onRemove(tile: AppTile) = viewModel.requestRemoveTile(tile)
             override fun onReorder(from: Int, to: Int) {
@@ -176,114 +238,156 @@ fun MainScreen(viewModel: MainViewModel, allAppsViewModel: AllAppsViewModel) {
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.displayCutout),
-        containerColor = if (wallpaper != null) Color.Transparent else MaterialTheme.colorScheme.background
-    ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            wallpaper?.let { WallpaperBackground(it) }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(bottom = FOOTER_HEIGHT)
-                    .focusProperties { if (!isHomeInteractive) canFocus = false }
-                    .graphicsLayer {
-                        alpha = contentAlpha
-                        translationY = contentOffsetPx
-                    },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                TileGrid(
-                    tiles = tiles,
-                    layout = homeLayout,
-                    actions = homeActions,
-                    menuContext = TileMenuContext(
-                        isInGroup = false,
-                        hasGroups = tiles.any { it.isGroup },
-                        isInMultiSelectMode = isInMultiSelectMode
-                    ),
-                    selectedTileIds = selectedTileIds,
-                    pendingFocusTileId = pendingFocusTileId.takeIf { openedGroup == null },
-                    onFocusConsumed = viewModel::consumePendingFocus,
-                    onTileFocused = onTileFocused,
-                    enabled = isHomeInteractive
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Box(modifier = Modifier.zIndex(1f)) {
-                    QuickActionsBar(
-                        quickApps = quickApps,
-                        onAllApps = viewModel::openAllApps,
-                        onBrowser = { AppLauncher.openBrowser(context) },
-                        onQuickApp = { AppLauncher.launchPackage(context, it.packageName) },
-                        onSystemSettings = { AppLauncher.openSystemSettings(context) },
-                        onFocused = { footerElement = FocusedElement.QUICK_ACTION },
-                        allAppsFocusRequester = allAppsFocusRequester,
-                        enabled = isHomeInteractive
-                    )
-                }
+    val shownWallpaper = wallpaper.takeIf { backgroundMode == BackgroundMode.WALLPAPER }
+    CompositionLocalProvider(LocalFocusPulse provides wakeCount) {
+        Scaffold(
+            modifier = Modifier
+                .fillMaxSize()
+                .trackNavInput(soundManager, rumble),
+            contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.displayCutout),
+            containerColor = when {
+                shownWallpaper != null -> Color.Transparent
+                backgroundMode == BackgroundMode.PLAIN ->
+                    plainBaseColor(plainBase, customPlain, LocalSproutColors.current.isDark, MaterialTheme.colorScheme.background)
+                else -> MaterialTheme.colorScheme.background
             }
+        ) { innerPadding ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                when {
+                    shownWallpaper != null -> WallpaperBackground(shownWallpaper)
+                    backgroundMode == BackgroundMode.AMBIENT ->
+                        AmbientBackground(
+                            focusedTile = focusedTile.takeIf { ambientSource == AmbientSource.SELECTED_APP },
+                            color = accentColor(ambientColor, customAmbient).takeIf { ambientSource == AmbientSource.CUSTOM }
+                        )
+                }
 
-            val visibleGroup = rememberLastNonNull(openedGroup)
-            AnimatedVisibility(visible = openedGroup != null, enter = fadeIn(), exit = fadeOut()) {
-                visibleGroup?.let { group ->
-                    GroupModal(
-                        group = group,
-                        layout = groupLayout,
-                        actions = groupActions,
-                        pendingFocusTileId = pendingFocusTileId,
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(top = HOME_TOP_PADDING, bottom = PromptsFooterHeight)
+                        .focusProperties { if (!isHomeInteractive) canFocus = false }
+                        .graphicsLayer {
+                            alpha = contentAlpha
+                            translationY = contentOffsetPx
+                            scaleX = wakeScale.value
+                            scaleY = wakeScale.value
+                        }
+                        .blur(homeBlur, BlurredEdgeTreatment.Unbounded),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    TileGrid(
+                        tiles = tiles,
+                        layout = homeLayout,
+                        actions = homeActions,
+                        modifier = Modifier.weight(1f, fill = false),
+                        menuContext = TileMenuContext(
+                            isInGroup = false,
+                            hasGroups = tiles.any { it.isGroup },
+                            isInMultiSelectMode = isInMultiSelectMode
+                        ),
+                        selectedTileIds = selectedTileIds,
+                        pendingFocusTileId = pendingFocusTileId.takeIf { openedGroup == null },
                         onFocusConsumed = viewModel::consumePendingFocus,
                         onTileFocused = onTileFocused,
-                        contentPadding = innerPadding,
-                        enabled = openedGroup != null && tileToMoveToGroup == null
+                        enabled = isHomeInteractive
                     )
-                }
-            }
 
-            val visibleTileToMove = rememberLastNonNull(tileToMoveToGroup)
-            AnimatedVisibility(visible = tileToMoveToGroup != null, enter = fadeIn(), exit = fadeOut()) {
-                visibleTileToMove?.let { tile ->
-                    AddToGroupModal(
-                        groups = tiles.filter { it.isGroup },
-                        onGroupSelected = { groupId -> viewModel.moveTileToGroup(tile.id, groupId) },
-                        onDismiss = viewModel::dismissMoveToGroup,
-                        contentPadding = innerPadding
-                    )
-                }
-            }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            AnimatedVisibility(
-                visible = showAllApps,
-                enter = slideInVertically(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300)),
-                exit = slideOutVertically(tween(250, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200))
-            ) {
-                AllAppsBottomSheet(
-                    viewModel = allAppsViewModel,
-                    onDismiss = {
-                        soundManager?.play(UiSound.BACK)
-                        viewModel.closeAllApps()
-                    },
-                    onSettingsClick = { context.startActivity(SettingsActivity.newIntent(context)) }
+                    Box(modifier = Modifier.zIndex(1f)) {
+                        QuickActionsBar(
+                            quickApps = quickApps,
+                            onAllApps = viewModel::openAllApps,
+                            onBrowser = { AppLauncher.openBrowser(context) },
+                            onQuickApp = { AppLauncher.launchPackage(context, it.packageName) },
+                            onSystemSettings = { AppLauncher.openSystemSettings(context) },
+                            onFocused = { footerElement = FocusedElement.QUICK_ACTION },
+                            allAppsFocusRequester = allAppsFocusRequester,
+                            enabled = isHomeInteractive
+                        )
+                    }
+                }
+
+                val layoutDirection = LocalLayoutDirection.current
+                val overlayPadding = PaddingValues(
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    top = innerPadding.calculateTopPadding(),
+                    end = innerPadding.calculateEndPadding(layoutDirection),
+                    bottom = innerPadding.calculateBottomPadding() + PromptsFooterHeight
                 )
-            }
+                val visibleGroup = rememberLastNonNull(openedGroup)
+                AnimatedVisibility(visible = openedGroup != null, enter = fadeIn(), exit = fadeOut()) {
+                    visibleGroup?.let { group ->
+                        GroupModal(
+                            group = group,
+                            origin = groupOrigin,
+                            layout = groupLayout,
+                            actions = groupActions,
+                            pendingFocusTileId = pendingFocusTileId,
+                            onFocusConsumed = viewModel::consumePendingFocus,
+                            onTileFocused = onTileFocused,
+                            contentPadding = overlayPadding,
+                            enabled = openedGroup != null && tileToMoveToGroup == null
+                        )
+                    }
+                }
 
-            PromptsFooter(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .zIndex(2f)
-            ) {
-                Crossfade(
-                    targetState = FooterState(tileToMoveToGroup != null, footerElement, openedGroup != null, focusedTileIsGroup),
-                    animationSpec = tween(120),
-                    label = "footerPrompts"
-                ) { state ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        HomePrompts(state)
+                val visibleTileToMove = rememberLastNonNull(tileToMoveToGroup)
+                AnimatedVisibility(visible = tileToMoveToGroup != null, enter = fadeIn(), exit = fadeOut()) {
+                    visibleTileToMove?.let { tile ->
+                        AddToGroupModal(
+                            groups = tiles.filter { it.isGroup },
+                            onGroupSelected = { groupId -> viewModel.moveTileToGroup(tile.id, groupId) },
+                            onDismiss = viewModel::dismissMoveToGroup,
+                            contentPadding = overlayPadding
+                        )
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = showAllApps,
+                    enter = slideInVertically(spring(dampingRatio = 0.75f, stiffness = 380f)) { it } + fadeIn(tween(200)),
+                    exit = slideOutVertically(tween(250, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200))
+                ) {
+                    AllAppsBottomSheet(
+                        viewModel = allAppsViewModel,
+                        onDismiss = {
+                            soundManager?.play(UiSound.SHEET_CLOSE)
+                            viewModel.closeAllApps()
+                        },
+                        onSettingsClick = { context.startActivity(SettingsActivity.newIntent(context)) }
+                    )
+                }
+
+                if (wakeFade.value > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .zIndex(3f)
+                            .graphicsLayer { alpha = wakeFade.value }
+                            .background(Color.Black)
+                    )
+                }
+
+                if (!showAllApps) PromptsFooter(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .zIndex(2f)
+                ) {
+                    Crossfade(
+                        targetState = FooterState(tileToMoveToGroup != null, footerElement, openedGroup != null, focusedTileIsGroup),
+                        animationSpec = tween(120),
+                        label = "footerPrompts"
+                    ) { state ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(PROMPT_SPACING)
+                        ) {
+                            HomePrompts(state)
+                        }
                     }
                 }
             }
@@ -291,7 +395,9 @@ fun MainScreen(viewModel: MainViewModel, allAppsViewModel: AllAppsViewModel) {
     }
 }
 
-private val FOOTER_HEIGHT = 44.dp
+private val HOME_TOP_PADDING = 40.dp
+private const val WAKE_FADE_MS = 180
+private const val WAKE_SCALE = 1.03f
 
 private data class FooterState(
     val isMovingToGroup: Boolean,

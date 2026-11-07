@@ -1,12 +1,9 @@
 package games.indiegesindel.sproutlauncher.ui.components
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -57,6 +54,7 @@ import games.indiegesindel.sproutlauncher.R
 import games.indiegesindel.sproutlauncher.model.QuickApp
 import games.indiegesindel.sproutlauncher.ui.icons.AppIcon
 import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.ui.motion.Motion
 import games.indiegesindel.sproutlauncher.utils.UiSound
 
 private const val BROWSER_ICON_PACKAGE = "com.android.chrome"
@@ -101,8 +99,10 @@ fun QuickActionsBar(
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        var slot = 0
         QuickActionButton(
             label = stringResource(R.string.quick_action_all_apps),
+            index = slot++,
             icon = Icons.Filled.Apps,
             onClick = onAllApps,
             onFocused = onFocused,
@@ -117,6 +117,7 @@ fun QuickActionsBar(
         )
         QuickActionButton(
             label = stringResource(R.string.quick_action_browser),
+            index = slot++,
             icon = Icons.Filled.Language,
             iconPackage = BROWSER_ICON_PACKAGE,
             onClick = onBrowser,
@@ -126,6 +127,7 @@ fun QuickActionsBar(
         quickApps.forEach { app ->
             QuickActionButton(
                 label = stringResource(app.label),
+                index = slot++,
                 icon = app.fallbackIcon,
                 iconPackage = app.packageName,
                 onClick = { onQuickApp(app) },
@@ -135,6 +137,7 @@ fun QuickActionsBar(
         }
         QuickActionButton(
             label = stringResource(R.string.quick_action_settings),
+            index = slot,
             icon = Icons.Filled.Settings,
             onClick = onSystemSettings,
             onFocused = onFocused,
@@ -146,6 +149,7 @@ fun QuickActionsBar(
 @Composable
 private fun QuickActionButton(
     label: String,
+    index: Int,
     icon: ImageVector,
     onClick: () -> Unit,
     onFocused: () -> Unit,
@@ -155,16 +159,13 @@ private fun QuickActionButton(
 ) {
     val soundManager = LocalSoundManager.current
     var isFocused by remember { mutableStateOf(false) }
+    val bump = rememberEdgeBump()
+    val onEdge = rememberEdgeFeedback(bump)
 
     val focusScale by animateFloatAsState(
-        targetValue = if (isFocused) 1.08f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        targetValue = if (isFocused) Motion.QUICK_ACTION_FOCUS_SCALE else 1f,
+        animationSpec = Motion.focus(),
         label = "quickActionScale"
-    )
-    val borderWidth by animateFloatAsState(
-        targetValue = if (isFocused) 2f else 0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessHigh),
-        label = "quickActionBorder"
     )
 
     val tint = MaterialTheme.colorScheme.onSecondary
@@ -187,15 +188,18 @@ private fun QuickActionButton(
                 .graphicsLayer {
                     scaleX = focusScale
                     scaleY = focusScale
+                    translationX = bump.offset.value.x
+                    translationY = bump.offset.value.y
                 }
                 .onFocusChanged {
                     isFocused = it.isFocused
                     if (it.isFocused) {
-                        soundManager?.play(UiSound.MOVE)
+                        soundManager?.playMove(column = index, lowered = true)
                         onFocused()
                     }
                 }
-                .border(borderWidth.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                .edgeAwareNavigation(enabled = enabled, onEdge = onEdge)
+                .focusRing(focused = isFocused, cornerRadius = null)
                 .clip(CircleShape)
                 .clickable(enabled = enabled) {
                     soundManager?.play(UiSound.CONFIRM)

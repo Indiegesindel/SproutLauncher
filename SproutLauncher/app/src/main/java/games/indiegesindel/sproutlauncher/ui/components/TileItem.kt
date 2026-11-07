@@ -1,7 +1,9 @@
 package games.indiegesindel.sproutlauncher.ui.components
 
 import android.content.Context
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -50,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -62,6 +65,8 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -74,7 +79,10 @@ import coil3.compose.AsyncImage
 import games.indiegesindel.sproutlauncher.R
 import games.indiegesindel.sproutlauncher.model.AppTile
 import games.indiegesindel.sproutlauncher.ui.icons.iconModel
+import games.indiegesindel.sproutlauncher.ui.motion.Motion
 import games.indiegesindel.sproutlauncher.utils.AppLauncher
+import games.indiegesindel.sproutlauncher.utils.ControllerRumble
+import games.indiegesindel.sproutlauncher.utils.LocalControllerRumble
 import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
 import games.indiegesindel.sproutlauncher.utils.UiSound
 import kotlinx.coroutines.delay
@@ -94,10 +102,14 @@ internal fun TileItem(
     onFocusHandled: () -> Unit,
     onFocused: () -> Unit,
     onMove: (MoveDirection) -> Unit,
-    enabled: Boolean
+    enabled: Boolean,
+    rows: Int = 1,
+    entranceDelayMs: Long = 0L,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val soundManager = LocalSoundManager.current
+    val rumble = LocalControllerRumble.current
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
@@ -106,6 +118,11 @@ internal fun TileItem(
     var isFocused by remember { mutableStateOf(false) }
     var isYHeld by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    var boundsInRoot by remember { mutableStateOf<Rect?>(null) }
+    var keyPressed by remember { mutableStateOf(false) }
+    val shake = remember { Animatable(0f) }
+    val bump = rememberEdgeBump()
+    val onEdge = rememberEdgeFeedback(bump)
 
     LaunchedEffect(requestFocus) {
         if (!requestFocus) return@LaunchedEffect
@@ -116,23 +133,46 @@ internal fun TileItem(
     val isDragging = reorderState.draggedKey == tile.id
     val isLifted = isDragging || isYHeld
 
-    val activate = {
-        soundManager?.play(UiSound.CONFIRM)
+    val activate: () -> Unit = {
         when {
-            menuContext.isInMultiSelectMode -> if (!tile.isGroup) actions.onToggleSelection(tile)
-            tile.isGroup -> actions.onOpenGroup(tile)
-            else -> actions.onLaunch(tile)
+            menuContext.isInMultiSelectMode -> {
+                soundManager?.play(UiSound.CONFIRM)
+                if (!tile.isGroup) actions.onToggleSelection(tile)
+            }
+            tile.isGroup -> {
+                soundManager?.play(UiSound.FOLDER_OPEN)
+                actions.onOpenGroup(tile, boundsInRoot)
+            }
+            else -> {
+                soundManager?.play(UiSound.CONFIRM)
+                rumble?.pulse(ControllerRumble.Pulse.CONFIRM)
+                if (actions.onLaunch(tile, boundsInRoot)) {
+                    soundManager?.playDelayed(UiSound.LAUNCH, LAUNCH_SOUND_DELAY_MS)
+                } else {
+                    soundManager?.play(UiSound.ERROR)
+                    coroutineScope.launch { shake.shakeOnce(with(density) { SHAKE_DISTANCE.toPx() }) }
+                }
+            }
         }
+    }
+    val pressByKey: () -> Unit = {
+        keyPressed = true
+        coroutineScope.launch {
+            delay(Motion.PRESS_HOLD_MS)
+            keyPressed = false
+        }
+        activate()
     }
 
     val focusScale by animateFloatAsState(
         targetValue = when {
             isLifted -> 1.15f
-            isFocused -> 1.08f
+            isFocused -> Motion.FOCUS_SCALE
             else -> 1f
         },
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
-        label = "tileFocusScale"
+        animationSpec = Motion.focus(),
+        label = "tileFocusScale",
+        finishedListener = { if (isFocused && !isLifted && it == Motion.FOCUS_SCALE) soundManager?.play(UiSound.MOVE_SETTLE) }
     )
     val liftAlpha by animateFloatAsState(
         targetValue = if (isLifted) 0.8f else 1f,
@@ -152,36 +192,40 @@ internal fun TileItem(
         label = "tileEntranceScale"
     )
     LaunchedEffect(Unit) {
-        delay((index * 30L).coerceAtMost(300L))
+        delay(entranceDelayMs + (index * 30L).coerceAtMost(300L))
         hasEntered = true
+    }
+
+    val focusPulse = LocalFocusPulse.current
+    val pulseScale = remember { Animatable(1f) }
+    LaunchedEffect(focusPulse) {
+        if (focusPulse == 0 || !isFocused) return@LaunchedEffect
+        pulseScale.animateTo(WAKE_PULSE_SCALE, tween(120))
+        pulseScale.animateTo(1f, Motion.focus())
     }
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.93f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        targetValue = if (isPressed || keyPressed) Motion.PRESS_SCALE else 1f,
+        animationSpec = Motion.press(),
         label = "tilePressScale"
     )
 
     val borderWidth by animateFloatAsState(
-        targetValue = when {
-            isSelected -> 4f
-            isFocused -> 3f
-            else -> 0f
-        },
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessHigh),
+        targetValue = if (isSelected) 4f else 0f,
+        animationSpec = Motion.snap(),
         label = "tileBorderWidth"
     )
     val focusPadding by animateFloatAsState(
-        targetValue = if (isFocused || isSelected) 6f else 0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessHigh),
+        targetValue = if (isSelected) 6f else 0f,
+        animationSpec = Motion.snap(),
         label = "tilePadding"
     )
 
     Box(
-        modifier = Modifier
-            .zIndex(if (isDragging) 1f else 0f)
+        modifier = modifier
+            .zIndex(if (isDragging || isFocused) 1f else 0f)
             .focusRequester(focusRequester)
             .bringIntoViewRequester(bringIntoViewRequester)
             .onSizeChanged { size = it }
@@ -191,7 +235,7 @@ internal fun TileItem(
                     isYHeld = false
                     return@onFocusChanged
                 }
-                soundManager?.play(UiSound.MOVE)
+                soundManager?.playMove(column = index / rows.coerceAtLeast(1), row = index % rows.coerceAtLeast(1))
                 onFocused()
                 coroutineScope.launch {
                     val horizontalPadding = with(density) { 24.dp.toPx() }
@@ -216,11 +260,12 @@ internal fun TileItem(
                 onMove(direction)
                 true
             }
+            .edgeAwareNavigation(enabled = enabled && !isYHeld, onEdge = onEdge)
             .gamepadActions(
-                onConfirm = activate,
+                onConfirm = pressByKey,
                 onMenu = { showMenu = true },
                 onBack = {
-                    soundManager?.play(UiSound.BACK)
+                    soundManager?.play(if (menuContext.isInGroup) UiSound.FOLDER_CLOSE else UiSound.BACK)
                     actions.onBack()
                 }
             )
@@ -254,12 +299,17 @@ internal fun TileItem(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .onGloballyPositioned { boundsInRoot = it.boundsInRoot() }
                     .graphicsLayer {
                         alpha = liftAlpha * entranceAlpha
-                        val scale = focusScale * entranceScale * pressScale
+                        val scale = focusScale * entranceScale * pressScale * pulseScale.value
                         scaleX = scale
                         scaleY = scale
+                        translationX = bump.offset.value.x + shake.value
+                        translationY = bump.offset.value.y
                     }
+                    .focusRing(focused = isFocused && !isLifted, cornerRadius = roundness.dp)
+                    .shadow(TILE_ELEVATION, RoundedCornerShape(roundness.dp), clip = false)
                     .then(
                         if (borderWidth > 0.5f) {
                             Modifier.border(borderWidth.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape((roundness + 4).dp))
@@ -316,6 +366,24 @@ internal fun TileItem(
             actions = tileMenuActions(context, tile, isSelected, menuContext, actions)
         )
     }
+}
+
+private val TILE_ELEVATION = 4.dp
+private const val WAKE_PULSE_SCALE = 1.1f
+private val SHAKE_DISTANCE = 6.dp
+private const val LAUNCH_SOUND_DELAY_MS = 110L
+
+internal suspend fun Animatable<Float, *>.shakeOnce(distancePx: Float) {
+    snapTo(0f)
+    animateTo(0f, keyframes {
+        durationMillis = 300
+        distancePx at 40
+        -distancePx at 90
+        distancePx * 0.6f at 140
+        -distancePx * 0.6f at 190
+        distancePx * 0.25f at 240
+        0f at 300
+    })
 }
 
 private fun tileMenuActions(

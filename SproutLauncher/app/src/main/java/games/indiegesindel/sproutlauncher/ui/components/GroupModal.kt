@@ -1,14 +1,10 @@
 package games.indiegesindel.sproutlauncher.ui.components
 
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -42,12 +38,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import games.indiegesindel.sproutlauncher.R
 import games.indiegesindel.sproutlauncher.data.GridLayout
 import games.indiegesindel.sproutlauncher.model.AppTile
+import games.indiegesindel.sproutlauncher.ui.motion.Motion
 import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
 import games.indiegesindel.sproutlauncher.utils.UiSound
 
@@ -55,6 +66,7 @@ import games.indiegesindel.sproutlauncher.utils.UiSound
 @Composable
 fun AnimatedVisibilityScope.GroupModal(
     group: AppTile,
+    origin: Rect?,
     layout: GridLayout,
     actions: TileGridActions,
     pendingFocusTileId: String?,
@@ -65,21 +77,31 @@ fun AnimatedVisibilityScope.GroupModal(
 ) {
     val soundManager = LocalSoundManager.current
     val dismiss = {
-        soundManager?.play(UiSound.BACK)
+        soundManager?.play(UiSound.FOLDER_CLOSE)
         actions.onBack()
     }
+
+    val reveal by transition.animateFloat(
+        transitionSpec = { tween(Motion.FOLDER_ZOOM_MS, easing = Motion.Emphasized) },
+        label = "folderReveal"
+    ) { if (it == EnterExitState.Visible) 1f else 0f }
+    var panelBounds by remember { mutableStateOf<Rect?>(null) }
+    val density = LocalDensity.current
+    val panelRadiusPx = with(density) { layout.roundness.dp.toPx() }
 
     OverlayScrim(onDismiss = dismiss, enabled = enabled, contentPadding = contentPadding) {
         Box(
             modifier = Modifier
-                .animateEnterExit(
-                    enter = fadeIn(tween(150)) + scaleIn(
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
-                        initialScale = 0.82f
-                    ),
-                    exit = fadeOut(tween(100)) + scaleOut(animationSpec = tween(100), targetScale = 0.92f)
-                )
                 .fillMaxSize(0.9f)
+                .onGloballyPositioned { panelBounds = it.boundsInRoot() }
+                .graphicsLayer {
+                    val panel = panelBounds ?: return@graphicsLayer
+                    val full = Rect(Offset.Zero, size)
+                    val start = origin?.translate(-panel.topLeft) ?: full.scaledAroundCenter(FALLBACK_START_SCALE)
+                    clip = true
+                    shape = RoundedRectShape(lerp(start, full, reveal), panelRadiusPx)
+                    alpha = (reveal * 3f).coerceAtMost(1f)
+                }
                 .clip(RoundedCornerShape(layout.roundness.dp))
                 .background(MaterialTheme.colorScheme.surface)
                 .consumeClicks()
@@ -87,7 +109,9 @@ fun AnimatedVisibilityScope.GroupModal(
                 .padding(16.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = ((reveal - 0.35f) / 0.65f).coerceIn(0f, 1f) },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
@@ -115,11 +139,25 @@ fun AnimatedVisibilityScope.GroupModal(
                     pendingFocusTileId = pendingFocusTileId,
                     onFocusConsumed = onFocusConsumed,
                     onTileFocused = onTileFocused,
-                    enabled = enabled
+                    enabled = enabled,
+                    entranceDelayMs = Motion.FOLDER_ITEM_DELAY_MS
                 )
             }
         }
     }
+}
+
+private const val FALLBACK_START_SCALE = 0.8f
+
+private fun Rect.scaledAroundCenter(factor: Float): Rect {
+    val w = width * factor
+    val h = height * factor
+    return Rect(center.x - w / 2f, center.y - h / 2f, center.x + w / 2f, center.y + h / 2f)
+}
+
+private class RoundedRectShape(private val rect: Rect, private val radius: Float) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+        Outline.Rounded(RoundRect(rect, CornerRadius(radius)))
 }
 
 @Composable
