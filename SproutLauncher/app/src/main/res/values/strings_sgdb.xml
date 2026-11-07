@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tile_settings_option_local_hint">Pick an image</string>
+    <string name="tile_settings_option_sgdb_hint">Search artwork</string>
+    <string name="tile_settings_option_sgdb_no_key">Add an API key in Settings</string>
+    <string name="sgdb_use_icon">Use this icon</string>
+    <string name="sgdb_by_author">by %1$s</string>
+</resources>

@@ -38,7 +38,6 @@ class SteamGridDbViewModel(
     private val imageStore: ImageStore,
     initialQuery: String
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(SteamGridDbUiState(query = initialQuery))
     val uiState: StateFlow<SteamGridDbUiState> = _uiState.asStateFlow()
 
@@ -71,12 +70,9 @@ class SteamGridDbViewModel(
         _uiState.update { it.copy(selectedGame = game, grids = emptyList(), isLoadingGrids = true, error = null) }
         gridsJob = viewModelScope.launch {
             val result = client.gridsForGame(game.id)
+            val grids = result.getOrDefault(emptyList()).filter { grid -> !grid.url.isNullOrBlank() }
             _uiState.update {
-                it.copy(
-                    isLoadingGrids = false,
-                    grids = result.getOrDefault(emptyList()).filter { grid -> !grid.url.isNullOrBlank() },
-                    error = result.errorReason()
-                )
+                it.copy(isLoadingGrids = false, grids = grids, selectedGrid = grids.firstOrNull(), error = result.errorReason())
             }
         }
     }
@@ -88,10 +84,6 @@ class SteamGridDbViewModel(
 
     fun selectGrid(grid: SteamGridDbGrid) {
         _uiState.update { it.copy(selectedGrid = grid, downloadFailed = false) }
-    }
-
-    fun dismissGridDetail() {
-        _uiState.update { it.copy(selectedGrid = null) }
     }
 
     fun downloadSelectedGrid() {
