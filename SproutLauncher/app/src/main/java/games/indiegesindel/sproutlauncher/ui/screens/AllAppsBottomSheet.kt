@@ -1,6 +1,20 @@
 package games.indiegesindel.sproutlauncher.ui.screens
 
+import games.indiegesindel.sproutlauncher.ui.components.RefocusOnKeyInput
 import android.content.Context
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.unit.IntOffset
+import games.indiegesindel.sproutlauncher.ui.components.focusRing
+import kotlin.math.roundToInt
 import androidx.annotation.StringRes
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
@@ -39,8 +53,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -72,11 +84,11 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -99,6 +111,7 @@ import games.indiegesindel.sproutlauncher.ui.viewmodels.AllAppsViewModel
 import games.indiegesindel.sproutlauncher.ui.viewmodels.AllAppsViewModel.AppEntry
 import games.indiegesindel.sproutlauncher.utils.AppLauncher
 import games.indiegesindel.sproutlauncher.utils.LocalSoundManager
+import games.indiegesindel.sproutlauncher.utils.LaunchOrigin
 import games.indiegesindel.sproutlauncher.utils.UiSound
 import kotlinx.coroutines.launch
 
@@ -131,6 +144,9 @@ fun AllAppsBottomSheet(
         entryFocusRequester.requestFocusWithRetry()
     }
 
+    var sheetHasFocus by remember { mutableStateOf(false) }
+    RefocusOnKeyInput(sheetHasFocus) { entryFocusRequester }
+
     BackHandler(onBack = onDismiss)
 
     tileToRemove?.let {
@@ -162,18 +178,27 @@ fun AllAppsBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(sheetFraction)
+                .onFocusChanged { sheetHasFocus = it.hasFocus }
                 .focusProperties {
                     onExit = {
                         if (requestedFocusDirection == FocusDirection.Up) entryFocusRequester.requestFocus()
                         cancelFocusChange()
                     }
                 },
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            shape = RoundedCornerShape(topStart = SHEET_RADIUS, topEnd = SHEET_RADIUS),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 2.dp
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(top = 10.dp)
+                            .size(width = 56.dp, height = 6.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    )
                     SheetHeader(
                         tab = uiState.tab,
                         onTabSelected = viewModel::setTab,
@@ -181,7 +206,6 @@ fun AllAppsBottomSheet(
                         onFocused = onHeaderFocused,
                         entryFocusRequester = entryFocusRequester
                     )
-                    HorizontalDivider()
                     Box(modifier = Modifier.weight(1f)) {
                         AppsGrid(
                             uiState = uiState,
@@ -194,18 +218,15 @@ fun AllAppsBottomSheet(
                             onHintFocused = onHeaderFocused
                         )
                     }
-                }
-
-                PromptsFooter(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .zIndex(2f)
-                ) {
-                    if (focusedElement == FocusedElement.APP_TILE) {
-                        ButtonPrompt(button = "A", label = stringResource(R.string.prompt_launch))
-                        ButtonPrompt(button = "X", label = stringResource(R.string.prompt_options))
+                    PromptsFooter {
+                        if (focusedElement == FocusedElement.APP_TILE) {
+                            ButtonPrompt(button = "A", label = stringResource(R.string.prompt_launch))
+                            ButtonPrompt(button = "X", label = stringResource(R.string.prompt_options))
+                        } else {
+                            ButtonPrompt(button = "A", label = stringResource(R.string.prompt_select))
+                        }
+                        ButtonPrompt(button = "B", label = stringResource(R.string.prompt_close))
                     }
-                    ButtonPrompt(button = "B", label = stringResource(R.string.prompt_close))
                 }
             }
         }
@@ -235,27 +256,17 @@ private fun SheetHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        AllAppsViewModel.Tab.entries.forEach { entry ->
-            FilterChip(
-                selected = tab == entry,
-                onClick = {
-                    soundManager?.play(UiSound.CONFIRM)
-                    onTabSelected(entry)
-                },
-                label = {
-                    Text(stringResource(if (entry == AllAppsViewModel.Tab.ALL) R.string.all_apps_tab_all else R.string.all_apps_tab_home))
-                },
-                modifier = (if (entry == AllAppsViewModel.Tab.ALL) Modifier.focusRequester(entryFocusRequester) else Modifier)
-                    .then(focusFeedback)
-            )
-        }
+        TabTrack(tab, onTabSelected, focusFeedback, entryFocusRequester)
         Spacer(modifier = Modifier.weight(1f))
+        val settingsInteraction = remember { MutableInteractionSource() }
+        val settingsFocused by settingsInteraction.collectIsFocusedAsState()
         IconButton(
             onClick = {
                 soundManager?.play(UiSound.CONFIRM)
                 onSettingsClick()
             },
-            modifier = focusFeedback
+            interactionSource = settingsInteraction,
+            modifier = focusFeedback.focusRing(focused = settingsFocused, cornerRadius = null)
         ) {
             Icon(
                 imageVector = Icons.Filled.Settings,
@@ -277,9 +288,13 @@ private fun AppsGrid(
     onItemFocused: () -> Unit,
     onHintFocused: () -> Unit
 ) {
+    val view = LocalView.current
     val context = LocalContext.current
     val gridState = rememberLazyGridState()
     val isHomeTab = uiState.tab == AllAppsViewModel.Tab.HOMESCREEN
+    val popped = remember(uiState.tab) { HashSet<String>() }
+    fun popDelay(key: String, index: Int): Long? =
+        if (index < POP_ITEMS && popped.add(key)) POP_BASE_DELAY_MS + index * POP_STEP_MS else null
 
     LaunchedEffect(gridState) {
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
@@ -302,7 +317,7 @@ private fun AppsGrid(
         columns = GridCells.Adaptive(minSize = 130.dp),
         state = gridState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 80.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -310,12 +325,13 @@ private fun AppsGrid(
             sectionHeader(R.string.all_apps_section_apps, topPadding = 8.dp)
         }
 
-        items(uiState.apps, key = { "${it.app.packageName}/${it.app.activityName}" }) { entry ->
+        itemsIndexed(uiState.apps, key = { _, it -> "${it.app.packageName}/${it.app.activityName}" }) { index, entry ->
             AllAppsItem(
+                popDelayMs = popDelay("${entry.app.packageName}/${entry.app.activityName}", index),
                 label = entry.tile?.label ?: entry.app.label,
                 iconModel = entry.tile?.iconUri ?: AppIcon.Activity(entry.app.packageName, entry.app.activityName),
                 isOnHomeScreen = entry.tile != null,
-                onLaunch = { AppLauncher.launch(context, entry.app) },
+                onLaunch = { origin -> AppLauncher.launch(context, entry.app, origin?.let { LaunchOrigin(view, it) }) },
                 menuActions = appMenuActions(context, entry, onAddToHomeScreen, onRequestRemove),
                 onFocused = onItemFocused,
                 onBack = onDismiss,
@@ -330,12 +346,13 @@ private fun AppsGrid(
                 }
             } else {
                 sectionHeader(R.string.all_apps_section_shortcuts, topPadding = 16.dp)
-                items(uiState.shortcuts, key = { "shortcut_${it.id}" }) { tile ->
+                itemsIndexed(uiState.shortcuts, key = { _, it -> "shortcut_${it.id}" }) { index, tile ->
                     AllAppsItem(
+                        popDelayMs = popDelay("shortcut_${tile.id}", uiState.apps.size + index),
                         label = tile.label,
                         iconModel = tile.iconModel,
                         isOnHomeScreen = true,
-                        onLaunch = { AppLauncher.launch(context, tile) },
+                        onLaunch = { origin -> AppLauncher.launch(context, tile, origin?.let { LaunchOrigin(view, it) }) },
                         menuActions = shortcutMenuActions(context, tile, onRequestRemove),
                         onFocused = onItemFocused,
                         onBack = onDismiss,
@@ -349,15 +366,91 @@ private fun AppsGrid(
 
 private fun LazyGridScope.sectionHeader(@StringRes title: Int, topPadding: Dp) {
     item(key = "header_$title", span = { GridItemSpan(maxLineSpan) }) {
-        Text(
-            text = stringResource(title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = topPadding, bottom = 8.dp)
-        )
+        Row(
+            modifier = Modifier.padding(top = topPadding, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+            Text(
+                text = stringResource(title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
+
+@Composable
+private fun TabTrack(
+    tab: AllAppsViewModel.Tab,
+    onTabSelected: (AllAppsViewModel.Tab) -> Unit,
+    focusFeedback: Modifier,
+    entryFocusRequester: FocusRequester
+) {
+    val soundManager = LocalSoundManager.current
+    val density = LocalDensity.current
+    val bounds = remember { mutableStateMapOf<AllAppsViewModel.Tab, Pair<Float, Float>>() }
+    val target = bounds[tab]
+    val blobX by animateFloatAsState(target?.first ?: 0f, spring(dampingRatio = 0.6f, stiffness = 600f), label = "tabBlobX")
+    val blobWidth by animateFloatAsState(target?.second ?: 0f, spring(dampingRatio = 0.6f, stiffness = 600f), label = "tabBlobWidth")
+
+    Box(
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape)
+            .padding(TRACK_PADDING)
+    ) {
+        if (target != null) {
+            Box(modifier = Modifier.matchParentSize()) {
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(blobX.roundToInt(), 0) }
+                        .width(with(density) { blobWidth.toDp() })
+                        .fillMaxHeight()
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+            }
+        }
+        Row {
+            AllAppsViewModel.Tab.entries.forEach { entry ->
+                val selected = tab == entry
+                var focused by remember { mutableStateOf(false) }
+                val textColor by animateColorAsState(
+                    if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                    label = "tabText"
+                )
+                Text(
+                    text = stringResource(if (entry == AllAppsViewModel.Tab.ALL) R.string.all_apps_tab_all else R.string.all_apps_tab_home),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = textColor,
+                    modifier = (if (entry == AllAppsViewModel.Tab.ALL) Modifier.focusRequester(entryFocusRequester) else Modifier)
+                        .onGloballyPositioned { bounds[entry] = it.positionInParent().x to it.size.width.toFloat() }
+                        .onFocusChanged { focused = it.isFocused }
+                        .then(focusFeedback)
+                        .focusRing(focused = focused, cornerRadius = 50.dp)
+                        .clip(CircleShape)
+                        .clickable {
+                            soundManager?.play(UiSound.CONFIRM)
+                            onTabSelected(entry)
+                        }
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+private val SHEET_RADIUS = 36.dp
+private val TRACK_PADDING = 5.dp
+private const val POP_ITEMS = 24
+private const val POP_BASE_DELAY_MS = 60L
+private const val POP_STEP_MS = 18L
 
 private fun appMenuActions(
     context: Context,
@@ -407,7 +500,7 @@ private fun ShortcutsHintBlock(enabled: Boolean, onFocused: () -> Unit) {
                 soundManager?.play(UiSound.MOVE)
                 onFocused()
                 scope.launch {
-                    val footerClearance = with(density) { 96.dp.toPx() }
+                    val footerClearance = with(density) { 16.dp.toPx() }
                     runCatching {
                         bringIntoViewRequester.bringIntoView(
                             Rect(0f, 0f, size.width.toFloat(), size.height + footerClearance)
@@ -415,16 +508,16 @@ private fun ShortcutsHintBlock(enabled: Boolean, onFocused: () -> Unit) {
                     }
                 }
             }
-            .clip(RoundedCornerShape(12.dp))
-            .then(if (isFocused) Modifier.background(MaterialTheme.colorScheme.surfaceVariant) else Modifier)
+            .focusRing(focused = isFocused, cornerRadius = 24.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .focusable(enabled = enabled)
             .padding(12.dp)
     ) {
         Text(
             text = stringResource(R.string.all_apps_section_shortcuts),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
