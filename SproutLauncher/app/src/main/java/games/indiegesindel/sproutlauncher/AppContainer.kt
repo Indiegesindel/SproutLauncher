@@ -2,6 +2,7 @@ package games.indiegesindel.sproutlauncher
 
 import android.content.Context
 import android.content.pm.LauncherApps
+import games.indiegesindel.sproutlauncher.data.DebugHttp
 import games.indiegesindel.sproutlauncher.data.ImageStore
 import games.indiegesindel.sproutlauncher.data.InstalledAppsRepository
 import games.indiegesindel.sproutlauncher.data.SettingsRepository
@@ -24,7 +25,7 @@ class AppContainer(context: Context) {
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val ioDispatcher = Dispatchers.IO
 
-    val httpClient: OkHttpClient by lazy { OkHttpClient() }
+    val httpClient: OkHttpClient by lazy { DebugHttp.configure(OkHttpClient.Builder(), appContext.filesDir).build() }
 
     val tileRepository: TileRepository by lazy {
         TileRepository(appContext.getSharedPreferences(TileRepository.PREFS_NAME, Context.MODE_PRIVATE))
