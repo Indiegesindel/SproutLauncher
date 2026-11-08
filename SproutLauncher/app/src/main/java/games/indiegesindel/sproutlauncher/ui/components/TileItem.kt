@@ -144,10 +144,9 @@ internal fun TileItem(
                 actions.onOpenGroup(tile, boundsInRoot)
             }
             else -> {
-                soundManager?.play(UiSound.CONFIRM)
                 rumble?.pulse(ControllerRumble.Pulse.CONFIRM)
                 if (actions.onLaunch(tile, boundsInRoot)) {
-                    soundManager?.playDelayed(UiSound.LAUNCH, LAUNCH_SOUND_DELAY_MS)
+                    soundManager?.play(UiSound.LAUNCH)
                 } else {
                     soundManager?.play(UiSound.ERROR)
                     coroutineScope.launch { shake.shakeOnce(with(density) { SHAKE_DISTANCE.toPx() }) }
@@ -171,8 +170,7 @@ internal fun TileItem(
             else -> 1f
         },
         animationSpec = Motion.focus(),
-        label = "tileFocusScale",
-        finishedListener = { if (isFocused && !isLifted && it == Motion.FOCUS_SCALE) soundManager?.play(UiSound.MOVE_SETTLE) }
+        label = "tileFocusScale"
     )
     val liftAlpha by animateFloatAsState(
         targetValue = if (isLifted) 0.8f else 1f,
@@ -371,7 +369,6 @@ internal fun TileItem(
 private val TILE_ELEVATION = 4.dp
 private const val WAKE_PULSE_SCALE = 1.1f
 private val SHAKE_DISTANCE = 6.dp
-private const val LAUNCH_SOUND_DELAY_MS = 110L
 
 internal suspend fun Animatable<Float, *>.shakeOnce(distancePx: Float) {
     snapTo(0f)

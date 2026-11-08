@@ -98,10 +98,9 @@ fun AllAppsItem(
     }
 
     val launch: () -> Unit = {
-        soundManager?.play(UiSound.CONFIRM)
         rumble?.pulse(ControllerRumble.Pulse.CONFIRM)
         if (onLaunch(boundsInRoot)) {
-            soundManager?.playDelayed(UiSound.LAUNCH, 110L)
+            soundManager?.play(UiSound.LAUNCH)
         } else {
             soundManager?.play(UiSound.ERROR)
             coroutineScope.launch { shake.shakeOnce(with(density) { 6.dp.toPx() }) }
