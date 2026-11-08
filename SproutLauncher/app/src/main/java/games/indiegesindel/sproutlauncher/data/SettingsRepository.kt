@@ -75,6 +75,11 @@ class SettingsRepository(private val prefs: SharedPreferences, shortScreen: Bool
     val isDarkMode = boolean("is_dark_mode", false)
     val uiSoundsEnabled = boolean("ui_sounds_enabled", true)
     val menuMusicEnabled = boolean("menu_music_enabled", true)
+    val customMusicUris = setting<List<String>>(
+        "custom_music_uris", emptyList(),
+        read = { key, default -> getString(key, null)?.lines()?.filter { it.isNotBlank() } ?: default },
+        write = { key, value -> if (value.isEmpty()) remove(key) else putString(key, value.joinToString("\n")) }
+    )
     val controllerRumbleEnabled = boolean("controller_rumble_enabled", true)
 
     val homeGrid = GridSettings(

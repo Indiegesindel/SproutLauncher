@@ -58,8 +58,13 @@ class AppContainer(context: Context) {
     }
 
     val menuMusic: MenuMusic by lazy {
-        MenuMusic(appContext) { settingsRepository.menuMusicEnabled.value }.also { music ->
+        MenuMusic(
+            appContext,
+            isEnabled = { settingsRepository.menuMusicEnabled.value },
+            customSources = { settingsRepository.customMusicUris.value }
+        ).also { music ->
             settingsRepository.menuMusicEnabled.flow.drop(1).onEach { music.refresh() }.launchIn(applicationScope)
+            settingsRepository.customMusicUris.flow.drop(1).onEach { music.refresh() }.launchIn(applicationScope)
         }
     }
 

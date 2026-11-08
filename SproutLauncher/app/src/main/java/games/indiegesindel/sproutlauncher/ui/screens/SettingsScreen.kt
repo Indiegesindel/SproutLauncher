@@ -11,6 +11,10 @@ import games.indiegesindel.sproutlauncher.ui.components.RefocusOnKeyInput
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -441,6 +445,7 @@ private fun SectionPage(
         SettingsSection.SOUND -> SettingsCard {
             SettingToggle(R.string.settings_ui_sounds, settings.uiSoundsEnabled)
             SettingToggle(R.string.settings_menu_music, settings.menuMusicEnabled)
+            MusicSourceSettings(settings)
             SettingToggle(R.string.settings_controller_rumble, settings.controllerRumbleEnabled)
         }
         SettingsSection.HOMESCREEN -> GridSettingsCard(settings.homeGrid, isGroup = false) { onDialog(SettingsDialogState.Slider(it)) }
@@ -836,6 +841,67 @@ private fun AppearanceSettings(
             )
         }
     }
+}
+
+@Composable
+private fun MusicSourceSettings(settings: SettingsRepository) {
+    val context = LocalContext.current
+    val soundManager = LocalSoundManager.current
+    val musicEnabled by settings.menuMusicEnabled.flow.collectAsStateWithLifecycle()
+    val uris by settings.customMusicUris.flow.collectAsStateWithLifecycle()
+    if (!musicEnabled) return
+
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { picked ->
+        if (picked.isEmpty()) return@rememberLauncherForActivityResult
+        val kept = picked.filter { uri ->
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }.isSuccess
+        }
+        if (kept.size < picked.size) Toast.makeText(context, R.string.error_music_not_persisted, Toast.LENGTH_LONG).show()
+        if (kept.isNotEmpty()) settings.customMusicUris.set(kept.map(Uri::toString))
+    }
+    val singleName by produceState<String?>(null, uris) {
+        value = uris.singleOrNull()?.let { displayName(context, Uri.parse(it)) }
+    }
+    val summary = when {
+        uris.isEmpty() -> stringResource(R.string.settings_music_builtin)
+        uris.size == 1 -> singleName ?: pluralStringResource(R.plurals.music_tracks_count, 1, 1)
+        else -> pluralStringResource(R.plurals.music_tracks_count, uris.size, uris.size)
+    }
+
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.settings_music_source)) },
+        supportingContent = { Text(summary, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        modifier = Modifier.clickable {
+            soundManager?.play(UiSound.CONFIRM)
+            picker.launch(arrayOf("audio/*"))
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+    )
+    if (uris.isNotEmpty()) {
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.settings_music_use_builtin)) },
+            modifier = Modifier.clickable {
+                soundManager?.play(UiSound.CONFIRM)
+                uris.forEach { uri ->
+                    runCatching {
+                        context.contentResolver.releasePersistableUriPermission(Uri.parse(uri), Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                }
+                settings.customMusicUris.set(emptyList())
+            },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        )
+    }
+}
+
+private suspend fun displayName(context: Context, uri: Uri): String? = withContext(Dispatchers.IO) {
+    runCatching {
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0)?.substringBeforeLast('.') else null
+        }
+    }.getOrNull()
 }
 
 private fun persistReadPermission(context: Context, uri: Uri) {

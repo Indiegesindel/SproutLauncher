@@ -13,6 +13,10 @@
 
     <string name="value_dp">%1$ddp</string>
     <string name="value_percent">%1$d%%</string>
+    <plurals name="music_tracks_count">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
     <plurals name="rows_count">
         <item quantity="one">%1$d Row</item>
         <item quantity="other">%1$d Rows</item>
@@ -119,6 +123,10 @@
     <string name="ambient_custom_description">Always a color of your choice</string>
     <string name="custom_ambient_title">Custom Ambient Color</string>
     <string name="settings_menu_music">Menu Music</string>
+    <string name="settings_music_source">Music</string>
+    <string name="settings_music_builtin">Sprout Ambient (built-in)</string>
+    <string name="settings_music_use_builtin">Use built-in music</string>
+    <string name="error_music_not_persisted">Couldn\'t keep access to that file</string>
     <string name="settings_controller_rumble">Controller Rumble</string>
     <string name="accent_turquoise">Turquoise</string>
     <string name="accent_sprout_green">Sprout</string>
